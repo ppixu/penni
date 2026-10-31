@@ -6,7 +6,9 @@ import { type JakoEra, MUUT, muotoileEuroPyorea, muotoileOsuus } from './tulosja
 
 const KOKO = 132;
 const PAKSUUS = 16;
-const SADE = (KOKO - PAKSUUS) / 2;
+/** Korostetun segmentin lisäpaksuus; säteeseen jätetään sille tilaa, ettei reuna leikkaudu. */
+const KOROSTUS = 3;
+const SADE = (KOKO - PAKSUUS - KOROSTUS) / 2;
 const KEHA = 2 * Math.PI * SADE;
 /** Pintaväriä näkyviin segmenttien väliin (px kehällä). */
 const RAKO = 2;
@@ -61,7 +63,7 @@ export function RengasKaavio({ otsikko, erat }: { otsikko: string; erat: readonl
               r={SADE}
               fill="none"
               stroke={vari}
-              strokeWidth={korostettu === era.avain ? PAKSUUS + 3 : PAKSUUS}
+              strokeWidth={korostettu === era.avain ? PAKSUUS + KOROSTUS : PAKSUUS}
               strokeDasharray={`${nakyva} ${KEHA - nakyva}`}
               strokeDashoffset={-alku}
               opacity={korostettu !== null && korostettu !== era.avain ? 0.35 : 1}
