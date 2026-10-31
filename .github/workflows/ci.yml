@@ -21,4 +21,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm build
-      - run: pnpm test
+      # Two packages at a time: the PGlite, workerd and PDF tests are CPU-heavy and time out
+      # when turbo runs every package in parallel on the 4-core runner.
+      - run: pnpm exec turbo run test --concurrency=2
