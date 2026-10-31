@@ -11,6 +11,8 @@
     "test": "turbo run test",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "demo:build": "turbo run build --filter=@penni/web^... && pnpm --filter @penni/web build:demo",
+    "demo:deploy": "pnpm demo:build && pnpm exec wrangler pages deploy apps/web/dist-demo --project-name penni-demo --branch main",
     "site:build": "node docs/mockups/build-landing.mjs",
     "site:deploy": "pnpm site:build && pnpm exec wrangler pages deploy docs/mockups/dist --project-name pennikirjanpito --branch main"
   },

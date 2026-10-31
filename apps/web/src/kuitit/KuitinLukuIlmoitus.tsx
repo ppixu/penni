@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { DEMO } from '@/demo/tila';
 import type { KuitinLukuTila } from './useKuitinLuku.js';
 
 /** Kuitin luvun tila liitepaneelissa: lupakysymys, edistyminen tai syy, miksi lukua ei tehty. */
@@ -39,9 +40,11 @@ export function KuitinLukuIlmoitus({
     case 'eiLuettu':
       return (
         <p className={teksti}>
-          {tila.syy === 'eiGpu'
-            ? 'Tämä laite ei pysty lukemaan kuvakuitteja automaattisesti — täytä tiedot käsin.'
-            : 'Kuittia ei saatu luettua — täytä tiedot käsin.'}
+          {tila.syy === 'eiGpu' && DEMO
+            ? 'Demossa luetaan PDF-kuitit — kuvakuittien lukumalli on käytössä omassa kirjanpidossa.'
+            : tila.syy === 'eiGpu'
+              ? 'Tämä laite ei pysty lukemaan kuvakuitteja automaattisesti — täytä tiedot käsin.'
+              : 'Kuittia ei saatu luettua — täytä tiedot käsin.'}
         </p>
       );
     default:

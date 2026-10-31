@@ -1,6 +1,7 @@
 import { KpClientProvider } from '@/app/KpClientProvider';
 import { PilviPortti } from '@/auth/PilviPortti';
 import { makeClient } from '@/client/makeClient';
+import { DEMO } from '@/demo/tila';
 import { alustaMuisti } from '@/lib/muisti';
 import type { KpClient } from '@penni/asiakas';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -85,6 +86,19 @@ if (import.meta.env.MODE !== 'test') {
       createRoot(rootEl).render(
         <StrictMode>
           <Sovellus client={client} />
+        </StrictMode>,
+      );
+      return;
+    }
+    if (DEMO) {
+      // Selaindemo: muistissa oleva demokirjanpito, ks. demo/kaynnistaDemo.tsx.
+      const { kaynnistaDemo } = await import('@/demo/kaynnistaDemo');
+      const { client, Kehys } = await kaynnistaDemo();
+      createRoot(rootEl).render(
+        <StrictMode>
+          <Kehys>
+            <Sovellus client={client} />
+          </Kehys>
         </StrictMode>,
       );
       return;

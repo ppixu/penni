@@ -1,4 +1,6 @@
 import { useKayttaja } from '@/auth/kayttajaKonteksti';
+import { DemoMerkki, DemoTunnus } from '@/demo/DemoMerkki';
+import { DEMO } from '@/demo/tila';
 import { cn } from '@/lib/utils';
 import { onkoTasmaysSilta } from '@/tasmays/silta';
 import { Link, useRouterState } from '@tanstack/react-router';
@@ -116,6 +118,7 @@ export function Sidebar({ kirjanpito }: { kirjanpito: string }) {
           />
         </span>
         Penni
+        {DEMO && <DemoTunnus />}
       </div>
       <div className="mx-[3px] -mt-[6px] mb-3">
         <NavigointiNapit />
@@ -129,7 +132,8 @@ export function Sidebar({ kirjanpito }: { kirjanpito: string }) {
           <NavLinkki key={kohta.to} {...kohta} />
         ))}
         <Erotin />
-        <NavLinkki {...UUSI_KIRJANPITO} />
+        {/* Demossa ei luoda uutta kirjaa: muistissa oleva demokirja palautetaan latauksella. */}
+        {DEMO ? <DemoMerkki /> : <NavLinkki {...UUSI_KIRJANPITO} />}
         <Erotin />
         <KirjanVaihto kirjanpito={kirjanpito} />
       </div>

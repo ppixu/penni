@@ -5,6 +5,7 @@ import { SalasananVaihto } from '@/auth/SalasananVaihto';
 import { useKayttaja } from '@/auth/kayttajaKonteksti';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
+import { DEMO } from '@/demo/tila';
 import { VieKirjanpito } from '@/vienti/VieKirjanpito';
 import type { AsetuksetPatch } from '@penni/asiakas';
 import { type Asetukset, type Tilikausi, asetusPaalla } from '@penni/engine';
@@ -70,7 +71,8 @@ export function AsetuksetSivu() {
           <h2 className="text-[15px] font-[650]">Vie kirjanpito</h2>
           <VieKirjanpito />
         </div>
-        <KysyOsio asetukset={init.asetukset} />
+        {/* Kysy tarvitsee paikallisen kielimallin — ei selaindemossa. */}
+        {!DEMO && <KysyOsio asetukset={init.asetukset} />}
         {kayttaja ? <SalasananVaihto onVaihda={kayttaja.vaihdaSalasana} /> : null}
         <TietojaOsio />
       </section>
