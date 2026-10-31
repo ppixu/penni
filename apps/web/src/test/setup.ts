@@ -1,8 +1,12 @@
 // Extends the global expect with jest-dom matchers (toBeInTheDocument, toHaveAccessibleName, …).
 import '@testing-library/jest-dom/vitest';
 import { tyhjennaListanJarjestys } from '@/tositteet/listanJarjestys';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
+
+// findBy*/waitFor default to 1 s, which the slower CI runner occasionally exceeds on heavy
+// route renders (e.g. a new invoice navigating to its document).
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom implements neither scroll API; TanStack Router's scroll-restoration calls them on mount.
 // Stub them so router renders don't emit noisy unhandled errors in the test output.
