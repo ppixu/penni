@@ -1,8 +1,8 @@
 import { useInit, useKumppanit, useSaldot, useTositteet } from '@/app/kysely';
+import { Linkki } from '@/components/Linkki';
 import { tiliRajauksessa } from '@/tilikartta/tilinakyma';
 import { type Tili, lataaKartta, nimi } from '@penni/engine';
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
-import { Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Lataustila } from './Lataustila';
 import { kirjaRivit, paakirjaTilit, riviSelite } from './kirjaRivit';
@@ -72,15 +72,15 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
         const tili = tilit.get(ryhma.tili);
         return (
           <tbody key={ryhma.tili} className="break-inside-avoid">
-            <tr className="font-semibold">
+            <tr id={`tili-${ryhma.tili}`} className="font-semibold">
               <td className="px-[10px] pb-[3px] pt-[14px]" colSpan={5}>
-                <Link
+                <Linkki
                   to="/tilikartta"
                   search={{ nakyma: 'kaikki', tili: ryhma.tili }}
                   className="hover:text-[var(--accent)] hover:underline"
                 >
                   {tili ? `${ryhma.tili} ${nimi(tili)}` : `${ryhma.tili} (tili puuttuu)`}
-                </Link>
+                </Linkki>
               </td>
               <td
                 className="px-[10px] pb-[3px] pt-[14px] text-right tabular-nums"
@@ -95,13 +95,13 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
                   {muotoilePvm(r.pvm)}
                 </td>
                 <td className="px-[10px] py-[4px]">
-                  <Link
+                  <Linkki
                     to="/tositteet/$id"
                     params={{ id: String(r.tositeId) }}
                     className="hover:text-[var(--accent)] hover:underline"
                   >
                     {r.tosite || 'Luonnos'}
-                  </Link>
+                  </Linkki>
                 </td>
                 <td className="px-[10px] py-[4px] text-[var(--text-muted)]">
                   {riviSelite(r, kumppaninNimi)}

@@ -1,3 +1,4 @@
+import { Linkki } from '@/components/Linkki';
 import { TaittuvaOtsikko } from '@/components/TaittuvaOtsikko';
 import {
   type AlvErittely,
@@ -7,7 +8,6 @@ import {
   nimi as tilinNimi,
 } from '@penni/engine';
 import { type Cents, muotoileEuro } from '@penni/euro';
-import { Link } from '@tanstack/react-router';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import type { AlvKausi } from './alvKaudet.js';
 import { koodiRivit } from './alvKoodit.js';
@@ -201,13 +201,13 @@ export function AlvLaskelmaDokumentti({
                         <td className="py-[2px] tabular-nums">{kitsasPvm(v.pvm)}</td>
                         <td className="py-[2px] tabular-nums">
                           {v.tosite !== undefined ? (
-                            <Link
+                            <Linkki
                               to="/tositteet/$id"
                               params={{ id: String(v.tosite) }}
                               className="text-[var(--accent)] hover:underline print:text-inherit print:no-underline"
                             >
                               {v.tositeNumero}
-                            </Link>
+                            </Linkki>
                           ) : null}
                         </td>
                         <td className="break-words py-[2px]">{v.kumppani}</td>

@@ -1,4 +1,5 @@
 import { useInit, useKumppanit, useSaldot, useTositteet } from '@/app/kysely';
+import { Linkki } from '@/components/Linkki';
 import {
   type IsoDate,
   type ListattuTosite,
@@ -10,7 +11,6 @@ import {
   onkoVastaavaa,
 } from '@penni/engine';
 import { type Cents, Euro, muotoileEuro, muotoilePvm } from '@penni/euro';
-import { Link } from '@tanstack/react-router';
 import { Fragment, useMemo } from 'react';
 import { Lataustila } from './Lataustila';
 import type { RaporttiProps } from './raporttiProps';
@@ -157,13 +157,13 @@ export function TaseErittely({ alkupvm, loppupvm }: RaporttiProps) {
       {tilit.map((e) => {
         const otsikkoTeksti = `${e.tili.numero} ${nimi(e.tili)}`;
         const linkki = (
-          <Link
+          <Linkki
             to="/tilikartta"
             search={{ nakyma: 'kaikki', tili: e.tili.numero }}
             className="hover:text-[var(--accent)] hover:underline"
           >
             {otsikkoTeksti}
-          </Link>
+          </Linkki>
         );
         if (!e.rivit) {
           // Erittelemätön tili: pelkkä loppusaldo (Kitsaksen 'S', :146-157).

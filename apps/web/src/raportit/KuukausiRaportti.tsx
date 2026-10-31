@@ -1,9 +1,9 @@
 import { useKpClient } from '@/app/KpClientProvider';
 import { avaimet } from '@/app/kysely';
+import { Linkki } from '@/components/Linkki';
 import type { IsoDate, RaporttiParams, RaporttiRivi } from '@penni/engine';
 import { type Cents, Euro, muotoileEuro } from '@penni/euro';
 import { useQueries } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { Fragment, useMemo } from 'react';
 import { Lataustila } from './Lataustila';
 import type { RaporttiProps } from './raporttiProps';
@@ -301,13 +301,13 @@ export function KuukausiRaportti({ alkupvm, loppupvm, muoto, naytaTilit }: Rapor
                     style={{ paddingLeft: `${r.sisennys * 16}px` }}
                   >
                     {r.tili !== undefined ? (
-                      <Link
+                      <Linkki
                         to="/tilikartta"
                         search={{ nakyma: 'kaikki', tili: r.tili }}
                         className="hover:text-[var(--accent)] hover:underline"
                       >
                         {r.teksti}
-                      </Link>
+                      </Linkki>
                     ) : (
                       r.teksti
                     )}

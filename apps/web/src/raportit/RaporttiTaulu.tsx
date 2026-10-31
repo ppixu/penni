@@ -1,6 +1,6 @@
+import { Linkki } from '@/components/Linkki';
 import type { RaporttiRivi } from '@penni/engine';
 import { muotoileEuro } from '@penni/euro';
-import { Link } from '@tanstack/react-router';
 
 /**
  * Render a pre-resolved report row list (indent / bold / blank spacer / right-aligned money).
@@ -30,13 +30,13 @@ export function RaporttiTaulu({ rivit }: { rivit: readonly RaporttiRivi[] }) {
                   className="py-[3px] text-[var(--text-muted)]"
                   style={{ paddingLeft: `${r.sisennys * 16}px` }}
                 >
-                  <Link
+                  <Linkki
                     to="/tilikartta"
                     search={{ nakyma: 'kaikki', tili: r.tili }}
                     className="hover:text-[var(--accent)] hover:underline"
                   >
                     {r.teksti}
-                  </Link>
+                  </Linkki>
                 </td>
                 <td className="py-[3px] text-right tabular-nums text-[var(--text-muted)]">
                   {r.arvo === null ? '' : muotoileEuro(r.arvo)}

@@ -1,7 +1,7 @@
 import { useInit, useKumppanit, useTositteet } from '@/app/kysely';
+import { Linkki } from '@/components/Linkki';
 import { type Tili, lataaKartta, nimi } from '@penni/engine';
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
-import { Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Lataustila } from './Lataustila';
 import { kirjaRivit, riviSelite, summaa } from './kirjaRivit';
@@ -60,22 +60,22 @@ export function Paivakirja({ alkupvm, loppupvm }: RaporttiProps) {
                 {muotoilePvm(r.pvm)}
               </td>
               <td className="px-[10px] py-[4px]">
-                <Link
+                <Linkki
                   to="/tositteet/$id"
                   params={{ id: String(r.tositeId) }}
                   className="hover:text-[var(--accent)] hover:underline"
                 >
                   {r.tosite || 'Luonnos'}
-                </Link>
+                </Linkki>
               </td>
               <td className="px-[10px] py-[4px]">
-                <Link
+                <Linkki
                   to="/tilikartta"
                   search={{ nakyma: 'kaikki', tili: r.tili }}
                   className="hover:text-[var(--accent)] hover:underline"
                 >
                   {tili ? `${r.tili} ${nimi(tili)}` : `${r.tili} (tili puuttuu)`}
-                </Link>
+                </Linkki>
               </td>
               <td className="px-[10px] py-[4px] text-[var(--text-muted)]">
                 {riviSelite(r, kumppaninNimi)}

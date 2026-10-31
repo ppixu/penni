@@ -50,9 +50,13 @@ export async function tallennaLaskuPdf(p: {
   }
 }
 
-/** Käynnistää selaimen latauksen (Blob + <a download>). */
-export function lataaSelaimeen(tavut: Uint8Array, tiedostonimi: string): void {
-  const url = URL.createObjectURL(new Blob([new Uint8Array(tavut)], { type: 'application/pdf' }));
+/** Käynnistää selaimen latauksen (Blob + <a download>); tyyppi oletuksena PDF. */
+export function lataaSelaimeen(
+  tavut: Uint8Array,
+  tiedostonimi: string,
+  tyyppi = 'application/pdf',
+): void {
+  const url = URL.createObjectURL(new Blob([new Uint8Array(tavut)], { type: tyyppi }));
   const linkki = document.createElement('a');
   linkki.href = url;
   linkki.download = tiedostonimi;

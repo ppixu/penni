@@ -1,6 +1,6 @@
 import { useInit, useSaldot } from '@/app/kysely';
+import { Linkki } from '@/components/Linkki';
 import { type Tili, lataaKartta, nimi, tyyppiKoodilla } from '@penni/engine';
-import { Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Lataustila } from './Lataustila';
 import type { RaporttiProps } from './raporttiProps';
@@ -123,13 +123,13 @@ export function Tililuettelo({ loppupvm }: RaporttiProps) {
             ) : (
               <tr key={t.numero} className="border-b border-[var(--border-faint)]">
                 <td className="py-[4px] pr-[10px] tabular-nums">
-                  <Link
+                  <Linkki
                     to="/tilikartta"
                     search={{ nakyma: 'kaikki', tili: t.numero }}
                     className="hover:text-[var(--accent)] hover:underline"
                   >
                     {t.numero}
-                  </Link>
+                  </Linkki>
                 </td>
                 <td className="py-[4px] pr-[10px]">{nimi(t)}</td>
                 <td className="py-[4px] text-[var(--text-muted)]">

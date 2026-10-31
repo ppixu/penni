@@ -7,11 +7,12 @@ import {
   useTilinpaatos,
   useVahvistaTilinpaatos,
 } from '@/app/kysely';
+import { ArkistoiNappi } from '@/arkisto/ArkistoiNappi';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
-import { RaporttiTaulu } from '@/raportit/RaporttiTaulu';
 import { useValittuTilikausi } from '@/tilikausi/valittuTilikausi';
 import { LiitetiedotEditori } from '@/tilinpaatos/LiitetiedotEditori';
+import { TilinpaatosDokumentti } from '@/tilinpaatos/TilinpaatosDokumentti';
 import { tilinpaatosTila } from '@/tilinpaatos/tilinpaatosTila';
 import type { TilinpaatosDoc, TilinpaatosMuoto } from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
@@ -164,26 +165,20 @@ function TilinpaatosSisalto({
             Peru vahvistus
           </Button>
         )}
+        {tila !== 'avoin' && (
+          <ArkistoiNappi
+            alkaa={doc.tilikausi.alkaa}
+            loppuu={doc.tilikausi.loppuu}
+            esto={liiteDirty ? 'Tallenna liitetiedot ennen arkistointia.' : null}
+          />
+        )}
         {virhe && <span className="text-[12.5px] text-[var(--danger)]">{virhe}</span>}
       </div>
 
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-[18px] font-[650]">Tilinpäätös</h1>
-          <p className="text-[13px] text-[var(--text-muted)]">
-            {nimi} · {muotoilePvm(doc.tilikausi.alkaa)}–{muotoilePvm(doc.tilikausi.loppuu)}
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 text-[15px] font-[650]">Tuloslaskelma</h2>
-          <RaporttiTaulu rivit={doc.tuloslaskelma} />
-        </div>
-        <div>
-          <h2 className="mb-2 text-[15px] font-[650]">Tase</h2>
-          <RaporttiTaulu rivit={doc.tase} />
-        </div>
-        <div>
-          <h2 className="mb-2 text-[15px] font-[650]">Liitetiedot</h2>
+      <TilinpaatosDokumentti
+        doc={doc}
+        nimi={nimi}
+        liitetiedot={
           <LiitetiedotEditori
             key={doc.tilikausi.loppuu}
             loppupvm={doc.tilikausi.loppuu}
@@ -191,8 +186,8 @@ function TilinpaatosSisalto({
             lukittu={tila === 'vahvistettu'}
             onDirty={onLiiteDirty}
           />
-        </div>
-      </div>
+        }
+      />
     </>
   );
 }
