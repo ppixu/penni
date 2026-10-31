@@ -1,6 +1,7 @@
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { type Cents, muotoileEuro, muotoilePvm } from '@penni/euro';
 import type {
   KitsasYhteenveto,
   TaysmaytysRaportti,
@@ -175,6 +176,12 @@ export function TuontiNakyma(): React.ReactElement {
                 Tuotiin {tulos.raportti.tositteet} tositetta, {tulos.raportti.viennit} vientiä ja{' '}
                 {tulos.raportti.liitteet} liitettä tiedostoon {tulos.kohde}.
               </p>
+              {tulos.taysmaytys.alvIlmoituksia > 0 && tulos.taysmaytys.alvErot.length === 0 && (
+                <p className="mt-1 text-[12.5px] text-[var(--text-muted)]">
+                  Penni laski {tulos.taysmaytys.alvIlmoituksia} Kitsaksessa annettua alv-ilmoitusta
+                  uudelleen, ja luvut täsmäävät.
+                </p>
+              )}
 
               {!tulos.taysmaytys.tasmaa && tulos.taysmaytys.erot.length > 0 && (
                 <table className="mt-3 w-full border-collapse text-[12.5px] tabular-nums">
@@ -225,6 +232,37 @@ export function TuontiNakyma(): React.ReactElement {
                 </table>
               )}
 
+              {!tulos.taysmaytys.tasmaa && tulos.taysmaytys.alvErot.length > 0 && (
+                <table className="mt-3 w-full border-collapse text-[12.5px] tabular-nums">
+                  <caption className="mb-1 text-left">
+                    Penni laskee nämä Kitsaksessa annetun alv-ilmoituksen luvut eri tavalla:
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th className={SOLU_OTSIKKO}>Kausi</th>
+                      <th className={SOLU_OTSIKKO}>Koodi</th>
+                      <th className="text-right font-semibold text-[var(--text-subtle)]">Kitsas</th>
+                      <th className="text-right font-semibold text-[var(--text-subtle)]">Penni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tulos.taysmaytys.alvErot.map((ero) => (
+                      <tr
+                        key={`${ero.alkupvm}-${ero.koodi}`}
+                        className="border-t border-[var(--border-faint)]"
+                      >
+                        <td className="py-1.5">
+                          {muotoilePvm(ero.alkupvm)}–{muotoilePvm(ero.loppupvm)}
+                        </td>
+                        <td className="py-1.5">{ero.koodi}</td>
+                        <td className="py-1.5 text-right">{muotoileEuro(ero.kitsas as Cents)}</td>
+                        <td className="py-1.5 text-right">{muotoileEuro(ero.penni as Cents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
               {!tulos.taysmaytys.tasmaa && tulos.taysmaytys.ulkopuoliset > 0 && (
                 <p className="mt-3 text-[12.5px]">
                   {tulos.taysmaytys.ulkopuoliset} vientiriviä on päivätty tilikausien ulkopuolelle,
@@ -235,6 +273,7 @@ export function TuontiNakyma(): React.ReactElement {
               {!tulos.taysmaytys.tasmaa &&
                 tulos.taysmaytys.erot.length === 0 &&
                 eriavatMaaratLista.length === 0 &&
+                tulos.taysmaytys.alvErot.length === 0 &&
                 tulos.taysmaytys.ulkopuoliset === 0 && (
                   <p className="mt-3 text-[12.5px]">
                     Täsmäytys epäonnistui, mutta syytä ei pystytty erittelemään.

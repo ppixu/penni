@@ -24,6 +24,8 @@ export interface WireTosite {
   marginaalialijaama?: Record<string, number>;
   /** Tiliotteen tiedot; saldot euroina kuten viennit (Kitsaksen kartan avaimet + saldot). */
   tiliote?: WireTiliote;
+  /** Vapaamuotoiset lisätiedot (Kitsaksen avain `info`). */
+  info?: string;
   /** Vain listavastauksessa (ks. encodeListattuTosite). */
   liitteita?: number;
   alkupera?: Alkupera;
@@ -89,6 +91,7 @@ export function encodeTosite(t: Tosite & { id?: number }): WireTosite {
   if (t.alkuperainenTosite) w.alkuperainenTosite = t.alkuperainenTosite;
   if (t.marginaalialijaama) w.marginaalialijaama = t.marginaalialijaama;
   if (t.tiliote) w.tiliote = encodeTiliote(t.tiliote);
+  if (t.info) w.info = t.info;
   return w;
 }
 
@@ -118,6 +121,7 @@ export function decodeTosite(w: WireTosite): Tosite & { id?: number } {
   }
   const tiliote = decodeTiliote(w.tiliote);
   if (tiliote) t.tiliote = tiliote;
+  if (typeof w.info === 'string' && w.info !== '') t.info = w.info;
   return t;
 }
 

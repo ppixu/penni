@@ -318,6 +318,24 @@ export async function createPostgresStorage(
       return out;
     },
 
+    async tuoLoki(merkinnat) {
+      await ajuri.transaction(async (tx) => {
+        for (const m of merkinnat) {
+          await tx.query(
+            'INSERT INTO loki (tosite, aika, userid, lahde, tila, data) VALUES ($1,$2,$3,$4,$5,$6)',
+            [
+              m.tosite,
+              m.aika,
+              m.userId ?? null,
+              m.lahde ?? null,
+              m.tila,
+              m.data === null ? null : JSON.stringify(m.data),
+            ],
+          );
+        }
+      });
+    },
+
     async getLoki(tositeId) {
       const { rows } = await ajuri.query(
         'SELECT aika, userid, lahde, tila, data FROM loki WHERE tosite = $1 ORDER BY id',

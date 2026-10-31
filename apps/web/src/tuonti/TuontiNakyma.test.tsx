@@ -25,6 +25,7 @@ const RAPORTTI = {
   viennit: 8,
   liitteet: 1,
   ohitetut: { Kohdennus: 3 },
+  loki: 0,
   varoitukset: ['Taulua Kohdennus (3 riviä) ei tuotu — Penni ei mallinna sitä.'],
 };
 
@@ -34,7 +35,15 @@ function luoSilta(yliajot: Partial<TuontiSilta> = {}): TuontiSilta {
     tuo: vi.fn(async () => ({
       kohde: '/tmp/testi.penni',
       raportti: RAPORTTI,
-      taysmaytys: { tasmaa: true, erot: [], maarat: {}, ulkopuoliset: 0 },
+      taysmaytys: {
+        tasmaa: true,
+        erot: [],
+        maarat: {},
+        ulkopuoliset: 0,
+        alvErot: [],
+        alvIlmoituksia: 0,
+        kattamattomat: {},
+      },
     })),
     avaaKirja: vi.fn(async () => undefined),
     ...yliajot,
@@ -82,6 +91,9 @@ describe('TuontiNakyma', () => {
           erot: [{ tilikausi: '2025-01-01', tili: 4000, kitsas: 19194, penni: 0 }],
           maarat: {},
           ulkopuoliset: 0,
+          alvErot: [],
+          alvIlmoituksia: 0,
+          kattamattomat: {},
         },
       })),
     });
@@ -102,7 +114,15 @@ describe('TuontiNakyma', () => {
       tuo: vi.fn(async () => ({
         kohde: '/tmp/testi.penni',
         raportti: RAPORTTI,
-        taysmaytys: { tasmaa: false, erot: [], maarat: {}, ulkopuoliset: 2 },
+        taysmaytys: {
+          tasmaa: false,
+          erot: [],
+          maarat: {},
+          ulkopuoliset: 2,
+          alvErot: [],
+          alvIlmoituksia: 0,
+          kattamattomat: {},
+        },
       })),
     });
     const user = userEvent.setup();
@@ -127,6 +147,9 @@ describe('TuontiNakyma', () => {
             viennit: [8, 8] as [number, number],
           },
           ulkopuoliset: 0,
+          alvErot: [],
+          alvIlmoituksia: 0,
+          kattamattomat: {},
         },
       })),
     });
@@ -138,6 +161,63 @@ describe('TuontiNakyma', () => {
     // Vain eriävä pari (tositteet) näytetään, ei täsmäävä pari (viennit).
     expect(screen.getByText('tositteet')).toBeInTheDocument();
     expect(screen.queryByText('viennit')).not.toBeInTheDocument();
+  });
+
+  it('näyttää alv-ilmoitusten erot euroina koodeittain', async () => {
+    window.penni = luoSilta({
+      tuo: vi.fn(async () => ({
+        kohde: '/tmp/testi.penni',
+        raportti: RAPORTTI,
+        taysmaytys: {
+          tasmaa: false,
+          erot: [],
+          maarat: {},
+          ulkopuoliset: 0,
+          alvErot: [
+            {
+              alkupvm: '2026-03-01',
+              loppupvm: '2026-03-31',
+              koodi: 308,
+              kitsas: 2161,
+              penni: 2160,
+            },
+          ],
+          alvIlmoituksia: 1,
+          kattamattomat: {},
+        },
+      })),
+    });
+    const user = userEvent.setup();
+    render(<TuontiNakyma />);
+    await user.click(screen.getByRole('button', { name: 'Valitse Kitsas-tiedosto' }));
+    await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
+    expect(await screen.findByText(/alv-ilmoituksen luvut eri tavalla/i)).toBeInTheDocument();
+    expect(screen.getByText('308')).toBeInTheDocument();
+    expect(screen.getByText(/21,61/)).toBeInTheDocument();
+    expect(screen.queryByText(/syytä ei pystytty erittelemään/)).not.toBeInTheDocument();
+  });
+
+  it('kertoo, että Kitsaksen alv-ilmoitukset laskettiin uudelleen ja ne täsmäävät', async () => {
+    window.penni = luoSilta({
+      tuo: vi.fn(async () => ({
+        kohde: '/tmp/testi.penni',
+        raportti: RAPORTTI,
+        taysmaytys: {
+          tasmaa: true,
+          erot: [],
+          maarat: {},
+          ulkopuoliset: 0,
+          alvErot: [],
+          alvIlmoituksia: 7,
+          kattamattomat: {},
+        },
+      })),
+    });
+    const user = userEvent.setup();
+    render(<TuontiNakyma />);
+    await user.click(screen.getByRole('button', { name: 'Valitse Kitsas-tiedosto' }));
+    await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
+    expect(await screen.findByText(/laski 7 Kitsaksessa annettua/)).toBeInTheDocument();
   });
 
   it('näyttää virheen kun tuonti epäonnistuu ja palauttaa napin käyttöön', async () => {

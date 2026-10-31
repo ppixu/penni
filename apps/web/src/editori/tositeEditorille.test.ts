@@ -166,6 +166,10 @@ describe('tositeEditorille — kentät, joita ruudukko ei kanna', () => {
     ['jakson loppu', { jaksoloppuu: '2026-12-31' }],
     ['jaksotustili', { jaksotustili: 1800 }],
     ['maksuperusteinen tosite', { maksuperusteinenTosite: 4 }],
+    ['rivin kumppani', { kumppani: 7 }],
+    ['arkistotunnus', { arkistotunnus: 'ARK123' }],
+    ['rivin viite', { viite: 'RF471234' }],
+    ['tasaeräpoisto', { tasaerapoisto: 36 }],
     ['vientityyppi', { tyyppi: 300 }],
     ['poikkeava vientipäivä', { pvm: '2026-05-05' }],
   ])('%s → ei ruudukkoon (tallennus pudottaisi kentän)', (_nimi, muutos) => {

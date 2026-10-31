@@ -2339,5 +2339,42 @@ export function runResourceConformance(
       const loki2 = await s.getLoki(withoutLahde.id);
       expect(loki2.at(-1)?.lahde).toBeUndefined();
     });
+
+    it('tuoLoki appends historical audit rows verbatim and in order, before later saves', async () => {
+      const s = await fresh();
+      await s.tuoLoki([
+        {
+          tosite: 77,
+          tila: 100,
+          aika: '2024-02-01T09:00:00Z',
+          userId: 3,
+          lahde: 'kitsas',
+          data: { a: 1 },
+        },
+        { tosite: 77, tila: 0, aika: '2024-02-02T09:00:00Z', lahde: 'kitsas', data: null },
+        { tosite: 78, tila: 100, aika: '2024-02-03T09:00:00Z', lahde: 'kitsas', data: { b: 2 } },
+      ]);
+      const tallennettu = await s.saveTosite(
+        { id: 77, pvm: '2026-06-01', tyyppi: 0, tila: 100, tunniste: 1, sarja: '', ...bal(100) },
+        env,
+      );
+      const loki = await s.getLoki(tallennettu.id);
+      expect(loki).toHaveLength(3);
+      expect(loki[0]).toEqual({
+        tosite: 77,
+        tila: 100,
+        aika: '2024-02-01T09:00:00Z',
+        userId: 3,
+        lahde: 'kitsas',
+        data: { a: 1 },
+      });
+      expect(loki[1]).toMatchObject({ tila: 0, aika: '2024-02-02T09:00:00Z', data: null });
+      expect(loki[1]?.userId).toBeUndefined();
+      expect(loki[2]?.aika).toBe(env.aika);
+      expect(loki[2]?.lahde).toBeUndefined();
+      expect(await s.getLoki(78)).toHaveLength(1);
+      // Historiarivit eivät ole tositteita: ne eivät näy listassa eivätkä saldoissa.
+      expect((await s.listTositteet({ bucket: 'kirjanpidossa' })).map((t) => t.id)).toEqual([77]);
+    });
   });
 }

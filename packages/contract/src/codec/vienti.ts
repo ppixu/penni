@@ -17,6 +17,11 @@ export interface WireVienti {
   jaksoloppuu?: string;
   jaksotustili?: number;
   maksuperusteinenTosite?: number;
+  /** Kitsaksen tapaan olio; decode hyväksyy myös pelkän numeron. */
+  kumppani?: { id: number } | number;
+  arkistotunnus?: string;
+  viite?: string;
+  tasaerapoisto?: number;
   // Unknown extra keys may be present on the wire; ignored on decode in Tier-0.
   [key: string]: unknown;
 }
@@ -35,6 +40,10 @@ export function encodeVienti(v: TositeVienti): WireVienti {
   if (v.jaksoloppuu) w.jaksoloppuu = v.jaksoloppuu;
   if (v.jaksotustili) w.jaksotustili = v.jaksotustili;
   if (v.maksuperusteinenTosite) w.maksuperusteinenTosite = v.maksuperusteinenTosite;
+  if (v.kumppani) w.kumppani = { id: v.kumppani };
+  if (v.arkistotunnus) w.arkistotunnus = v.arkistotunnus;
+  if (v.viite) w.viite = v.viite;
+  if (v.tasaerapoisto) w.tasaerapoisto = v.tasaerapoisto;
   return w;
 }
 
@@ -59,5 +68,14 @@ export function decodeVienti(w: WireVienti): TositeVienti {
     v.jaksotustili = Number(w.jaksotustili);
   if (w.maksuperusteinenTosite != null && Number(w.maksuperusteinenTosite) !== 0)
     v.maksuperusteinenTosite = Number(w.maksuperusteinenTosite);
+  const kumppani =
+    typeof w.kumppani === 'object' && w.kumppani !== null
+      ? Number((w.kumppani as { id?: unknown }).id)
+      : Number(w.kumppani);
+  if (Number.isFinite(kumppani) && kumppani !== 0) v.kumppani = kumppani;
+  if (w.arkistotunnus) v.arkistotunnus = String(w.arkistotunnus);
+  if (w.viite) v.viite = String(w.viite);
+  if (w.tasaerapoisto != null && Number(w.tasaerapoisto) !== 0)
+    v.tasaerapoisto = Number(w.tasaerapoisto);
   return v;
 }

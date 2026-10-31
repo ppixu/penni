@@ -132,6 +132,12 @@ export interface Storage {
    *  skipped. Positive = still open (AR is an asset). `saldopvm` bounds by vienti.pvm ≤ saldopvm. */
   queryErat(q: { saldopvm?: IsoDate }): Promise<Map<number, Cents>>;
   getLoki(tositeId: number): Promise<AuditEntry[]>;
+  /**
+   * Append historical audit rows verbatim (import only, e.g. a Kitsas book's Tositeloki), in the
+   * given order and with their own `aika`/`lahde`. Never touches tosite or vienti, never called
+   * by the resource layer. The log stays append-only: nothing is rewritten.
+   */
+  tuoLoki(merkinnat: AuditEntry[]): Promise<void>;
 
   // --- master data (read) ---
   getChart(): Promise<Tili[]>;

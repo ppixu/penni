@@ -1,5 +1,6 @@
 import type {
   Asetukset,
+  AuditEntry,
   IsoDate,
   TiliData,
   Tilikausi,
@@ -27,6 +28,32 @@ export interface KitsasKirja {
   kpVersio: string;
   /** Tables present in the source but not modelled by Penni: table name -> row count. */
   ohitetut: Record<string, number>;
+  /**
+   * The source book's own change history (Kitsas `Tositeloki`), oldest first, each row marked
+   * `lahde: 'kitsas'`. `data` is Kitsas's snapshot in Kitsas's own format, kept verbatim.
+   */
+  loki: AuditEntry[];
+  /**
+   * Coverage audit: source fields with content that the import does not carry over, as
+   * `Taulu.json.avain` (or a descriptive label) -> occurrences. Empty = nothing was dropped.
+   */
+  kattamattomat: Record<string, number>;
+  /** VAT returns filed in Kitsas, for recomputing each period in Penni after the import. */
+  alvIlmoitukset: KitsasAlvIlmoitus[];
+}
+
+/**
+ * One VAT return filed in Kitsas: the ALVLASKELMA voucher's json `alv`
+ * (alv/alvlaskelma.cpp:950-967 — `koodit` in cents, `maksettava` in euros).
+ */
+export interface KitsasAlvIlmoitus {
+  tosite: number;
+  alkupvm: IsoDate;
+  loppupvm: IsoDate;
+  /** Code 308: tax payable (negative = refund), cents. */
+  maksettava: number;
+  /** Return code -> amount in cents, as filed. May be empty for an all-zero return. */
+  koodit: Record<number, number>;
 }
 
 /** Progress event emitted while writing. `tehty`/`kaikkiaan` are row counts within `vaihe`. */
@@ -47,8 +74,19 @@ export interface TuontiRaportti {
   liitteet: number;
   /** Tables not imported: table name -> row count. */
   ohitetut: Record<string, number>;
+  /** Kitsas change-history rows carried over. */
+  loki: number;
   /** Human-readable Finnish warnings (unknown tyyppi, unexpected KpVersio, ...). */
   varoitukset: string[];
+}
+
+/** One VAT-return figure that Penni recomputes differently from what was filed in Kitsas. */
+export interface AlvEro {
+  alkupvm: IsoDate;
+  loppupvm: IsoDate;
+  koodi: number;
+  kitsas: number;
+  penni: number;
 }
 
 /** One account whose balance disagrees between source and destination. */
@@ -71,6 +109,16 @@ export interface TaysmaytysRaportti {
    * would otherwise be invisible to reconciliation. Must be 0 for `tasmaa` to be true.
    */
   ulkopuoliset: number;
+  /**
+   * Every VAT return filed in Kitsas, recomputed by Penni's own VAT engine over the imported
+   * data. Unlike the balance check (both sides sum the same rows), this tests that Penni
+   * INTERPRETS the rows as Kitsas did. Must be empty for `tasmaa` to be true.
+   */
+  alvErot: AlvEro[];
+  /** Filed VAT returns that were checked. */
+  alvIlmoituksia: number;
+  /** Coverage audit carried over from the read (see KitsasKirja.kattamattomat); informational. */
+  kattamattomat: Record<string, number>;
 }
 
 /**

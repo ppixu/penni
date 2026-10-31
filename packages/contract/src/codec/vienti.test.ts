@@ -141,3 +141,27 @@ describe('vienti codec — jakso fields', () => {
     expect(decodeVienti(w)).toEqual(v);
   });
 });
+
+describe('vienti codec — Kitsas-tuonnin rivikohtaiset tiedot', () => {
+  it('kuljettaa kumppanin Kitsaksen tapaan oliona ja muut kentät sellaisinaan', () => {
+    const v: TositeVienti = {
+      tili: 1701,
+      debet: c(0),
+      kredit: c(5000),
+      pvm: '2026-03-20',
+      alvKoodi: 0,
+      alvProsentti: 0,
+      kumppani: 7,
+      arkistotunnus: 'ARK123',
+      viite: 'RF471234',
+      tasaerapoisto: 36,
+    };
+    const w = encodeVienti(v);
+    expect(w.kumppani).toEqual({ id: 7 });
+    expect(decodeVienti(w)).toEqual(v);
+  });
+
+  it('hyväksyy kumppanin myös pelkkänä numerona', () => {
+    expect(decodeVienti({ tili: 1701, pvm: '2026-03-20', kumppani: 7 }).kumppani).toBe(7);
+  });
+});

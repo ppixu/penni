@@ -84,7 +84,7 @@ describe('lueKitsas — synteettinen kanta', () => {
   it('raportoi ohitetut taulut rivimäärineen', () => {
     const kirja = lueKitsas(testiPolku);
     expect(kirja.ohitetut).toHaveProperty('Kohdennus');
-    expect(kirja.ohitetut).toHaveProperty('Tositeloki');
+    expect(kirja.ohitetut).not.toHaveProperty('Tositeloki');
   });
 });
 

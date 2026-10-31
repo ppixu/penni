@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  KASITELLYT_TOSITE_JSON,
+  KASITELLYT_TOSITE_SISAKKAISET,
   type KitsasKumppaniRivi,
   type KitsasLiiteRivi,
   type KitsasOtsikkoRivi,
   type KitsasTiliRivi,
   type KitsasTositeRivi,
   type KitsasVientiRivi,
+  laskeKattamattomat,
+  luoEraKartta,
   muunnaKumppani,
   muunnaLiite,
   muunnaOtsikko,
@@ -379,5 +383,118 @@ describe('suodataAsetukset', () => {
       KitsasVersio: '2.0',
     });
     expect(a).toEqual({ Nimi: 'Testi Oy', AlvVelvollinen: 'true' });
+  });
+});
+
+describe('muunnaVienti — Kitsas-tuonnin rivikohtaiset tiedot', () => {
+  it('säilyttää rivin oman kumppanin vain, kun se poikkeaa tositteen kumppanista', () => {
+    const tiliotteenRivi = muunnaVienti({ ...tyhjaVienti, kumppani: 7 }, '2026-01-01', {
+      kumppani: null,
+    });
+    expect(tiliotteenRivi.kumppani).toBe(7);
+    // Kitsas kopioi tositteen kumppanin jokaiselle riville; turha kopio pudotetaan.
+    const tavallinen = muunnaVienti({ ...tyhjaVienti, kumppani: 7 }, '2026-01-01', {
+      kumppani: 7,
+    });
+    expect(tavallinen.kumppani).toBeUndefined();
+  });
+
+  it('tuo arkistotunnuksen, rivin viitteen ja tasaeräpoiston kuukaudet', () => {
+    const v = muunnaVienti(
+      {
+        ...tyhjaVienti,
+        arkistotunnus: '20260101ABCD1234',
+        json: JSON.stringify({ viite: 'RF471234', tasaerapoisto: 36 }),
+      },
+      '2026-01-01',
+      { viite: '1232' },
+    );
+    expect(v.arkistotunnus).toBe('20260101ABCD1234');
+    expect(v.viite).toBe('RF471234');
+    expect(v.tasaerapoisto).toBe(36);
+  });
+
+  it('pudottaa rivin viitteen, joka on sama kuin tositteen', () => {
+    const v = muunnaVienti({ ...tyhjaVienti, json: '{"viite":"1232"}' }, '2026-01-01', {
+      viite: '1232',
+    });
+    expect(v.viite).toBeUndefined();
+  });
+});
+
+describe('luoEraKartta', () => {
+  it('nimeää yhden erän avaavan tositteen erän tositteen id:llä', () => {
+    // Kitsas: avausrivin eraid = rivin oma id (41); maksurivi viittaa samaan eraid:hen.
+    const avain = luoEraKartta([
+      { id: 41, tosite: 12, eraid: 41 },
+      { id: 42, tosite: 12, eraid: null },
+      { id: 90, tosite: 30, eraid: 41 },
+    ]);
+    expect(avain(41)).toBe(12);
+  });
+
+  it('antaa monta erää avaavan tositteen erille negatiiviset avaimet, jotka eivät törmää', () => {
+    const avain = luoEraKartta([
+      { id: 5, tosite: 1, eraid: 5 },
+      { id: 6, tosite: 1, eraid: 6 },
+    ]);
+    expect(avain(5)).toBe(-5);
+    expect(avain(6)).toBe(-6);
+  });
+
+  it('antaa erälle, jonka avausriviä ei ole, negatiivisen avaimen', () => {
+    expect(luoEraKartta([])(77)).toBe(-77);
+  });
+});
+
+describe('muunnaTosite — tiliote ja lisätiedot', () => {
+  it('tuo tiliotteen kauden ja tilin (tili voi olla merkkijono)', () => {
+    const t = muunnaTosite(
+      {
+        ...tyhjaTosite,
+        json: JSON.stringify({
+          tiliote: { alkupvm: '2020-06-01', loppupvm: '2020-06-04', tili: '1910' },
+        }),
+      },
+      [],
+    );
+    expect(t.tiliote).toEqual({ tili: 1910, alkupvm: '2020-06-01', loppupvm: '2020-06-04' });
+  });
+
+  it('tuo vapaamuotoiset lisätiedot', () => {
+    const t = muunnaTosite({ ...tyhjaTosite, json: '{"info":"Tarkista kuitti"}' }, []);
+    expect(t.info).toBe('Tarkista kuitti');
+  });
+});
+
+describe('laskeKattamattomat', () => {
+  it('laskee sisällölliset avaimet, joita tuonti ei kanna, ja jättää tyhjät pois', () => {
+    const kohde: Record<string, number> = {};
+    const json = JSON.stringify({
+      tiliote: { tili: 1910 },
+      kierto: 3,
+      huomio: '',
+      lasku: { numero: '1001', osoite: 'Katu 1', email: '' },
+      alv: { maksettava: '0.00', marginaalialijaama: { '24': 100 } },
+    });
+    laskeKattamattomat(
+      json,
+      KASITELLYT_TOSITE_JSON,
+      'Tosite.json',
+      kohde,
+      KASITELLYT_TOSITE_SISAKKAISET,
+    );
+    laskeKattamattomat(
+      json,
+      KASITELLYT_TOSITE_JSON,
+      'Tosite.json',
+      kohde,
+      KASITELLYT_TOSITE_SISAKKAISET,
+    );
+    expect(kohde).toEqual({
+      'Tosite.json.kierto': 2,
+      'Tosite.json.lasku.osoite': 2,
+      'Tosite.json.alv.marginaalialijaama': 2,
+    });
   });
 });

@@ -36,6 +36,9 @@ function kirjaTositteineen(tositteet: KitsasTosite[]): KitsasKirja {
     liitteet: [],
     kpVersio: '24',
     ohitetut: {},
+    loki: [],
+    kattamattomat: {},
+    alvIlmoitukset: [],
   };
 }
 
@@ -92,11 +95,37 @@ describe('kirjoitaKirja', () => {
 
   it('leimaa koko tuonnin samalla aikaleimalla lokiin', async () => {
     const { storage } = await tuoMuistiin();
-    const eka = await storage.getLoki(1);
-    const toka = await storage.getLoki(2);
-    expect(eka.length).toBeGreaterThan(0);
-    expect(eka.every((r) => r.aika === AIKA)).toBe(true);
-    expect(toka.every((r) => r.aika === AIKA)).toBe(true);
+    const omat = [...(await storage.getLoki(1)), ...(await storage.getLoki(2))].filter(
+      (r) => r.lahde !== 'kitsas',
+    );
+    expect(omat).toHaveLength(2);
+    expect(omat.every((r) => r.aika === AIKA)).toBe(true);
+  });
+
+  it('tuo Kitsaksen muutoshistorian ennen tuonnin omaa lokiriviä', async () => {
+    const { storage, raportti } = await tuoMuistiin();
+    expect(raportti.loki).toBe(2);
+    const loki = await storage.getLoki(1);
+    expect(loki).toHaveLength(2);
+    expect(loki[0]).toMatchObject({
+      tosite: 1,
+      tila: 100,
+      aika: '2025-03-01T10:00:00Z',
+      userId: 1,
+      lahde: 'kitsas',
+      data: {},
+    });
+    expect(loki[1]).toMatchObject({ aika: AIKA, tila: 100 });
+    expect(loki[1]?.lahde).toBeUndefined();
+  });
+
+  it('ei kahdenna Kitsaksen historiaa, kun sama kirja tuodaan uudestaan', async () => {
+    const storage = createMemoryStorage();
+    await kirjoitaKirja(lueKitsas(polku), storage, { aika: AIKA });
+    const toinen = await kirjoitaKirja(lueKitsas(polku), storage, { aika: AIKA });
+    expect(toinen.loki).toBe(0);
+    const kitsaksesta = (await storage.getLoki(1)).filter((r) => r.lahde === 'kitsas');
+    expect(kitsaksesta).toHaveLength(1);
   });
 
   it('raportoi kirjoitetut määrät ja ohitetut taulut', async () => {
@@ -107,9 +136,9 @@ describe('kirjoitaKirja', () => {
     expect(raportti.tositteet).toBe(5);
     expect(raportti.viennit).toBe(10);
     expect(raportti.liitteet).toBe(1);
-    // Testikanta siementää yhden Kohdennus-rivin ja kaksi Tositeloki-riviä, kuten oikea kirja.
+    // Testikanta siementää yhden Kohdennus-rivin, kuten oikea kirja. Tositeloki tuodaan.
     expect(raportti.ohitetut.Kohdennus).toBe(1);
-    expect(raportti.ohitetut.Tositeloki).toBe(2);
+    expect(raportti.ohitetut.Tositeloki).toBeUndefined();
   });
 
   it('ilmoittaa edistymisestä jokaisessa vaiheessa', async () => {
@@ -193,16 +222,15 @@ describe('kirjoitaKirja', () => {
     );
   });
 
-  it('selittää Tositelokin omalla syyllään — Penni kyllä mallintaa auditlokin', async () => {
-    // Oletussyy ("Penni ei mallinna sitä") olisi Tositelokista suoraan väärä: Penni pitää
-    // omaa append-only-lokiaan, mutta ei peri toisen kirjanpidon historiaa.
+  it('kertoo kattavuustarkastuksen löydöt yhdellä varoituksella', async () => {
     const storage = createMemoryStorage();
-    const kirja = { ...kirjaTositteineen([]), ohitetut: { Tositeloki: 311 } };
+    const kirja = {
+      ...kirjaTositteineen([]),
+      kattamattomat: { 'Vienti.json.palkkakoodi': 4, 'Tosite.json.lasku.osoite': 2 },
+    };
     const raportti = await kirjoitaKirja(kirja, storage, { aika: AIKA });
-    const varoitus = raportti.varoitukset.find((v) => v.includes('Tositeloki'));
-    expect(varoitus).toBe(
-      'Taulua Tositeloki (311 riviä) ei tuotu — Penni ei peri toisen kirjanpidon lokia, vaan kirjaa tuonnista omat lokimerkintänsä.',
+    expect(raportti.varoitukset).toContain(
+      'Näitä Kitsaksen tietoja ei tuotu, koska Pennissä ei ole niille paikkaa: Tosite.json.lasku.osoite (2), Vienti.json.palkkakoodi (4).',
     );
-    expect(varoitus).not.toContain('ei mallinna');
   });
 });

@@ -1,12 +1,26 @@
-import type { Asetukset, TiliData, Tilikausi, TositeVienti } from '@penni/engine';
+import {
+  type Asetukset,
+  type AuditEntry,
+  type TiliData,
+  type Tilikausi,
+  TositeTyyppi,
+  type TositeVienti,
+} from '@penni/engine';
+import { Euro } from '@penni/euro';
 import Database from 'better-sqlite3';
 import {
+  KASITELLYT_TOSITE_JSON,
+  KASITELLYT_TOSITE_SISAKKAISET,
+  KASITELLYT_VIENTI_JSON,
+  KITSAS_LAHDE,
   type KitsasKumppaniRivi,
   type KitsasLiiteRivi,
   type KitsasOtsikkoRivi,
   type KitsasTiliRivi,
   type KitsasTositeRivi,
   type KitsasVientiRivi,
+  laskeKattamattomat,
+  luoEraKartta,
   muunnaKumppani,
   muunnaLiite,
   muunnaOtsikko,
@@ -15,7 +29,7 @@ import {
   muunnaVienti,
   suodataAsetukset,
 } from './muunna.js';
-import type { KitsasKirja, KitsasTosite, KitsasYhteenveto } from './tyypit.js';
+import type { KitsasAlvIlmoitus, KitsasKirja, KitsasTosite, KitsasYhteenveto } from './tyypit.js';
 
 /** A user-facing import failure. `viesti` is Finnish and safe to show in a dialog. */
 export class TuontiVirhe extends Error {
@@ -42,12 +56,71 @@ const OHITETTAVAT_TAULUT = [
   'Merkkaus',
   'Ryhma',
   'KumppaniRyhmassa',
-  'Tositeloki',
   'Rivi',
 ];
 
+/**
+ * Kitsas writes `aika` with SQLite's `current_timestamp` ('YYYY-MM-DD HH:MM:SS', UTC). Penni's
+ * audit log holds ISO instants, so the space becomes 'T' and the zone is made explicit.
+ */
+export function kitsasAika(aika: string | null): string {
+  if (!aika) return '1970-01-01T00:00:00Z';
+  const iso = aika.includes('T') ? aika : aika.replace(' ', 'T');
+  return /(Z|[+-]\d\d:?\d\d)$/.test(iso) ? iso : `${iso}Z`;
+}
+
+/** Parse a filed VAT return out of an ALVLASKELMA voucher's json; undefined if it has none. */
+function lueAlvIlmoitus(tosite: number, json: string | null): KitsasAlvIlmoitus | undefined {
+  let arvo: unknown;
+  try {
+    arvo = json ? JSON.parse(json) : undefined;
+  } catch {
+    return undefined;
+  }
+  const alv = (arvo as { alv?: Record<string, unknown> } | undefined)?.alv;
+  if (!alv || typeof alv.kausialkaa !== 'string' || typeof alv.kausipaattyy !== 'string')
+    return undefined;
+  const maksettava = Euro.fromString(String(alv.maksettava ?? '0'));
+  const raaka: [number, number][] = [];
+  if (alv.koodit && typeof alv.koodit === 'object') {
+    for (const [koodi, arvo] of Object.entries(alv.koodit as Record<string, unknown>)) {
+      // 337 is a cash-basis flag (value 1), not money (alvlaskelma.cpp:957-958).
+      if (koodi === '337') continue;
+      const n = Number(arvo);
+      if (Number.isFinite(n)) raaka.push([Number(koodi), n]);
+    }
+  }
+  // Current Kitsas stores koodit in cents (alvlaskelma.cpp:955); older books stored euros as
+  // doubles (e.g. kitsas-source/unittest/data/oy.kitsas: {"308":58.16}, maksettava 58.16).
+  // A non-zero code 308 equals `maksettava`, which is always euros, so it tells the units;
+  // otherwise a fractional value can only be euros.
+  const k308 = raaka.find(([koodi]) => koodi === 308)?.[1];
+  const euroina =
+    k308 !== undefined && k308 !== 0
+      ? Math.abs(k308 * 100 - maksettava) < Math.abs(k308 - maksettava)
+      : raaka.some(([, n]) => !Number.isInteger(n));
+  const koodit: Record<number, number> = {};
+  for (const [koodi, n] of raaka) {
+    koodit[koodi] = euroina ? Euro.fromString(String(n)) : Math.trunc(n);
+  }
+  return { tosite, alkupvm: alv.kausialkaa, loppupvm: alv.kausipaattyy, maksettava, koodit };
+}
+
 /** Tables that must exist for a file to count as a Kitsas book. */
 const VAADITUT_TAULUT = ['Tili', 'Tosite', 'Vienti', 'Tilikausi', 'Asetus'];
+
+/** The credited invoice's number on a Kitsas credit note, as a string. */
+function lueAlkupNro(json: string | null): string | undefined {
+  try {
+    const lasku = (json ? JSON.parse(json) : {})?.lasku;
+    const nro = lasku?.alkupNro;
+    return typeof nro === 'number' || (typeof nro === 'string' && nro !== '')
+      ? String(nro)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function laske(db: Database.Database, taulu: string): number {
   try {
@@ -161,8 +234,8 @@ export function lueKitsas(polku: string): KitsasKirja {
     const viennitTositteittain = new Map<number, TositeVienti[]>();
     const vientiRivit = db
       .prepare(
-        `SELECT tosite, tili, debetsnt, kreditsnt, alvkoodi, alvprosentti, kohdennus, eraid,
-                selite, tyyppi, pvm, jaksoalkaa, jaksoloppuu, json
+        `SELECT id, tosite, tili, debetsnt, kreditsnt, alvkoodi, alvprosentti, kohdennus, eraid,
+                selite, tyyppi, pvm, jaksoalkaa, jaksoloppuu, kumppani, arkistotunnus, json
          FROM Vienti ORDER BY tosite, rivi`,
       )
       .all() as (KitsasVientiRivi & { tosite: number })[];
@@ -174,26 +247,101 @@ export function lueKitsas(polku: string): KitsasKirja {
          FROM Tosite ORDER BY id`,
       )
       .all() as KitsasTositeRivi[];
-    const pvmTositteella = new Map(tositeRivit.map((t) => [t.id, t.pvm]));
+    const tositeIdlla = new Map(tositeRivit.map((t) => [t.id, t]));
+    const eraAvain = luoEraKartta(vientiRivit);
+    const kattamattomat: Record<string, number> = {};
 
     for (const rivi of vientiRivit) {
+      const lahde = tositeIdlla.get(rivi.tosite);
+      const vienti = muunnaVienti(rivi, lahde?.pvm ?? rivi.pvm ?? '', {
+        kumppani: lahde?.kumppani ?? null,
+        viite: lahde?.viite ?? null,
+      });
+      if (vienti.era !== undefined) vienti.era = eraAvain(vienti.era);
+      laskeKattamattomat(rivi.json, KASITELLYT_VIENTI_JSON, 'Vienti.json', kattamattomat);
       const lista = viennitTositteittain.get(rivi.tosite) ?? [];
-      lista.push(muunnaVienti(rivi, pvmTositteella.get(rivi.tosite) ?? rivi.pvm ?? ''));
+      lista.push(vienti);
       viennitTositteittain.set(rivi.tosite, lista);
     }
 
-    const tositteet: KitsasTosite[] = tositeRivit.map((rivi) =>
-      muunnaTosite(rivi, viennitTositteittain.get(rivi.id) ?? []),
-    );
+    const tositteet: KitsasTosite[] = tositeRivit.map((rivi) => {
+      laskeKattamattomat(
+        rivi.json,
+        KASITELLYT_TOSITE_JSON,
+        'Tosite.json',
+        kattamattomat,
+        KASITELLYT_TOSITE_SISAKKAISET,
+      );
+      return muunnaTosite(rivi, viennitTositteittain.get(rivi.id) ?? []);
+    });
+
+    // A credit note names the credited invoice by NUMBER (lasku.alkupNro, model/lasku.h:81);
+    // Penni links it by voucher id (Tosite.alkuperainenTosite).
+    const tositeNumerolla = new Map<string, number>();
+    for (const t of tositteet) if (t.numero) tositeNumerolla.set(t.numero, t.id);
+    for (const rivi of tositeRivit) {
+      const alkupNro = lueAlkupNro(rivi.json);
+      const alkuperainen = alkupNro ? tositeNumerolla.get(alkupNro) : undefined;
+      const tosite = tositteet.find((t) => t.id === rivi.id);
+      if (tosite && alkuperainen !== undefined && alkuperainen !== rivi.id)
+        tosite.alkuperainenTosite = alkuperainen;
+    }
+
+    // Filed VAT returns (ALVLASKELMA = 9100) — finalized only, for the post-import check.
+    const alvIlmoitukset: KitsasAlvIlmoitus[] = [];
+    for (const rivi of tositeRivit) {
+      if (rivi.tyyppi !== TositeTyyppi.ALVLASKELMA || rivi.tila < 100) continue;
+      const ilmoitus = lueAlvIlmoitus(rivi.id, rivi.json);
+      if (ilmoitus) alvIlmoitukset.push(ilmoitus);
+    }
 
     // --- liitteet ---
-    const liitteet = (
-      db
-        .prepare('SELECT tosite, nimi, roolinimi, tyyppi, sha, luotu, data FROM Liite ORDER BY id')
-        .all() as (KitsasLiiteRivi & { tosite: number | null })[]
-    )
+    const liiteRivit = db
+      .prepare(
+        'SELECT tosite, nimi, roolinimi, tyyppi, sha, luotu, data, json FROM Liite ORDER BY id',
+      )
+      .all() as (KitsasLiiteRivi & { tosite: number | null; json: string | null })[];
+    const liitteet = liiteRivit
       .filter((r) => r.tosite !== null)
       .map((r) => muunnaLiite(r, r.tosite as number));
+    for (const r of liiteRivit) laskeKattamattomat(r.json, new Set(), 'Liite.json', kattamattomat);
+    // Kitsas itself deletes voucherless attachments as garbage (sqlitemodel.cpp:346); reported.
+    const orvot = liiteRivit.length - liitteet.length;
+    if (orvot > 0) kattamattomat['Liite (ei tositetta)'] = orvot;
+
+    // --- Tositeloki: the source book's change history, oldest first ---
+    const loki: AuditEntry[] = [];
+    if (taulut.has('Tositeloki')) {
+      for (const r of db
+        .prepare('SELECT tosite, aika, data, userid, tila FROM Tositeloki ORDER BY id')
+        .all() as {
+        tosite: number | null;
+        aika: string | null;
+        data: string | Buffer | null;
+        userid: number | null;
+        tila: number | null;
+      }[]) {
+        if (r.tosite === null) continue;
+        const teksti = r.data === null ? null : String(r.data);
+        let data: unknown = null;
+        if (teksti !== null && teksti !== '') {
+          try {
+            data = JSON.parse(teksti);
+          } catch {
+            data = teksti;
+          }
+        }
+        const merkinta: AuditEntry = {
+          tosite: r.tosite,
+          tila: r.tila ?? 0,
+          aika: kitsasAika(r.aika),
+          lahde: KITSAS_LAHDE,
+          data,
+        };
+        if (r.userid !== null) merkinta.userId = r.userid;
+        loki.push(merkinta);
+      }
+    }
 
     // --- ohitetut taulut ---
     const ohitetut: Record<string, number> = {};
@@ -202,7 +350,19 @@ export function lueKitsas(polku: string): KitsasKirja {
       if (n > 0) ohitetut[taulu] = n;
     }
 
-    return { tilit, tilikaudet, asetukset, kumppanit, tositteet, liitteet, kpVersio, ohitetut };
+    return {
+      tilit,
+      tilikaudet,
+      asetukset,
+      kumppanit,
+      tositteet,
+      liitteet,
+      kpVersio,
+      ohitetut,
+      loki,
+      kattamattomat,
+      alvIlmoitukset,
+    };
   } catch (virhe) {
     if (virhe instanceof TuontiVirhe) throw virhe;
     throw new TuontiVirhe('lukuvirhe', 'Kirjanpidon luku epäonnistui.', (virhe as Error).message);

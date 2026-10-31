@@ -19,6 +19,10 @@ export interface TositeVienti {
   jaksoloppuu?: IsoDate; // accrual span end (open-ended if absent)
   jaksotustili?: number; // accrual counter-account override (round-trips; unused by the jaksotukset flow)
   maksuperusteinenTosite?: number; // set on a cash-basis VAT expiry-recognition leg: the origin invoice id
+  kumppani?: number; // the row's own counterparty (Kitsas Vienti.kumppani), e.g. per bank-statement row
+  arkistotunnus?: string; // bank archive id of the transaction (Kitsas Vienti.arkistotunnus)
+  viite?: string; // payment reference of the row (Kitsas vienti json `viite`)
+  tasaerapoisto?: number; // straight-line depreciation period in months (Kitsas vienti json `tasaerapoisto`)
 }
 
 /**
@@ -70,6 +74,7 @@ export interface Tosite {
   alkuperainenTosite?: number; // hyvityslasku: the credited original voucher's id
   marginaalialijaama?: Record<string, number>; // MARGINAALILASKELMA: rate-key -> carried deficit cents
   tiliote?: TilioteTiedot; // TILIOTE: kausi, pankkitili ja pankin saldot
+  info?: string; // vapaamuotoiset lisätiedot (Kitsaksen tositteen json `info`, model/tosite.cpp:668)
   viennit: TositeVienti[];
   rivit?: TositeRivi[];
 }

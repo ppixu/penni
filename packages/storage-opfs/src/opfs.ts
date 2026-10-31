@@ -86,6 +86,7 @@ export async function createOpfsStorage(
       return new Map<number, Cents>(parit);
     },
     getLoki: (tositeId: number) => kutsu<AuditEntry[]>('getLoki', tositeId),
+    tuoLoki: (merkinnat: AuditEntry[]) => kutsu<void>('tuoLoki', merkinnat),
     getChart: () => kutsu<Tili[]>('getChart'),
     getTilikaudet: () => kutsu<Tilikausi[]>('getTilikaudet'),
     getAsetukset: () => kutsu<Asetukset>('getAsetukset'),

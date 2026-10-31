@@ -1,4 +1,5 @@
 import type { AuditCtx, Storage } from '@penni/engine';
+import { KITSAS_LAHDE } from './muunna.js';
 import type { KitsasKirja, TuontiEdistyminen, TuontiRaportti } from './tyypit.js';
 
 /** The Kitsas schema version this importer was written against. */
@@ -7,15 +8,8 @@ const TUETTU_KPVERSIO = '24';
 /** Default reason for a skipped Kitsas table: the feature has no Tier-0 counterpart. */
 const OLETUS_OHITUKSEN_SYY = 'Penni ei mallinna sitä.';
 
-/**
- * Per-table reason, where the default would be wrong. Tositeloki is the case that matters:
- * Penni DOES model an append-only audit log (it is a core invariant) — the importer simply
- * refuses to inherit another book's history, and writes its own entries instead. Saying
- * "Penni ei mallinna sitä" about it would be plainly false to the reader.
- */
-const OHITUKSEN_SYY: Record<string, string> = {
-  Tositeloki: 'Penni ei peri toisen kirjanpidon lokia, vaan kirjaa tuonnista omat lokimerkintänsä.',
-};
+/** Per-table reason, where the default would be wrong. */
+const OHITUKSEN_SYY: Record<string, string> = {};
 
 export interface KirjoitusValinnat {
   /** ISO timestamp stamped on every audit entry. */
@@ -31,10 +25,12 @@ export interface KirjoitusValinnat {
  * and liitteet reference tositteet. `tila` and `tunniste` are written verbatim, so finalized
  * vouchers keep the numbers they had in Kitsas.
  *
- * Kitsas's own Tositeloki is NOT carried over. Each saveTosite appends a fresh audit entry
- * stamped with `aika` — the honest record that these vouchers entered THIS book by import.
- * The whole import shares one `aika`, so "what arrived in this import" is one timestamp query.
- * AuditCtx carries no provenance field by design; see the spec's audit-log section.
+ * Kitsas's own Tositeloki IS carried over first, verbatim and marked `lahde: 'kitsas'`, so a
+ * voucher's history reads: its changes in Kitsas, then the import. Each saveTosite then appends
+ * a fresh audit entry stamped with `aika` — the record that the voucher entered THIS book by
+ * import. The whole import shares one `aika`, so "what arrived in this import" is one query.
+ * Re-running an import does not duplicate the history: a voucher that already has Kitsas rows
+ * is skipped.
  */
 export async function kirjoitaKirja(
   kirja: KitsasKirja,
@@ -82,7 +78,22 @@ export async function kirjoitaKirja(
     ilmoita('kumppanit', ++n, kirja.kumppanit.length);
   }
 
-  // 5. tositteet + viennit
+  // 5. Kitsaksen muutoshistoria ennen tositteita, jotta lokin järjestys on aikajärjestys
+  const lokiTositteittain = new Map<number, typeof kirja.loki>();
+  for (const merkinta of kirja.loki) {
+    const lista = lokiTositteittain.get(merkinta.tosite) ?? [];
+    lista.push(merkinta);
+    lokiTositteittain.set(merkinta.tosite, lista);
+  }
+  let lokia = 0;
+  for (const [tosite, merkinnat] of lokiTositteittain) {
+    const aiemmat = await storage.getLoki(tosite);
+    if (aiemmat.some((e) => e.lahde === KITSAS_LAHDE)) continue;
+    await storage.tuoLoki(merkinnat);
+    lokia += merkinnat.length;
+  }
+
+  // 6. tositteet + viennit
   ilmoita('tositteet', 0, kirja.tositteet.length);
   n = 0;
   let viennit = 0;
@@ -92,7 +103,7 @@ export async function kirjoitaKirja(
     ilmoita('tositteet', ++n, kirja.tositteet.length);
   }
 
-  // 6. liitteet (viimeisenä: viittaavat tositteisiin)
+  // 7. liitteet (viimeisenä: viittaavat tositteisiin)
   ilmoita('liitteet', 0, kirja.liitteet.length);
   n = 0;
   for (const liite of kirja.liitteet) {
@@ -113,6 +124,13 @@ export async function kirjoitaKirja(
     const syy = OHITUKSEN_SYY[taulu] ?? OLETUS_OHITUKSEN_SYY;
     varoitukset.push(`Taulua ${taulu} (${maara} riviä) ei tuotu — ${syy}`);
   }
+  const kattamattomat = Object.entries(kirja.kattamattomat).sort(([a], [b]) => a.localeCompare(b));
+  if (kattamattomat.length > 0) {
+    const lista = kattamattomat.map(([kentta, maara]) => `${kentta} (${maara})`).join(', ');
+    varoitukset.push(
+      `Näitä Kitsaksen tietoja ei tuotu, koska Pennissä ei ole niille paikkaa: ${lista}.`,
+    );
+  }
 
   return {
     tilit: kirja.tilit.length,
@@ -123,6 +141,7 @@ export async function kirjoitaKirja(
     viennit,
     liitteet: kirja.liitteet.length,
     ohitetut: kirja.ohitetut,
+    loki: lokia,
     varoitukset,
   };
 }

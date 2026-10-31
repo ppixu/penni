@@ -100,6 +100,12 @@ describe('round-trip', () => {
     expect(decodeTosite(encodeTosite(hyvitys)).alkuperainenTosite).toBe(7);
   });
 
+  it('preserves info (Kitsaksen vapaamuotoiset lisätiedot)', () => {
+    const w = encodeTosite({ ...voucher, info: 'Muista karhuta' });
+    expect(w.info).toBe('Muista karhuta');
+    expect(decodeTosite(w).info).toBe('Muista karhuta');
+  });
+
   it('round-trips tiliote (saldot euroina langalla, sentteinä sisällä)', () => {
     const t = {
       pvm: '2026-09-30',

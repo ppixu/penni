@@ -64,6 +64,7 @@ const kasittelijat: Record<string, (...a: any[]) => unknown> = {
   querySaldot: (q) => vaadiStorage().querySaldot(q),
   queryErat: (q) => vaadiStorage().queryErat(q),
   getLoki: (id) => vaadiStorage().getLoki(id),
+  tuoLoki: (m) => vaadiStorage().tuoLoki(m),
   getChart: () => vaadiStorage().getChart(),
   getTilikaudet: () => vaadiStorage().getTilikaudet(),
   getAsetukset: () => vaadiStorage().getAsetukset(),

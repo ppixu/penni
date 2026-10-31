@@ -1,5 +1,5 @@
-import type { Storage } from '@penni/engine';
-import type { KitsasKirja, TaysmaytysEro, TaysmaytysRaportti } from './tyypit.js';
+import { type Storage, haeAlvLaskelma } from '@penni/engine';
+import type { AlvEro, KitsasKirja, TaysmaytysEro, TaysmaytysRaportti } from './tyypit.js';
 
 /** Vouchers at or above this state count toward balances (mirrors TositeTila.KIRJANPIDOSSA). */
 const KIRJANPIDOSSA = 100;
@@ -36,9 +36,46 @@ function laskeUlkopuoliset(kirja: KitsasKirja): number {
   return n;
 }
 
+/** Return code 308: tax payable (Kitsas `maksettava`, Penni `AlvLaskelmaTulos.maksettava`). */
+const MAKSETTAVA = 308;
+
+/**
+ * Recompute every VAT return filed in Kitsas with Penni's own VAT engine and list each figure
+ * that comes out differently. This is the one check that does not just re-sum the same rows on
+ * both sides: it proves Penni reads VAT codes, rates and cash-basis rules the way Kitsas did.
+ */
+async function vertaaAlvIlmoitukset(kirja: KitsasKirja, storage: Storage): Promise<AlvEro[]> {
+  const erot: AlvEro[] = [];
+  for (const ilmoitus of kirja.alvIlmoitukset) {
+    const { alkupvm, loppupvm } = ilmoitus;
+    const laskelma = await haeAlvLaskelma(storage, { alkupvm, loppupvm });
+    if (laskelma.maksettava !== ilmoitus.maksettava) {
+      erot.push({
+        alkupvm,
+        loppupvm,
+        koodi: MAKSETTAVA,
+        kitsas: ilmoitus.maksettava,
+        penni: laskelma.maksettava,
+      });
+    }
+    const koodit = new Set<number>([
+      ...Object.keys(ilmoitus.koodit).map(Number),
+      ...laskelma.koodit.keys(),
+    ]);
+    koodit.delete(MAKSETTAVA);
+    for (const koodi of [...koodit].sort((a, b) => a - b)) {
+      const kitsas = ilmoitus.koodit[koodi] ?? 0;
+      const penni = laskelma.koodit.get(koodi) ?? 0;
+      if (kitsas !== penni) erot.push({ alkupvm, loppupvm, koodi, kitsas, penni });
+    }
+  }
+  return erot;
+}
+
 /**
  * Compare the source book against what actually landed in storage: per-account balances for
- * each fiscal year, plus row counts. This is what turns "it imported" into "the numbers match".
+ * each fiscal year, row counts, and every filed VAT return recomputed. This is what turns
+ * "it imported" into "the numbers match".
  */
 export async function tarkistaTuonti(
   kirja: KitsasKirja,
@@ -87,10 +124,14 @@ export async function tarkistaTuonti(
   };
 
   const maaratTasmaavat = Object.values(maarat).every(([a, b]) => a === b);
+  const alvErot = await vertaaAlvIlmoitukset(kirja, storage);
   return {
-    tasmaa: erot.length === 0 && maaratTasmaavat && ulkopuoliset === 0,
+    tasmaa: erot.length === 0 && maaratTasmaavat && ulkopuoliset === 0 && alvErot.length === 0,
     erot,
     maarat,
     ulkopuoliset,
+    alvErot,
+    alvIlmoituksia: kirja.alvIlmoitukset.length,
+    kattamattomat: kirja.kattamattomat,
   };
 }

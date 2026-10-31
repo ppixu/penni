@@ -53,7 +53,8 @@ function loysaAvain(v: TositeVienti): string {
 
 /**
  * Vientikenttä, jota ruudukko ei kirjoita takaisin: erä (laskun avoin saldo), kohdennus,
- * jaksotus tai maksuperusteisen alv:n linkki. Tallennus hävittäisi sen hiljaa. Tarkistetaan
+ * jaksotus, maksuperusteisen alv:n linkki tai Kitsas-tuonnin rivikohtaiset tiedot (kumppani,
+ * arkistotunnus, viite, tasaeräpoisto). Tallennus hävittäisi sen hiljaa. Tarkistetaan
  * vain tiukassa tilassa: esitäytössä ei ole tallennettua tietoa, jota voisi hävitä.
  */
 function sailymatonKentta(v: TositeVienti): boolean {
@@ -63,7 +64,11 @@ function sailymatonKentta(v: TositeVienti): boolean {
     v.jaksoalkaa !== undefined ||
     v.jaksoloppuu !== undefined ||
     v.jaksotustili !== undefined ||
-    v.maksuperusteinenTosite !== undefined
+    v.maksuperusteinenTosite !== undefined ||
+    v.kumppani !== undefined ||
+    v.arkistotunnus !== undefined ||
+    v.viite !== undefined ||
+    v.tasaerapoisto !== undefined
   );
 }
 

@@ -108,6 +108,9 @@ describe('tarkistaTuonti', () => {
       liitteet: [],
       kpVersio: '24',
       ohitetut: {},
+      loki: [],
+      kattamattomat: {},
+      alvIlmoitukset: [],
     };
     await kirjoitaKirja(kirja, storage, { aika: AIKA });
     const raportti = await tarkistaTuonti(kirja, storage);

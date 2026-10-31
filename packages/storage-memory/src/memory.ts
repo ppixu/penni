@@ -199,6 +199,10 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
       return loki.filter((e) => e.tosite === tositeId).map((e) => clone(e));
     },
 
+    async tuoLoki(merkinnat) {
+      for (const m of merkinnat) loki.push(clone(m));
+    },
+
     // --- master data ---
     async getChart() {
       return lataaKartta([...chart.values()].map((c) => clone(c.data)));
