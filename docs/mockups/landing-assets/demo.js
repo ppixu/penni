@@ -142,6 +142,38 @@
     });
   }
 
+  /* ---------- kuvakkeet ---------- */
+  /* Samat lucide-kuvakkeet kuin sovelluksen sivupalkissa ja tositelistassa. */
+  var IKONIT = {
+    kojelauta: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+    uusi: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>',
+    tositteet: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+    kumppanit: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    raportit: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    alv: '<line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+    tilikartta: '<path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>',
+    tilinpaatos: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/>',
+    asetukset: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    meno: '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+    myynti: '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4 7V4a2 2 0 0 1 2-2 2 2 0 0 0-2 2"/><path d="M4.063 20.999a2 2 0 0 0 2 1L18 22a2 2 0 0 0 2-2V7l-5-5H6"/><path d="m5 11-3 3"/><path d="m5 17-3-3h10"/>',
+    siirto: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    kuitti: '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
+    liite: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    nuoli: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'
+  };
+  function ikoni(nimi) {
+    return '<svg class="demo-ikoni" viewBox="0 0 24 24" aria-hidden="true">' + IKONIT[nimi] + "</svg>";
+  }
+  var TYYPPI_IKONI = {
+    Meno: { ikoni: "meno", savy: "meno" },
+    Myyntilasku: { ikoni: "myynti", savy: "tulo" },
+    Suoritus: { ikoni: "siirto", savy: "neutraali" }
+  };
+  function tyyppiMerkki(tyyppi) {
+    var t = TYYPPI_IKONI[tyyppi] || TYYPPI_IKONI.Suoritus;
+    return '<span class="demo-tyyppi ' + t.savy + '">' + ikoni(t.ikoni) + "</span>";
+  }
+
   /* ---------- kirja ---------- */
   var TOSITTEET = [];
   var seuraavaNumero = 187;
@@ -204,23 +236,21 @@
     });
     return { tuotot: tuotot, kulut: kulut, tulos: tuotot - kulut };
   }
-  function kertyma() {
+  /* Tulot ja kulut kuukausittain, kuten kojelaudan pylväskaaviossa. */
+  function kuukaudet() {
     var nimet = ["Tammi", "Helmi", "Maalis", "Huhti", "Touko", "Kesä", "Heinä"];
-    var summa = 0, ulos = [];
-    for (var m = 1; m <= nimet.length; m++) {
-      (function (kuu) {
-        TOSITTEET.forEach(function (t) {
-          if (Number(t.pvm.slice(3, 5)) !== kuu) return;
-          t.rivit.forEach(function (r) {
-            var ti = tili(r.tili);
-            if (ti.laji === "tuotto") summa += (r.kredit || 0) - (r.debet || 0);
-            if (ti.laji === "kulu") summa -= (r.debet || 0) - (r.kredit || 0);
-          });
+    return nimet.map(function (nimi, i) {
+      var tulot = 0, kulut = 0;
+      TOSITTEET.forEach(function (t) {
+        if (Number(t.pvm.slice(3, 5)) !== i + 1) return;
+        t.rivit.forEach(function (r) {
+          var ti = tili(r.tili);
+          if (ti.laji === "tuotto") tulot += (r.kredit || 0) - (r.debet || 0);
+          if (ti.laji === "kulu") kulut += (r.debet || 0) - (r.kredit || 0);
         });
-      })(m);
-      ulos.push({ nimi: nimet[m - 1], arvo: summa });
-    }
-    return ulos;
+      });
+      return { nimi: nimi, tulot: tulot, kulut: kulut };
+    });
   }
 
   /* ---------- näkymän tila ---------- */
@@ -239,54 +269,113 @@
   }
 
   /* ---------- kojelauta ---------- */
-  function kortti(nimi, luku, lisa, tyyli) {
+  /* Rakenne seuraa sovelluksen kojelautaa (apps/web/src/routes/index.tsx):
+     huomiot, neljä tunnuslukua, tulot ja kulut, suurimmat erät, viimeisimmät, saldot. */
+  function kortti(nimi, luku, tyyli) {
     return '<div class="demo-kortti' + (tyyli ? " " + tyyli : "") + '">' +
       '<div class="nimi">' + nimi + "</div>" +
-      '<div class="luku">' + luku + "</div>" +
-      '<div class="lisa">' + lisa + "</div></div>";
+      '<div class="luku">' + luku + "</div></div>";
+  }
+
+  function otsikko(teksti, maininta) {
+    return '<div class="demo-otsake">' + teksti +
+      (maininta ? '<span class="maininta">' + maininta + "</span>" : "") + "</div>";
+  }
+
+  function tulotJaKulut() {
+    var kk = kuukaudet();
+    var huippu = Math.max.apply(null, kk.map(function (x) { return Math.max(x.tulot, x.kulut); })) || 1;
+    function korkeus(c) { return c ? Math.max(3, Math.round((c / huippu) * 100)) : 0; }
+    return '<div class="demo-palkit">' + kk.map(function (x) {
+      return '<div class="kk"><div class="parit">' +
+        '<div class="tolppa tulo" style="height:' + korkeus(x.tulot) + '%" title="Tulot ' + raha(x.tulot) + ' €"></div>' +
+        '<div class="tolppa kulu" style="height:' + korkeus(x.kulut) + '%" title="Kulut ' + raha(x.kulut) + ' €"></div>' +
+        '</div><div class="nimi">' + x.nimi + "</div></div>";
+    }).join("") + "</div>" +
+      '<div class="demo-selite-rivi"><span><i class="tulo"></i>Tulot</span><span><i class="kulu"></i>Kulut</span></div>';
+  }
+
+  function suurimmat(laji, montako) {
+    var tilit = TILIT.filter(function (t) { return t.laji === laji && saldoLuku(t.nro) > 0; })
+      .sort(function (a, b) { return saldoLuku(b.nro) - saldoLuku(a.nro); }).slice(0, montako);
+    var huippu = tilit.length ? saldoLuku(tilit[0].nro) : 1;
+    return tilit.map(function (t) {
+      var s = saldoLuku(t.nro);
+      return '<div class="demo-era"><div class="rivi"><span>' + pakoon(t.nimi) + "</span><span>" +
+        raha(s) + ' €</span></div><div class="ura"><i class="' + (laji === "tuotto" ? "tulo" : "kulu") +
+        '" style="width:' + Math.round((s / huippu) * 100) + '%"></i></div></div>';
+    }).join("");
+  }
+
+  function saldot() {
+    var ryhmat = [
+      { nimi: "Vastaavaa", nrot: [PANKKI, SAAMISET, ALV_OSTO] },
+      { nimi: "Vastattavaa", nrot: [ALV_MYYNTI] }
+    ];
+    var rivit = ryhmat.map(function (r) {
+      return '<tr class="ryhma"><td colspan="2">' + r.nimi + "</td></tr>" +
+        r.nrot.map(function (n) {
+          return '<tr><td><span class="nro">' + n + "</span> " + pakoon(tili(n).nimi) +
+            '</td><td class="oikea">' + raha(saldoLuku(n)) + "</td></tr>";
+        }).join("");
+    }).join("");
+    var tl = tulos().tulos;
+    return '<table class="demo-saldot"><tbody>' + rivit +
+      '<tr class="loppu"><td>Tilikauden tulos</td><td class="oikea' + (tl >= 0 ? " plus" : "") + '">' +
+      raha(tl) + "</td></tr></tbody></table>";
   }
 
   function nakymaKojelauta() {
     var tl = tulos();
     var alv = saldoLuku(ALV_MYYNTI) - saldoLuku(ALV_OSTO);
-    var kk = kertyma();
-    var huippu = Math.max.apply(null, kk.map(function (x) { return x.arvo; })) || 1;
-    var palkit = kk.map(function (x) {
-      return '<div class="kk"><div class="tolppa" style="height:' +
-        Math.max(2, Math.round((x.arvo / huippu) * 100)) + '%" title="' + x.nimi + " " +
-        raha(x.arvo) + ' €"></div><div class="nimi">' + x.nimi + "</div></div>";
-    }).join("");
+    var huomio = KUITIT.length
+      ? '<div class="demo-huomio-rivi">' + ikoni("kuitti") + '<div class="teksti"><b>' +
+        KUITIT.length + " kuittia odottaa kirjausta</b><span>Penni lukee kuitit ja tekee niistä " +
+        'luonnokset. Sinä hyväksyt.</span></div><button type="button" class="demo-linkki" ' +
+        'data-toiminto="kuitteihin">Lue kuitit</button></div>'
+      : "";
 
-    return '<div class="demo-kortit">' +
-        kortti("Tilikauden tulos", raha(tl.tulos) + " €", "Liikevaihto " + raha(tl.tuotot) + " €", "voitto") +
-        kortti("Pankkitili", raha(saldoLuku(PANKKI)) + " €", "tili 1910", "") +
-        kortti("Maksettava ALV", raha(alv) + " €", "eräpäivä 12.8.2026", "varoitus") +
-        kortti("Myyntisaamiset", raha(saldoLuku(SAAMISET)) + " €", "1 lasku erääntynyt", "") +
+    return huomio +
+      '<div class="demo-kortit">' +
+        kortti("Tilikauden tulos", raha(tl.tulos) + " €", tl.tulos >= 0 ? "voitto" : "") +
+        kortti("Pankki", raha(saldoLuku(PANKKI)) + " €") +
+        kortti("Myyntisaatavat", raha(saldoLuku(SAAMISET)) + " €") +
+        kortti("ALV-velka", raha(alv) + " €") +
       "</div>" +
-      (KUITIT.length
-        ? '<div class="demo-paneeli"><div class="demo-otsake">Saapuneet kuitit' +
-          '<span class="maininta">' + KUITIT.length + " odottaa</span></div>" +
-          '<div class="demo-selite-teksti">Penni lukee kuitit ja tekee niistä luonnokset. ' +
-          "<b>Sinä hyväksyt.</b></div>" +
-          '<div style="margin-top:0.7rem">' + nappi("kuitteihin", "Lue kuitit", true) + "</div></div>"
-        : "") +
-      '<div class="demo-paneeli"><div class="demo-otsake">Tuloksen kertymä' +
-        '<span class="maininta">tammi–heinäkuu 2026</span></div>' +
-        '<div class="demo-palkit">' + palkit + "</div></div>" +
-      '<div><div class="demo-otsake">Viimeisimmät tositteet</div>' +
-        tositeTaulukko(TOSITTEET.slice(0, 5)) + "</div>";
+      '<div class="demo-kahtia">' +
+        '<div class="demo-paneeli">' + otsikko("Tulot ja kulut") + tulotJaKulut() + "</div>" +
+        '<div class="demo-paneeli">' + otsikko("Suurimmat erät") +
+          '<div class="demo-erat"><b>Tulot</b>' + suurimmat("tuotto", 1) +
+          "<b>Kulut</b>" + suurimmat("kulu", 3) + "</div></div>" +
+      "</div>" +
+      '<div class="demo-kahtia vapaa">' +
+        "<div>" + otsikko("Viimeisimmät tositteet") + tositeLista(TOSITTEET.slice(0, 6)) +
+          '<button type="button" class="demo-linkki" data-nakyma="tositteet">Kaikki tositteet ' +
+          ikoni("nuoli") + "</button></div>" +
+        "<div>" + otsikko("Saldot 24.7.2026") + saldot() + "</div>" +
+      "</div>";
   }
 
   /* ---------- tositteet ---------- */
+  /* Kojelaudan tiivis lista: päivä, tyyppikuvake + selite, summa. */
+  function tositeLista(lista) {
+    return '<table class="demo-lista-taulu"><tbody>' + lista.map(function (t) {
+      return '<tr><td class="pvm">' + t.pvm + '</td><td><span class="demo-solu-rivi">' +
+        tyyppiMerkki(t.tyyppi) + t.tyyppi + " · " + pakoon(t.selite) + "</span></td>" +
+        '<td class="oikea">' + raha(t.brutto) + "</td></tr>";
+    }).join("") + "</tbody></table>";
+  }
+
   function tositeTaulukko(lista) {
     var rivit = lista.map(function (t) {
-      return "<tr><td>" + t.numero + "</td><td>" + t.pvm + "</td><td>" + t.tyyppi + "</td>" +
-        '<td class="kapea">' + pakoon(t.selite) +
-        (t.kuitti ? ' <span class="demo-tunniste luonnos">kuitti</span>' : "") + "</td>" +
+      return '<tr><td class="himmea">' + t.numero + '</td><td class="himmea">' + t.pvm + "</td>" +
+        '<td class="kapea"><span class="demo-solu-rivi">' + tyyppiMerkki(t.tyyppi) + pakoon(t.selite) +
+        (t.kuitti ? '<span class="demo-liite" title="1 liite">' + ikoni("liite") + "</span>" : "") +
+        "</span></td>" +
         '<td class="oikea">' + raha(t.brutto) + "</td></tr>";
     }).join("");
     return '<div class="demo-taulukko-kaare"><table class="demo-taulukko"><thead><tr>' +
-      "<th>Nro</th><th>Päivä</th><th>Tyyppi</th><th>Selite</th>" +
+      "<th>Nro</th><th>Päivä</th><th>Selite</th>" +
       '<th class="oikea">Summa €</th></tr></thead><tbody>' + rivit + "</tbody></table></div>";
   }
 
@@ -316,10 +405,9 @@
 
   /* ---------- laskut ---------- */
   function nakymaLaskut() {
-    var avoin = 0, myohassa = 0;
+    var avoin = 0;
     LASKUT.forEach(function (l) {
-      if (l.tila === "Erääntynyt") { avoin += l.summa; myohassa += l.summa; }
-      else if (l.tila === "Avoin") avoin += l.summa;
+      if (l.tila === "Erääntynyt" || l.tila === "Avoin") avoin += l.summa;
     });
     var luokat = { "Maksettu": "ok", "Avoin": "odottaa", "Erääntynyt": "myohassa", "Luonnos": "luonnos" };
     var rivit = LASKUT.map(function (l) {
@@ -331,12 +419,8 @@
       return l.tila === "Luonnos" ? s : s + l.summa;
     }, 0);
 
-    return '<div class="demo-kortit">' +
-        kortti("Avoinna", raha(avoin) + " €", LASKUT.length + " laskua yhteensä", "") +
-        kortti("Erääntynyt", raha(myohassa) + " €", "2026-003 · 10 päivää myöhässä", "varoitus") +
-        kortti("Laskutettu 2026", raha(laskutettu) + " €", "sis. ALV", "") +
-      "</div>" +
-      '<div><div class="demo-otsake">Myyntilaskut</div>' +
+    return '<div>' + otsikko("Myyntilaskut", "avoinna " + raha(avoin) + " € · laskutettu " +
+        raha(laskutettu) + " €") +
       '<div class="demo-taulukko-kaare"><table class="demo-taulukko"><thead><tr>' +
       "<th>Numero</th><th>Asiakas</th><th>Päivä</th><th>Eräpäivä</th>" +
       '<th class="oikea">Summa €</th><th>Tila</th></tr></thead><tbody>' + rivit +
@@ -387,19 +471,59 @@
       '<tr class="summa"><td>Vastattavaa yhteensä</td><td class="oikea">' + raha(vastattavaaSumma) +
       "</td></tr></tbody></table></div></div>";
 
+    return tuloslaskelma + tase +
+      '<div class="demo-selite-teksti">Raportit päivittyvät heti tallennuksesta.</div>';
+  }
+
+  /* ---------- alv ---------- */
+  function nakymaAlv() {
     var myynninAlv = saldoLuku(ALV_MYYNTI), ostojenAlv = saldoLuku(ALV_OSTO);
-    var alv = '<div><div class="demo-otsake">ALV-laskelma' +
-      '<span class="maininta">tilikauden kertymä</span></div>' +
+    return '<div class="demo-kortit">' +
+        kortti("Myynnin ALV", raha(myynninAlv) + " €") +
+        kortti("Vähennettävä ALV", raha(ostojenAlv) + " €") +
+        kortti("Maksettava", raha(myynninAlv - ostojenAlv) + " €") +
+        kortti("Eräpäivä", "12.8.2026") +
+      "</div>" +
+      "<div>" + otsikko("ALV-laskelma", "1.1.–24.7.2026") +
       '<div class="demo-taulukko-kaare"><table class="demo-taulukko"><thead><tr><th>Erä</th>' +
       '<th class="oikea">€</th></tr></thead><tbody>' +
-      '<tr><td>Myynnin arvonlisävero</td><td class="oikea">' + raha(myynninAlv) + "</td></tr>" +
+      '<tr><td>Myynnin arvonlisävero 25,5 %</td><td class="oikea">' + raha(myynninAlv) + "</td></tr>" +
       '<tr><td>Vähennettävä arvonlisävero</td><td class="oikea">−' + raha(ostojenAlv) + "</td></tr>" +
-      '<tr class="summa"><td>Maksettava</td><td class="oikea">' + raha(myynninAlv - ostojenAlv) +
-      "</td></tr></tbody></table></div></div>";
+      '<tr class="summa"><td>Maksettava vero</td><td class="oikea">' + raha(myynninAlv - ostojenAlv) +
+      "</td></tr></tbody></table></div></div>" +
+      '<div class="demo-selite-teksti">Penni laskee ALV:n kirjauksista. Demo ei lähetä mitään ' +
+      "Verohallinnolle.</div>";
+  }
 
-    return tuloslaskelma + tase + alv +
-      '<div class="demo-selite-teksti">Raportit päivittyvät heti tallennuksesta. Demo ei ' +
-      "lähetä mitään Verohallinnolle.</div>";
+  /* ---------- kumppanit ---------- */
+  function nakymaKumppanit() {
+    var asiakkaat = [];
+    LASKUT.forEach(function (l) {
+      var a = asiakkaat.filter(function (x) { return x.nimi === l.asiakas; })[0];
+      if (!a) asiakkaat.push(a = { nimi: l.asiakas, laskuja: 0, laskutettu: 0, avoinna: 0 });
+      a.laskuja++;
+      if (l.tila !== "Luonnos") a.laskutettu += l.summa;
+      if (l.tila === "Avoin" || l.tila === "Erääntynyt") a.avoinna += l.summa;
+    });
+    var rivit = asiakkaat.map(function (a) {
+      return "<tr><td>" + pakoon(a.nimi) + '</td><td class="himmea">Asiakas</td>' +
+        '<td class="oikea">' + a.laskuja + '</td><td class="oikea">' + raha(a.laskutettu) + "</td>" +
+        '<td class="oikea">' + (a.avoinna ? raha(a.avoinna) : '<span class="himmea">—</span>') +
+        "</td></tr>";
+    }).join("");
+    return "<div>" + otsikko("Asiakkaat", asiakkaat.length + " kpl") +
+      '<div class="demo-taulukko-kaare"><table class="demo-taulukko"><thead><tr>' +
+      '<th>Nimi</th><th>Rooli</th><th class="oikea">Laskuja</th><th class="oikea">Laskutettu €</th>' +
+      '<th class="oikea">Avoinna €</th></tr></thead><tbody>' + rivit + "</tbody></table></div></div>" +
+      nakymaLaskut();
+  }
+
+  /* ---------- ei demossa ---------- */
+  function eiDemossa(teksti) {
+    return function () {
+      return '<div class="demo-tyhja-paneeli"><b>Ei mukana selaindemossa</b><span>' + teksti +
+        "</span></div>";
+    };
   }
 
   /* ---------- tilikartta ---------- */
@@ -537,17 +661,27 @@
   }
 
   /* ---------- piirto ---------- */
+  var KIRJA = "Demokirjat Oy · Tilikausi 1.1.2026–31.12.2026";
   var NAKYMAT = {
-    kojelauta:  { otsikko: "Kojelauta", tila: "Tilikausi 1.1.–31.12.2026", sisalto: nakymaKojelauta },
-    tositteet:  { otsikko: "Tositteet", sisalto: nakymaTositteet },
-    laskut:     { otsikko: "Myyntilaskut", tila: "Tilikausi 2026", sisalto: nakymaLaskut },
-    raportit:   { otsikko: "Raportit", tila: "Päivittyvät kirjausten mukana", sisalto: nakymaRaportit },
-    tilikartta: { otsikko: "Tilikartta", tila: "Yrityksen vakiotilikartta", sisalto: nakymaTilikartta }
+    kojelauta:   { otsikko: "Kojelauta", tila: KIRJA, sisalto: nakymaKojelauta },
+    tositteet:   { otsikko: "Tositteet", sisalto: nakymaTositteet },
+    kumppanit:   { otsikko: "Kumppanit", tila: "Asiakkaat, toimittajat ja myyntilaskut", sisalto: nakymaKumppanit },
+    raportit:    { otsikko: "Raportit", tila: "Päivittyvät kirjausten mukana", sisalto: nakymaRaportit },
+    alv:         { otsikko: "ALV", tila: "Kuukausittain ilmoittava", sisalto: nakymaAlv },
+    tilikartta:  { otsikko: "Tilikartta", tila: "Kitsas-yhteensopiva yritystilikartta", sisalto: nakymaTilikartta },
+    tilinpaatos: { otsikko: "Tilinpäätös", tila: KIRJA, sisalto: eiDemossa(
+      "Sovellus tekee tilinpäätöksen tilikauden lopussa ja lukitsee kauden. Tilikausi 2026 on vielä auki.") },
+    asetukset:   { otsikko: "Asetukset", tila: "Demokirjat Oy", sisalto: eiDemossa(
+      "Yrityksen tiedot, tositelajit ja ALV-asetukset muokataan sovelluksessa.") }
   };
 
   function piirra() {
-    Array.prototype.forEach.call(juuri.querySelectorAll("[data-nakyma]"), function (b) {
-      if (b.dataset.nakyma === nakyma) b.setAttribute("aria-current", "page");
+    Array.prototype.forEach.call(juuri.querySelectorAll(".demo-nav"), function (b) {
+      var auki = editori ? b.dataset.toiminto === "uusi" && !editori.kuitti
+        : b.dataset.nakyma === nakyma;
+      if (auki || (editori && editori.kuitti && b.dataset.nakyma === "tositteet")) {
+        b.setAttribute("aria-current", "page");
+      }
       else b.removeAttribute("aria-current");
       var vanha = b.querySelector(".pallukka");
       if (vanha) vanha.remove();
@@ -576,7 +710,8 @@
     otsakeEl.textContent = n.otsikko;
     tilaEl.textContent = n.tila ||
       (TOSITTEET.length + " tositetta · seuraava nro " + seuraavaNumero);
-    toiminnotEl.innerHTML = nakyma === "tositteet" ? nappi("uusi", "Uusi tosite") : "";
+    toiminnotEl.innerHTML = nakyma === "kojelauta" || nakyma === "tositteet"
+      ? nappi("uusi", "+ Uusi tosite", true) : "";
     sisaltoEl.innerHTML = n.sisalto();
 
     var haku = document.getElementById("demoHaku");
@@ -798,5 +933,8 @@
     }
   });
 
+  Array.prototype.forEach.call(juuri.querySelectorAll("[data-ikoni]"), function (b) {
+    b.insertAdjacentHTML("afterbegin", ikoni(b.dataset.ikoni));
+  });
   piirra();
 })();

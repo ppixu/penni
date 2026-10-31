@@ -47,7 +47,7 @@
         <p><span>03</span><strong>Avoin lähdekoodi</strong></p>
       </div>
       <section id="sovellus" class="sovellusosio">
-        <div class="osio-otsake"><div><p class="silmakulma">Demo</p><h2>Kokeile<br />itse.</h2></div><p>Lue kuitti, tarkista tiedot ja tallenna tosite. Selaa laskuja ja raportteja. Kaikki on esimerkkidataa, joten mitään ei voi rikkoa.</p></div>
+        <div class="osio-otsake"><div><p class="silmakulma">Demo</p><h2>Kokeile<br />itse.</h2></div><p>Lue kuitti, tarkista tiedot ja tallenna tosite. Selaa laskuja, raportteja ja ALV:tä. Kaikki on esimerkkidataa, joten mitään ei voi rikkoa.</p></div>
             <div class="demo" id="demo">
       <div class="demo-palkki">
         <span class="valo" style="background: var(--pinkki);"></span>
@@ -58,19 +58,27 @@
       </div>
       <div class="demo-runko">
         <aside class="demo-sivu">
-          <span class="demo-brandi"><img src="landing-assets/penni-icon.svg" width="30" height="30" alt="" />Penni</span>
-          <button type="button" class="demo-nav" data-nakyma="kojelauta"><i></i>Kojelauta</button>
-          <button type="button" class="demo-nav" data-nakyma="tositteet" aria-current="page"><i></i>Tositteet</button>
-          <button type="button" class="demo-nav" data-nakyma="laskut"><i></i>Laskut</button>
-          <button type="button" class="demo-nav" data-nakyma="raportit"><i></i>Raportit</button>
-          <button type="button" class="demo-nav" data-nakyma="tilikartta"><i></i>Tilikartta</button>
-          <span class="demo-sivu-alaosa">Demokirjat Oy<br />Tilikausi 1.1.–31.12.2026</span>
+          <span class="demo-brandi"><img src="landing-assets/penni-icon.svg" width="26" height="26" alt="" />Penni</span>
+          <span class="demo-kausi-nimi">Tilikausi</span>
+          <span class="demo-kausi">2026<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          <button type="button" class="demo-nav" data-nakyma="kojelauta" data-ikoni="kojelauta">Kojelauta</button>
+          <button type="button" class="demo-nav" data-toiminto="uusi" data-ikoni="uusi">Uusi tosite</button>
+          <button type="button" class="demo-nav" data-nakyma="tositteet" data-ikoni="tositteet" aria-current="page">Tositteet</button>
+          <button type="button" class="demo-nav" data-nakyma="kumppanit" data-ikoni="kumppanit">Kumppanit</button>
+          <button type="button" class="demo-nav" data-nakyma="raportit" data-ikoni="raportit">Raportit</button>
+          <button type="button" class="demo-nav" data-nakyma="alv" data-ikoni="alv">ALV</button>
+          <button type="button" class="demo-nav" data-nakyma="tilikartta" data-ikoni="tilikartta">Tilikartta</button>
+          <div class="demo-sivu-alaosa">
+            <button type="button" class="demo-nav" data-nakyma="tilinpaatos" data-ikoni="tilinpaatos">Tilinpäätös</button>
+            <button type="button" class="demo-nav" data-nakyma="asetukset" data-ikoni="asetukset">Asetukset</button>
+            <span class="demo-kirja">Demokirjat Oy</span>
+          </div>
         </aside>
         <div class="demo-paa">
           <div class="demo-ylapalkki">
             <div>
               <div class="otsake" id="demoOtsake">Tositteet</div>
-              <div class="tila" id="demoTila">Tilikausi 2026 · yleinen tositelaji</div>
+              <div class="tila" id="demoTila">Demokirjat Oy · Tilikausi 1.1.2026–31.12.2026</div>
             </div>
             <div class="demo-toiminnot" id="demoToiminnot"></div>
           </div>
@@ -92,12 +100,11 @@
         <div class="avustajan-asiat"><p><strong>Luonnos ensin</strong>Kirjanpito ei muutu ennen hyväksyntääsi.</p><p><strong>Kaikki lokiin</strong>Näet jokaisen avustajan toimen.</p><p><strong>Täysin valinnainen</strong>Penni toimii myös ilman tekoälyä.</p></div>
       </section>
       <section id="hinnat" class="hinnoittelu">
-        <div class="osio-otsake"><div><p class="silmakulma">Hinnoittelu</p><h2>Omalla koneella ilmainen.<br />Pilvi, jos tarvitset.</h2></div><p>Sovellus on ilmainen. Pilvipalvelut ovat suunnitteilla, alla alustavat hinnat.</p></div>
+        <div class="osio-otsake"><div><p class="silmakulma">Hinnoittelu</p><h2>Omalla koneella ilmainen.<br />Pro, jos tarvitset.</h2></div><p>Sovellus on ilmainen. Pilvipalvelut ovat suunnitteilla, alla alustavat hinnat.</p></div>
         <div class="hinnat">
           <article class="hinta-kortti"><p class="paketin-tila">Paikallinen sovellus</p><h3>Penni</h3><p class="hinta-luku">0 €</p><p>Koko kirjanpito omalla koneellasi.</p><ul><li>Kahdenkertainen kirjanpito</li><li>Tositteet, laskut ja raportit</li><li>Tiedot omassa tiedostossa</li><li>Avoin lähdekoodi</li></ul><a class="nappi" href="#sovellus">Kokeile demoa <span aria-hidden="true">↗</span></a></article>
-          <article class="hinta-kortti korostettu"><p class="paketin-tila">Suunnitteilla</p><h3>Pilvi</h3><p class="hinta-luku">9 € <small>/ kk</small></p><p>Kuitit ja varmuuskopiot pilvessä.</p><ul><li>Kuittien automaattinen luku</li><li>Tositeluonnokset valmiina</li><li>Synkronointi ja varmuuskopiot</li><li>Kuitit sähköpostilla</li></ul><a class="nappi" href="mailto:hei@penni.pro?subject=Kiinnostus%20Pennin%20pilvipalveluun">Kerro kiinnostuksesi <span aria-hidden="true">↗</span></a></article>
-          <article class="hinta-kortti"><p class="paketin-tila">Suunnitteilla</p><h3>Pro</h3><p class="hinta-luku">19 € <small>/ kk</small></p><p>Automaatiota ja useampi käyttäjä.</p><ul><li>Omat automaatiosäännöt</li><li>Useita käyttäjiä</li><li>Pankkiyhteydet</li><li>Laajempi tuki</li></ul><a class="nappi" href="mailto:hei@penni.pro?subject=Kiinnostus%20Penni%20Prohon">Kerro kiinnostuksesi <span aria-hidden="true">↗</span></a></article>
-        </div><p class="hinnoittelu-huomio">Pilvi ja Pro eivät ole vielä tilattavissa. Hinnat ja sisältö voivat muuttua.</p>
+          <article class="hinta-kortti korostettu"><p class="paketin-tila">Suunnitteilla</p><h3>Pro</h3><p class="hinta-luku">9 € <small>/ kk</small></p><p>Kuitit ja varmuuskopiot pilvessä.</p><ul><li>Kuittien automaattinen luku</li><li>Tositeluonnokset valmiina</li><li>Synkronointi ja varmuuskopiot</li><li>Kuitit sähköpostilla</li></ul><a class="nappi" href="mailto:hei@penni.pro?subject=Kiinnostus%20Penni%20Prohon">Kerro kiinnostuksesi <span aria-hidden="true">↗</span></a></article>
+        </div><p class="hinnoittelu-huomio">Pro ei ole vielä tilattavissa. Hinnat ja sisältö voivat muuttua.</p>
       </section>
     </main>
     <footer><div class="footer-alku"><a class="merkki" href="#"><img src="landing-assets/penni-icon.svg" width="44" height="44" alt="" />penni</a><p>Kirjanpito omalla koneellasi.</p><a class="ilinkki" href="mailto:hei@penni.pro">hei@penni.pro <span aria-hidden="true">↗</span></a></div><div class="footer-loppu"><span>© 2026 Penni</span><p>Vastuu kirjanpidon oikeellisuudesta on kirjanpitovelvollisella.</p><a href="https://github.com/ppixu/penni">GitHub ↗</a></div></footer>

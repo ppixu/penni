@@ -14,10 +14,10 @@
       "port": 5174
     },
     {
-      "name": "web-demo",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@penni/web", "dev:demo", "--port", "5175", "--strictPort"],
-      "port": 5175
+      "name": "site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8788", "-d", "docs/mockups/dist"],
+      "port": 8788
     }
   ]
 }
