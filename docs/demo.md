@@ -43,7 +43,7 @@ Kertaluonteinen Cloudflare-valmistelu ennen ensimmäistä julkaisua:
 
 1. `wrangler pages project create penni-demo --production-branch main`
 2. Cloudflaren hallinnassa: Pages → penni-demo → Custom domains → `demo.penni.pro`
-   (luo CNAME-tietueen pennikirjanpito.fi-vyöhykkeeseen).
+   (luo CNAME-tietueen penni.pro-vyöhykkeeseen).
 
 Pages tarjoilee yhden sivun sovelluksen `index.html`:n tuntemattomille poluille, kun paketissa
 ei ole `404.html`:ää, joten syvälinkit (esim. `/alv`) toimivat ilman lisäasetuksia.

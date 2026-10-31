@@ -49,7 +49,7 @@ export function DemoMerkki() {
       </button>
       <a href={KOTISIVU} className={LINKKI}>
         <ArrowUpRight className="h-[13px] w-[13px] shrink-0" />
-        pennikirjanpito.fi
+        penni.pro
       </a>
     </div>
   );

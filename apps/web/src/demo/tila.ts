@@ -6,4 +6,4 @@
 export const DEMO = import.meta.env.MODE === 'demo' || import.meta.env.VITE_PENNI_DEMO === '1';
 
 /** Penni-sivusto, jonne demosta palataan. */
-export const KOTISIVU = 'https://pennikirjanpito.fi/';
+export const KOTISIVU = 'https://penni.pro/';
