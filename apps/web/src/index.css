@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ---- Penni design tokens — style A "tyyni & minimalistinen" ----
+   Raw values live here as CSS variables; @theme inline promotes them to
+   Tailwind theme keys + utilities. Source: docs/design/ux-design.md §2 +
+   docs/mockups/voucher-entry.html, reconciled. */
+:root {
+  --bg-app: #ffffff;
+  --bg-subtle: #fafafa;
+  --surface: #ffffff;
+  --border: #ececf0;
+  --border-strong: #e4e4e7;
+  --border-faint: #f4f4f5;
+  --track: #f4f4f5;
+  --text: #18181b;
+  --text-muted: #6b7280;
+  --text-subtle: #9ca3af;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --accent-fg: #ffffff;
+  --positive: #16a34a;
+  --positive-soft: #f0fdf4;
+  --positive-border: #bbf7d0;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --focus-ring: rgba(79, 70, 229, 0.15);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  --radius-input: 6px;
+  --radius-button: 8px;
+  --radius-card: 10px;
+  --radius-panel: 13px;
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+}
+
+/* @theme inline: reference the vars so both var(--x) and utilities (bg-app, text-muted,
+   border-border, …) resolve from one source. */
+@theme inline {
+  --color-bg-app: var(--bg-app);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-faint: var(--border-faint);
+  --color-track: var(--track);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-positive-border: var(--positive-border);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --radius-input: var(--radius-input);
+  --radius-button: var(--radius-button);
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-app);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1; /* tabular figures everywhere — money is integer cents */
+    line-height: 1.45;
+  }
+}

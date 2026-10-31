@@ -1,0 +1,57 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 420 595] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 992 >>
+stream
+1 1 1 rg 0 0 420 595 re f
+BT 0 g /F1 16 Tf 36 560 Td (LASKU) Tj ET
+BT 0 g /F2 9.5 Tf 36 538 Td (Testi Konsultointi Oy) Tj ET
+BT 0 g /F2 9.5 Tf 36 524 Td (Asiakas: Testi Oy) Tj ET
+BT 0 g /F2 11 Tf 36 486 Td (Laskun numero) Tj ET
+BT 0 g /F2 11 Tf 250 486 Td (2026-014) Tj ET
+BT 0 g /F2 11 Tf 36 466 Td (Laskun pvm) Tj ET
+BT 0 g /F2 11 Tf 250 466 Td (10.3.2026) Tj ET
+BT 0 g /F2 11 Tf 36 446 Td (Eräpäivä) Tj ET
+BT 0 g /F2 11 Tf 250 446 Td (24.3.2026) Tj ET
+BT 0 g /F2 11 Tf 36 426 Td (Laskuttaja) Tj ET
+BT 0 g /F2 11 Tf 250 426 Td (Testi Konsultointi Oy, 3456789-3) Tj ET
+BT 0 g /F2 11 Tf 36 406 Td () Tj ET
+BT 0 g /F2 11 Tf 36 386 Td (Kuvaus) Tj ET
+BT 0 g /F2 11 Tf 250 386 Td (Asiantuntijatyö maaliskuu) Tj ET
+BT 0 g /F2 11 Tf 36 366 Td (Veroton hinta) Tj ET
+BT 0 g /F2 11 Tf 250 366 Td (800,00 EUR) Tj ET
+BT 0 g /F2 11 Tf 36 346 Td (ALV 25,5 %) Tj ET
+BT 0 g /F2 11 Tf 250 346 Td (204,00 EUR) Tj ET
+BT 0 g /F2 11 Tf 36 326 Td (Yhteensä) Tj ET
+BT 0 g /F2 11 Tf 250 326 Td (1 004,00 EUR) Tj ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000001294 00000 n 
+0000001396 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1493
+%%EOF

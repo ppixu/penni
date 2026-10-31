@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Env / local config
+.env
+.env.*
+!.env.example
+*.local
+
+# Test / coverage
+coverage/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Brainstorm / scratch
+.superpowers/
+
+# TanStack Router generated route tree
+apps/web/src/routeTree.gen.ts
+
+apps/desktop/out/
+apps/desktop/resources/
+
+# Kirjanpitotiedostot: oikeaa taloustietoa, ei koskaan julkiseen repoon
+*.penni
+*.penni-wal
+*.penni-shm
+*.kitsas
+*.kitsas-wal
+*.kitsas-shm
+
+# Wrangler (paikallinen workerd-tila: apps/pilvi `wrangler dev`)
+.wrangler/
+
+# Pilvi-spiken mittaustulokset (apps/pilvi/mittaus): aikoja ja lukumääriä, mutta ei repoon
+apps/pilvi/mittaus/tulokset/
+
+# Q5-spiken tulokset (packages/kuitti-validointi/tulokset): synteettistä, mutta generoitua ajoa
+packages/kuitti-validointi/tulokset/
+# Workers AI -kutsulaskuri (kiinteä, ei --out:n alla): koko spiken kutsukatto 60
+packages/kuitti-validointi/.ai-tila/
+
+# Blender-lähdetiedostot ja työtilat: suunnittelulähteitä, ei repoon
+.claude/worktrees/
+*.blend
+*.blend1

@@ -1,0 +1,23 @@
+{
+  "name": "penni",
+  "private": true,
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "site:build": "node docs/mockups/build-landing.mjs",
+    "site:deploy": "pnpm site:build && pnpm exec wrangler pages deploy docs/mockups/dist --project-name pennikirjanpito --branch main"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2",
+    "wrangler": "4.72.0"
+  }
+}

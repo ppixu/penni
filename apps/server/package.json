@@ -1,0 +1,35 @@
+{
+  "name": "@penni/server",
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./kasittelijat": { "types": "./dist/kasittelijat.d.ts", "default": "./dist/kasittelijat.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fastify/static": "^7.0.4",
+    "@penni/contract": "workspace:*",
+    "@penni/control": "workspace:*",
+    "@penni/engine": "workspace:*",
+    "@penni/euro": "workspace:*",
+    "@penni/storage-sqlite": "workspace:*",
+    "@ts-rest/fastify": "^3.52.1",
+    "fastify": "^4.28.1"
+  },
+  "devDependencies": {
+    "@penni/storage-memory": "workspace:*",
+    "@penni/storage-postgres": "workspace:*",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

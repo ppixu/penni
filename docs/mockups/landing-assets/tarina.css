@@ -1,0 +1,66 @@
+/* Etusivun animaatio: miten Penni toimii. Elementit luodaan tarina.js:ssä. */
+.sankari-kuva.tarina{justify-content:space-between;gap:.25rem}
+.tarina-kuva{display:block;width:100%;height:auto}
+.tarina-kuva text{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:var(--muste)}
+.tarina-kuva .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px}
+.tarina-kuva .vahva{font-weight:700}
+.tarina-kuva .himmea{fill:var(--himmea)}
+.tarina-kuva .violetti{fill:var(--violetti)}
+.tarina-kuva .luku{font-variant-numeric:tabular-nums}
+.t-paperi{fill:#fff;stroke:#ececf2}
+.t-katko{stroke:#c9c9d3;stroke-dasharray:3 3}
+.t-korostus{fill:var(--violetti);fill-opacity:.12}
+.t-lappu{fill:var(--violetti)}
+.tarina-kuva .t-lappu-teksti{fill:#fff;font-size:10.5px;font-weight:600}
+.t-kortti{fill:#fff;stroke:var(--raja)}
+.tarina-kuva .t-otsikko{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.tarina-kuva .t-pieni{font-size:10.5px;fill:var(--himmea)}
+.tarina-kuva .t-pieni.violetti{fill:var(--violetti);font-weight:600}
+.tarina-kuva .t-sarake{font-size:9.5px;font-weight:600;letter-spacing:.06em;fill:var(--himmea)}
+.tarina-kuva .t-rivi{font-size:12px}
+.tarina-kuva .t-rivi.violetti{fill:var(--violetti);font-weight:600}
+.t-viiva{stroke:var(--raja)}
+.t-harmaa{fill:#f3f3f7}
+.t-vaalea{fill:#eceafd}
+.t-auto{fill:#eceafd}
+.tarina-kuva .t-auto-teksti{font-size:9px;font-weight:600;fill:var(--violetti)}
+.t-ensisijainen{fill:var(--violetti)}
+.tarina-kuva .t-nappi-teksti{font-size:12.5px;font-weight:600;fill:#fff}
+.tarina-kuva .t-nappi-teksti.violetti{fill:var(--violetti)}
+.t-osoitin{fill:var(--muste);stroke:#fff;stroke-width:1.3;stroke-linejoin:round}
+.tarina-kuva .t-iso{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.t-palkki{fill:var(--pinkki)}
+.t-palkki-uusi{fill:var(--violetti)}
+.t-oranssi{fill:#fff4e2;stroke:var(--oranssi)}
+.tarina-kuva .t-oranssi-teksti{font-size:11px;font-weight:600;fill:#b45309}
+.t-piirros{fill:none;stroke:var(--muste);stroke-width:2.5;stroke-linejoin:round;stroke-dasharray:1}
+.t-tiedosto-ikoni{fill:none;stroke:var(--violetti);stroke-width:1.6;stroke-linejoin:round}
+.tarina-kuva .t-tiedostonimi{font-size:12px;font-weight:600}
+
+.sankari-kuva.tarina figcaption{display:block;padding:0 1.6rem 1.4rem;font-size:.8125rem}
+.tarina-lause{margin:0 0 .9rem;font-size:1rem;font-weight:500;color:var(--muste);min-height:1.65em}
+.tarina-ohjaus{display:flex;align-items:flex-end;gap:1rem}
+.tarina-vaiheet{list-style:none;margin:0;padding:0;flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+.tarina-vaiheet button{appearance:none;border:0;background:none;padding:.2rem 0 0;margin:0;width:100%;font:inherit;color:var(--himmea);text-align:left;cursor:pointer;display:block;border-radius:.3rem}
+.tarina-vaiheet button b{font-weight:500;color:var(--violetti);font-variant-numeric:tabular-nums}
+.tarina-vaiheet button[aria-current]{color:var(--muste)}
+.tarina-vaiheet button:hover{color:var(--muste)}
+.tarina-vaiheet .viiva{display:block;margin-top:.45rem;height:2px;border-radius:2px;background:var(--raja);overflow:hidden}
+.tarina-vaiheet .viiva i{display:block;height:100%;background:var(--violetti);transform:scaleX(0);transform-origin:left}
+.tarina-tauko{appearance:none;flex:none;width:2rem;height:2rem;border-radius:50%;border:1px solid var(--raja);background:#fff;color:var(--muste);display:grid;place-items:center;cursor:pointer;padding:0}
+.tarina-tauko:hover{border-color:var(--himmea)}
+.tarina-tauko svg{width:.85rem;height:.85rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tarina-tauko .toista{display:none;fill:currentColor}
+.tarina.tauolla .tarina-tauko .tauko{display:none}
+.tarina.tauolla .tarina-tauko .toista{display:inline}
+.tarina-vaiheet button:focus-visible,.tarina-tauko:focus-visible{outline:2px solid var(--violetti);outline-offset:3px}
+.tarina-staattinen{display:block;width:62%;max-width:340px;height:auto;margin:2rem auto}
+
+@media(max-width:760px){
+  .sankari-kuva.tarina figcaption{padding-inline:1.1rem}
+  .tarina-vaiheet{gap:.4rem}
+  .tarina-vaiheet button{font-size:.75rem}
+}
+@media(max-width:420px){
+  .tarina-vaiheet button b{display:none}
+}

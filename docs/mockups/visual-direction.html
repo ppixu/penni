@@ -1,0 +1,141 @@
+<h2>Pick a visual direction</h2>
+<p class="subtitle">The same dashboard, three personalities. This sets the design language everything else inherits — color, density, typography, chrome. Click the one that feels right (or tell me to blend two).</p>
+
+<style>
+  .mk { font-family: 'Inter', system-ui, -apple-system, sans-serif; border-radius: 12px; overflow: hidden; display: flex; height: 340px; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .mk * { box-sizing: border-box; }
+  .mk-side { width: 168px; flex-shrink: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .mk-logo { font-weight: 700; font-size: 15px; margin: 2px 6px 16px; letter-spacing: -.3px; }
+  .mk-nav { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px; font-size: 13px; }
+  .mk-ico { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+  .mk-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .mk-top { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+  .mk-body { padding: 4px 20px 20px; overflow: hidden; }
+  .mk-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .mk-kpi { padding: 12px; border-radius: 10px; }
+  .mk-klab { font-size: 9px; text-transform: uppercase; letter-spacing: .5px; opacity: .65; margin-bottom: 6px; }
+  .mk-knum { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
+  .mk-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .mk-tbl td { padding: 8px 6px; font-variant-numeric: tabular-nums; }
+  .mk-r { text-align: right; }
+  .mk-pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+</style>
+
+<div class="options">
+
+  <!-- A: Calm minimal -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Calm &amp; minimal — "Linear / Stripe"</h3>
+      <p>Quiet neutrals, generous whitespace, one restrained accent, hairline borders, no shadows. Feels precise and professional; recedes so the numbers lead.</p>
+      <div class="mk" style="background:#ffffff; color:#18181b;">
+        <div class="mk-side" style="background:#fafafa; border-right:1px solid #ececf0;">
+          <div class="mk-logo" style="color:#18181b;">Penni</div>
+          <div class="mk-nav" style="background:#f0f0f3; color:#18181b; font-weight:600;"><span class="mk-ico" style="background:#4f46e5;"></span>Kojelauta</div>
+          <div class="mk-nav" style="color:#6b7280;"><span class="mk-ico" style="background:#d4d4d8;"></span>Tositteet</div>
+          <div class="mk-nav" style="color:#6b7280;"><span class="mk-ico" style="background:#d4d4d8;"></span>Laskut</div>
+          <div class="mk-nav" style="color:#6b7280;"><span class="mk-ico" style="background:#d4d4d8;"></span>Raportit</div>
+          <div class="mk-nav" style="color:#6b7280;"><span class="mk-ico" style="background:#d4d4d8;"></span>Tilikartta</div>
+          <div class="mk-nav" style="color:#6b7280;"><span class="mk-ico" style="background:#d4d4d8;"></span>Asetukset</div>
+        </div>
+        <div class="mk-main">
+          <div class="mk-top" style="border-bottom:1px solid #ececf0; color:#6b7280;"><span style="color:#18181b; font-weight:600;">Yritys Oy</span><span>Tilikausi 2026</span></div>
+          <div class="mk-body">
+            <div class="mk-kpis">
+              <div class="mk-kpi" style="border:1px solid #ececf0;"><div class="mk-klab">Tulos</div><div class="mk-knum" style="color:#16a34a;">24 130,50</div></div>
+              <div class="mk-kpi" style="border:1px solid #ececf0;"><div class="mk-klab">Pankki</div><div class="mk-knum">8 642,10</div></div>
+              <div class="mk-kpi" style="border:1px solid #ececf0;"><div class="mk-klab">Saatavat</div><div class="mk-knum">3 210,00</div></div>
+              <div class="mk-kpi" style="border:1px solid #ececf0;"><div class="mk-klab">ALV-velka</div><div class="mk-knum">1 458,75</div></div>
+            </div>
+            <table class="mk-tbl">
+              <tr style="color:#9ca3af; font-size:10px; text-transform:uppercase; letter-spacing:.5px;"><td>Pvm</td><td>Selite</td><td class="mk-r">Summa</td></tr>
+              <tr style="border-top:1px solid #f4f4f5;"><td style="color:#9ca3af;">26.06.</td><td>Myyntilasku · Asiakas Oy</td><td class="mk-r" style="color:#16a34a;">+1 240,00</td></tr>
+              <tr style="border-top:1px solid #f4f4f5;"><td style="color:#9ca3af;">25.06.</td><td>Osto · Toimistotarvike</td><td class="mk-r">−86,40</td></tr>
+              <tr style="border-top:1px solid #f4f4f5;"><td style="color:#9ca3af;">24.06.</td><td>Tiliote · Pankki</td><td class="mk-r">+2 000,00</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B: Warm friendly -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Warm &amp; friendly — "approachable fintech"</h3>
+      <p>Soft warm background, rounded cards with gentle tints, a friendly teal accent, roomier spacing. Reassuring for a small-business owner who isn't an accountant.</p>
+      <div class="mk" style="background:#fbf8f4; color:#3a3530;">
+        <div class="mk-side" style="background:#ffffff;">
+          <div class="mk-logo" style="color:#0f766e;">● Penni</div>
+          <div class="mk-nav" style="background:#ccfbf1; color:#0f766e; font-weight:600;"><span class="mk-ico" style="background:#14b8a6; border-radius:7px;"></span>Kojelauta</div>
+          <div class="mk-nav" style="color:#78716c;"><span class="mk-ico" style="background:#e7e5e4; border-radius:7px;"></span>Tositteet</div>
+          <div class="mk-nav" style="color:#78716c;"><span class="mk-ico" style="background:#e7e5e4; border-radius:7px;"></span>Laskut</div>
+          <div class="mk-nav" style="color:#78716c;"><span class="mk-ico" style="background:#e7e5e4; border-radius:7px;"></span>Raportit</div>
+          <div class="mk-nav" style="color:#78716c;"><span class="mk-ico" style="background:#e7e5e4; border-radius:7px;"></span>Tilikartta</div>
+          <div class="mk-nav" style="color:#78716c;"><span class="mk-ico" style="background:#e7e5e4; border-radius:7px;"></span>Asetukset</div>
+        </div>
+        <div class="mk-main">
+          <div class="mk-top" style="color:#a8a29e;"><span style="color:#3a3530; font-weight:700; font-size:15px;">Hei, Yritys Oy 👋</span><span class="mk-pill" style="background:#fff; color:#78716c;">Tilikausi 2026</span></div>
+          <div class="mk-body">
+            <div class="mk-kpis">
+              <div class="mk-kpi" style="background:#ecfdf5;"><div class="mk-klab" style="color:#047857;">Tulos</div><div class="mk-knum" style="color:#047857;">24 130,50</div></div>
+              <div class="mk-kpi" style="background:#fff;"><div class="mk-klab">Pankki</div><div class="mk-knum">8 642,10</div></div>
+              <div class="mk-kpi" style="background:#fff;"><div class="mk-klab">Saatavat</div><div class="mk-knum">3 210,00</div></div>
+              <div class="mk-kpi" style="background:#fef3f2;"><div class="mk-klab" style="color:#b91c1c;">ALV-velka</div><div class="mk-knum" style="color:#b91c1c;">1 458,75</div></div>
+            </div>
+            <div style="background:#fff; border-radius:12px; padding:6px 14px;">
+            <table class="mk-tbl">
+              <tr style="color:#a8a29e; font-size:10px; text-transform:uppercase; letter-spacing:.5px;"><td>Pvm</td><td>Selite</td><td class="mk-r">Summa</td></tr>
+              <tr style="border-top:1px solid #f5f5f4;"><td style="color:#a8a29e;">26.06.</td><td>Myyntilasku · Asiakas Oy</td><td class="mk-r" style="color:#047857;">+1 240,00</td></tr>
+              <tr style="border-top:1px solid #f5f5f4;"><td style="color:#a8a29e;">25.06.</td><td>Osto · Toimistotarvike</td><td class="mk-r">−86,40</td></tr>
+              <tr style="border-top:1px solid #f5f5f4;"><td style="color:#a8a29e;">24.06.</td><td>Tiliote · Pankki</td><td class="mk-r" style="color:#047857;">+2 000,00</td></tr>
+            </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C: Dense pro -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Dense &amp; pro — "keyboard-first power tool"</h3>
+      <p>Dark slate sidebar, compact rows, monospace figures, visible keyboard hints, more data per screen. Built for an accountant who lives in it all day.</p>
+      <div class="mk" style="background:#f8fafc; color:#0f172a;">
+        <div class="mk-side" style="background:#0f172a; gap:1px;">
+          <div class="mk-logo" style="color:#fff;">Penni</div>
+          <div class="mk-nav" style="background:#1e293b; color:#fff;"><span class="mk-ico" style="background:#3b82f6;"></span>Kojelauta</div>
+          <div class="mk-nav" style="color:#94a3b8;"><span class="mk-ico" style="background:#334155;"></span>Tositteet</div>
+          <div class="mk-nav" style="color:#94a3b8;"><span class="mk-ico" style="background:#334155;"></span>Laskut</div>
+          <div class="mk-nav" style="color:#94a3b8;"><span class="mk-ico" style="background:#334155;"></span>Raportit</div>
+          <div class="mk-nav" style="color:#94a3b8;"><span class="mk-ico" style="background:#334155;"></span>Tilikartta</div>
+          <div class="mk-nav" style="color:#94a3b8;"><span class="mk-ico" style="background:#334155;"></span>Asetukset</div>
+          <div style="margin-top:auto; font-size:10px; color:#475569; padding:6px 10px;">⌘K komentopaletti</div>
+        </div>
+        <div class="mk-main">
+          <div class="mk-top" style="background:#fff; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:12px;"><span style="color:#0f172a; font-weight:600;">Yritys Oy · Tilikausi 2026</span><span style="font-family:ui-monospace,monospace; background:#f1f5f9; padding:2px 7px; border-radius:5px;">N = uusi tosite</span></div>
+          <div class="mk-body" style="padding-top:12px;">
+            <div class="mk-kpis" style="gap:8px; margin-bottom:12px;">
+              <div class="mk-kpi" style="background:#fff; border:1px solid #e2e8f0; padding:9px;"><div class="mk-klab">Tulos</div><div class="mk-knum" style="font-family:ui-monospace,monospace; color:#15803d; font-size:15px;">24 130,50</div></div>
+              <div class="mk-kpi" style="background:#fff; border:1px solid #e2e8f0; padding:9px;"><div class="mk-klab">Pankki</div><div class="mk-knum" style="font-family:ui-monospace,monospace; font-size:15px;">8 642,10</div></div>
+              <div class="mk-kpi" style="background:#fff; border:1px solid #e2e8f0; padding:9px;"><div class="mk-klab">Saatavat</div><div class="mk-knum" style="font-family:ui-monospace,monospace; font-size:15px;">3 210,00</div></div>
+              <div class="mk-kpi" style="background:#fff; border:1px solid #e2e8f0; padding:9px;"><div class="mk-klab">ALV-velka</div><div class="mk-knum" style="font-family:ui-monospace,monospace; font-size:15px;">1 458,75</div></div>
+            </div>
+            <table class="mk-tbl" style="font-family:ui-monospace,monospace; font-size:11px;">
+              <tr style="color:#94a3b8; font-size:10px; text-transform:uppercase;"><td>Pvm</td><td>Nro</td><td style="font-family:Inter,sans-serif;">Selite</td><td class="mk-r">Summa</td></tr>
+              <tr style="border-top:1px solid #e2e8f0;"><td style="color:#64748b;">26.06.</td><td style="color:#64748b;">210/14</td><td style="font-family:Inter,sans-serif;">Myyntilasku · Asiakas Oy</td><td class="mk-r" style="color:#15803d;">+1 240,00</td></tr>
+              <tr style="border-top:1px solid #e2e8f0;"><td style="color:#64748b;">25.06.</td><td style="color:#64748b;">100/87</td><td style="font-family:Inter,sans-serif;">Osto · Toimistotarvike</td><td class="mk-r">−86,40</td></tr>
+              <tr style="border-top:1px solid #e2e8f0;"><td style="color:#64748b;">24.06.</td><td style="color:#64748b;">400/12</td><td style="font-family:Inter,sans-serif;">Tiliote · Pankki</td><td class="mk-r" style="color:#15803d;">+2 000,00</td></tr>
+              <tr style="border-top:1px solid #e2e8f0;"><td style="color:#64748b;">23.06.</td><td style="color:#64748b;">500/03</td><td style="font-family:Inter,sans-serif;">Palkka · Kesäkuu</td><td class="mk-r">−3 100,00</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

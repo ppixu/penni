@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Penni on ilmainen kirjanpito-ohjelma pienyritykselle. Tositteet, laskut ja raportit omalla koneellasi. Kokeile selaindemoa." />
+  <meta name="theme-color" content="#fafafa" />
+  <title>Penni — kirjanpito omalla koneellasi</title>
+  <link rel="canonical" href="https://penni.pro/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://penni.pro/" />
+  <meta property="og:title" content="Penni — kirjanpito omalla koneellasi" />
+  <meta property="og:description" content="Ilmainen kirjanpito-ohjelma pienyritykselle. Nyt beta-vaiheessa." />
+  <meta property="og:image" content="https://penni.pro/landing-assets/penni-logo.png" />
+  <meta property="og:locale" content="fi_FI" />
+  <link rel="icon" type="image/svg+xml" href="landing-assets/penni-icon.svg" />
+  <link rel="apple-touch-icon" href="landing-assets/penni-icon.png" />
+  <link rel="preload" href="landing-assets/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="landing-assets/demo.css" />
+  <link rel="stylesheet" href="landing-assets/site.css" />
+  <link rel="stylesheet" href="landing-assets/tarina.css" />
+  <script src="landing-assets/demo.js" defer></script>
+  <script src="landing-assets/tarina.js" defer></script>
+</head>
+<body>
+  <a class="ohitus" href="#sisalto">Siirry sisältöön</a>
+  <div class="kehys">
+    <nav class="paavalikko" aria-label="Päävalikko">
+      <a class="merkki" href="#" aria-label="Penni, etusivu"><img src="landing-assets/penni-icon.svg" width="44" height="44" alt="" />penni<span class="beta-merkki">beta</span></a>
+      <div class="navlinkit"><a href="#sovellus">Sovellus</a><a href="#avoin">Tietoa</a><a href="#hinnat">Hinnat</a></div>
+      <a class="nappi nav-nappi" href="#sovellus">Kokeile demoa <span aria-hidden="true">↗</span></a>
+    </nav>
+    <main id="sisalto">
+      <header class="sankari">
+        <div class="sankari-teksti">
+          <p class="silmakulma"><span class="piste" aria-hidden="true"></span> Kirjanpito pienyritykselle</p>
+          <h1>Kirjanpito<br />omalla<br /><span>koneellasi.</span></h1>
+          <p class="alaotsikko">Tositteet, laskut ja raportit yhdessä paikassa. Ilmainen ohjelma yrittäjälle, joka hoitaa kirjanpitonsa itse.</p>
+          <div class="napit"><a class="nappi ensisijainen" href="#sovellus">Kokeile demoa <span aria-hidden="true">↗</span></a><a class="ilinkki" href="#avoin">Mikä Penni on? <span aria-hidden="true">→</span></a></div>
+          <p class="tilahuomio">Penni on beta-vaiheessa: ominaisuuksia lisätään ja muutoksia tulee. Demo toimii suoraan selaimessa.</p>
+        </div>
+        <figure class="sankari-kuva tarina" id="tarina"><svg class="tarina-staattinen" viewBox="0 0 100 100" role="img" aria-label="Pennin merkki: violetti P oranssin kiekon edessä"><defs><linearGradient id="s-oranssi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8941d"/><stop offset="1" stop-color="#e06a00"/></linearGradient><linearGradient id="s-violetti" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6248f4"/><stop offset="1" stop-color="#4b3bd6"/></linearGradient><mask id="s-reika" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="48.3" cy="45.2" r="11" fill="#000"/></mask></defs><g mask="url(#s-reika)"><circle cx="48.3" cy="47" r="37.5" fill="url(#s-oranssi)"/><g fill="url(#s-violetti)"><circle cx="48.3" cy="45.2" r="29.7"/><path d="M18.7 45.2 V86 a9.5 9.5 0 0 0 19 0 V45.2 Z"/></g></g></svg><figcaption><p class="tarina-lause">Oma kone. Omat tiedot.</p></figcaption></figure>
+      </header>
+      <div class="perusasiat" aria-label="Pennin perusasiat">
+        <p><span>01</span><strong>Ilmainen sovellus</strong></p>
+        <p><span>02</span><strong>Tiedot omalla koneella</strong></p>
+        <p><span>03</span><strong>Avoin lähdekoodi</strong></p>
+      </div>
+      <section id="sovellus" class="sovellusosio">
+        <div class="osio-otsake"><div><p class="silmakulma">Demo</p><h2>Kokeile<br />itse.</h2></div><p>Lue kuitti, tarkista tiedot ja tallenna tosite. Selaa laskuja ja raportteja. Kaikki on esimerkkidataa, joten mitään ei voi rikkoa.</p></div>
+            <div class="demo" id="demo">
+      <div class="demo-palkki">
+        <span class="valo" style="background: var(--pinkki);"></span>
+        <span class="valo" style="background: var(--oranssi);"></span>
+        <span class="valo" style="background: var(--sininen);"></span>
+        <span class="demo-tiedosto">Demokirjat Oy · tilikausi 2026 · demokirjat.penni</span>
+        <span class="demo-lippu">Selain­demo</span>
+      </div>
+      <div class="demo-runko">
+        <aside class="demo-sivu">
+          <span class="demo-brandi"><img src="landing-assets/penni-icon.svg" width="30" height="30" alt="" />Penni</span>
+          <button type="button" class="demo-nav" data-nakyma="kojelauta"><i></i>Kojelauta</button>
+          <button type="button" class="demo-nav" data-nakyma="tositteet" aria-current="page"><i></i>Tositteet</button>
+          <button type="button" class="demo-nav" data-nakyma="laskut"><i></i>Laskut</button>
+          <button type="button" class="demo-nav" data-nakyma="raportit"><i></i>Raportit</button>
+          <button type="button" class="demo-nav" data-nakyma="tilikartta"><i></i>Tilikartta</button>
+          <span class="demo-sivu-alaosa">Demokirjat Oy<br />Tilikausi 1.1.–31.12.2026</span>
+        </aside>
+        <div class="demo-paa">
+          <div class="demo-ylapalkki">
+            <div>
+              <div class="otsake" id="demoOtsake">Tositteet</div>
+              <div class="tila" id="demoTila">Tilikausi 2026 · yleinen tositelaji</div>
+            </div>
+            <div class="demo-toiminnot" id="demoToiminnot"></div>
+          </div>
+          <div class="demo-sisalto" id="demoSisalto"></div>
+        </div>
+      </div>
+    </div>
+
+        <p class="demo-saate">Demo näyttää suunnitellun käyttöliittymän. Muutokset katoavat, kun suljet sivun.</p>
+        <div class="poiminnat"><article><h3>Kuitista tositteeksi</h3><p>Penni lukee kuitin ja ehdottaa kirjausta. Sinä tarkistat ja tallennat.</p></article><article><h3>Laskut yhdellä silmäyksellä</h3><p>Näet heti, mitkä laskut on maksettu ja mitkä odottavat.</p></article><article><h3>Luvut aina ajan tasalla</h3><p>Tuloslaskelma ja tase päivittyvät jokaisesta kirjauksesta.</p></article></div>
+      </section>
+      <section id="avoin" class="tietoa">
+        <div><p class="silmakulma">Tietoa Pennistä</p><h2>Sinun yrityksesi.<br /><span>Sinun tietosi.</span></h2><p>Kirjanpito tallentuu tiedostoon omalle koneellesi. Pilvitilausta ei tarvita.</p><a class="ilinkki" href="https://github.com/ppixu/penni">Lähdekoodi GitHubissa <span aria-hidden="true">↗</span></a></div>
+        <div class="tietolista"><article><span>01</span><div><h3>Toimii ilman verkkoa</h3><p>Kirjaa missä vain. Muista varmuuskopiot.</p></div></article><article><span>02</span><div><h3>Avoin lähdekoodi</h3><p>Koodi on GitHubissa, ja kehitys tapahtuu avoimesti.</p></div></article><article><span>03</span><div><h3>Apua, kun haluat</h3><p>Kirjaa itse tai käytä avustajan ehdotuksia. Sinä hyväksyt.</p></div></article></div>
+      </section>
+      <section id="agentti" class="avustaja">
+        <p class="silmakulma">Valinnainen avustaja</p>
+        <div class="osio-otsake"><h2>Avustaja valmistelee.<br />Sinä päätät.</h2><p>Avustaja etsii tietoja ja tekee tositeluonnoksia. Tarkistat ne itse.</p></div>
+        <div class="avustajan-asiat"><p><strong>Luonnos ensin</strong>Kirjanpito ei muutu ennen hyväksyntääsi.</p><p><strong>Kaikki lokiin</strong>Näet jokaisen avustajan toimen.</p><p><strong>Täysin valinnainen</strong>Penni toimii myös ilman tekoälyä.</p></div>
+      </section>
+      <section id="hinnat" class="hinnoittelu">
+        <div class="osio-otsake"><div><p class="silmakulma">Hinnoittelu</p><h2>Omalla koneella ilmainen.<br />Pilvi, jos tarvitset.</h2></div><p>Sovellus on ilmainen. Pilvipalvelut ovat suunnitteilla, alla alustavat hinnat.</p></div>
+        <div class="hinnat">
+          <article class="hinta-kortti"><p class="paketin-tila">Paikallinen sovellus</p><h3>Penni</h3><p class="hinta-luku">0 €</p><p>Koko kirjanpito omalla koneellasi.</p><ul><li>Kahdenkertainen kirjanpito</li><li>Tositteet, laskut ja raportit</li><li>Tiedot omassa tiedostossa</li><li>Avoin lähdekoodi</li></ul><a class="nappi" href="#sovellus">Kokeile demoa <span aria-hidden="true">↗</span></a></article>
+          <article class="hinta-kortti korostettu"><p class="paketin-tila">Suunnitteilla</p><h3>Pilvi</h3><p class="hinta-luku">9 € <small>/ kk</small></p><p>Kuitit ja varmuuskopiot pilvessä.</p><ul><li>Kuittien automaattinen luku</li><li>Tositeluonnokset valmiina</li><li>Synkronointi ja varmuuskopiot</li><li>Kuitit sähköpostilla</li></ul><a class="nappi" href="mailto:hei@penni.pro?subject=Kiinnostus%20Pennin%20pilvipalveluun">Kerro kiinnostuksesi <span aria-hidden="true">↗</span></a></article>
+          <article class="hinta-kortti"><p class="paketin-tila">Suunnitteilla</p><h3>Pro</h3><p class="hinta-luku">19 € <small>/ kk</small></p><p>Automaatiota ja useampi käyttäjä.</p><ul><li>Omat automaatiosäännöt</li><li>Useita käyttäjiä</li><li>Pankkiyhteydet</li><li>Laajempi tuki</li></ul><a class="nappi" href="mailto:hei@penni.pro?subject=Kiinnostus%20Penni%20Prohon">Kerro kiinnostuksesi <span aria-hidden="true">↗</span></a></article>
+        </div><p class="hinnoittelu-huomio">Pilvi ja Pro eivät ole vielä tilattavissa. Hinnat ja sisältö voivat muuttua.</p>
+      </section>
+    </main>
+    <footer><div class="footer-alku"><a class="merkki" href="#"><img src="landing-assets/penni-icon.svg" width="44" height="44" alt="" />penni</a><p>Kirjanpito omalla koneellasi.</p><a class="ilinkki" href="mailto:hei@penni.pro">hei@penni.pro <span aria-hidden="true">↗</span></a></div><div class="footer-loppu"><span>© 2026 Penni</span><p>Vastuu kirjanpidon oikeellisuudesta on kirjanpitovelvollisella.</p><a href="https://github.com/ppixu/penni">GitHub ↗</a></div></footer>
+  </div>
+</body>
+</html>

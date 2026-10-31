@@ -1,0 +1,121 @@
+<h2>Scandinavian modern — two accent personalities</h2>
+<p class="subtitle">Both keep B's friendliness but add craft: warm bone paper, earthy color-blocks for the figures, an editorial greeting, and a personal note. They differ in the lead accent. Click the one you like — or mix ("B1's serif + B2's sage block").</p>
+
+<style>
+  .sk { font-family: 'Inter', system-ui, -apple-system, sans-serif; border-radius: 16px; overflow: hidden; display: flex; height: 372px; width: 100%; box-shadow: 0 2px 10px rgba(60,50,40,.10); }
+  .sk * { box-sizing: border-box; }
+  .sk-side { width: 178px; flex-shrink: 0; padding: 18px 13px; display: flex; flex-direction: column; gap: 3px; }
+  .sk-brand { display:flex; align-items:center; gap:8px; font-weight: 700; font-size: 16px; margin: 2px 6px 18px; letter-spacing: -.4px; }
+  .sk-dot { width: 16px; height: 16px; border-radius: 50%; }
+  .sk-nav { display: flex; align-items: center; gap: 10px; padding: 8px 11px; border-radius: 10px; font-size: 13px; }
+  .sk-ico { width: 15px; height: 15px; border-radius: 6px; flex-shrink: 0; }
+  .sk-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .sk-head { padding: 20px 24px 12px; display: flex; align-items: flex-start; justify-content: space-between; }
+  .sk-hi { font-family: 'New York','Iowan Old Style','Palatino Linotype',Georgia,serif; font-size: 23px; letter-spacing: -.3px; line-height: 1.1; }
+  .sk-sub { font-size: 12px; margin-top: 5px; }
+  .sk-av { width: 38px; height: 38px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight: 700; flex-shrink:0; }
+  .sk-body { padding: 0 24px 22px; }
+  .sk-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .sk-kpi { padding: 14px 13px; border-radius: 14px; }
+  .sk-klab { font-size: 9px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; font-weight: 600; }
+  .sk-knum { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.4px; }
+  .sk-list { border-radius: 14px; padding: 6px 16px; }
+  .sk-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .sk-tbl td { padding: 9px 4px; font-variant-numeric: tabular-nums; }
+  .sk-r { text-align: right; }
+  .sk-hdr td { font-size: 9px; text-transform: uppercase; letter-spacing: .7px; padding-bottom: 4px; }
+</style>
+
+<div class="options">
+
+  <!-- B1: Terracotta-led, editorial serif -->
+  <div class="option" data-choice="b1" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>B1 — Clay &amp; paper, editorial</h3>
+      <p>Terracotta as the warm lead, a serif greeting for a personal, crafted feel. Earthy blocks: sage, ochre, clay.</p>
+      <div class="sk" style="background:#f1ece2; color:#2c2925;">
+        <div class="sk-side" style="background:#fdfbf7; border-right:1px solid #e9e1d2;">
+          <div class="sk-brand" style="color:#2c2925;"><span class="sk-dot" style="background:#c2714e;"></span>Penni</div>
+          <div class="sk-nav" style="background:#f3ddd0; color:#9a4f30; font-weight:600;"><span class="sk-ico" style="background:#c2714e;"></span>Kojelauta</div>
+          <div class="sk-nav" style="color:#8f887b;"><span class="sk-ico" style="background:#e3dccc;"></span>Tositteet</div>
+          <div class="sk-nav" style="color:#8f887b;"><span class="sk-ico" style="background:#e3dccc;"></span>Laskut</div>
+          <div class="sk-nav" style="color:#8f887b;"><span class="sk-ico" style="background:#e3dccc;"></span>Raportit</div>
+          <div class="sk-nav" style="color:#8f887b;"><span class="sk-ico" style="background:#e3dccc;"></span>Tilikartta</div>
+          <div class="sk-nav" style="color:#8f887b;"><span class="sk-ico" style="background:#e3dccc;"></span>Asetukset</div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-head">
+            <div>
+              <div class="sk-hi" style="color:#2c2925;">Hei, Yritys Oy</div>
+              <div class="sk-sub" style="color:#a39a86;">Hyvää perjantaita · 26. kesäkuuta 2026</div>
+            </div>
+            <div class="sk-av" style="background:#f0d6c8; color:#9a4f30;">YO</div>
+          </div>
+          <div class="sk-body">
+            <div class="sk-kpis">
+              <div class="sk-kpi" style="background:#e2e8d8;"><div class="sk-klab" style="color:#5f7152;">Tulos</div><div class="sk-knum" style="color:#46563b;">24 130,50</div></div>
+              <div class="sk-kpi" style="background:#fdfbf7; border:1px solid #ece4d4;"><div class="sk-klab" style="color:#a39a86;">Pankki</div><div class="sk-knum" style="color:#2c2925;">8 642,10</div></div>
+              <div class="sk-kpi" style="background:#f4e6c3;"><div class="sk-klab" style="color:#9a7b2e;">Saatavat</div><div class="sk-knum" style="color:#6e5a23;">3 210,00</div></div>
+              <div class="sk-kpi" style="background:#f3dccf;"><div class="sk-klab" style="color:#a85a38;">ALV-velka</div><div class="sk-knum" style="color:#8f4a2e;">1 458,75</div></div>
+            </div>
+            <div class="sk-list" style="background:#fdfbf7; border:1px solid #ece4d4;">
+              <table class="sk-tbl">
+                <tr class="sk-hdr" style="color:#bdb39d;"><td>Pvm</td><td>Selite</td><td class="sk-r">Summa €</td></tr>
+                <tr style="border-top:1px solid #f1ebdd;"><td style="color:#bdb39d;">26.06.</td><td>Myyntilasku · Asiakas Oy</td><td class="sk-r" style="color:#5f7152;">+1 240,00</td></tr>
+                <tr style="border-top:1px solid #f1ebdd;"><td style="color:#bdb39d;">25.06.</td><td>Osto · Toimistotarvike</td><td class="sk-r" style="color:#8f4a2e;">−86,40</td></tr>
+                <tr style="border-top:1px solid #f1ebdd;"><td style="color:#bdb39d;">24.06.</td><td>Tiliote · Pankki</td><td class="sk-r" style="color:#5f7152;">+2 000,00</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B2: Sage-led, confident sans, bold color block -->
+  <div class="option" data-choice="b2" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>B2 — Sage-led, one bold block</h3>
+      <p>Sage green leads, with the hero figure as a confident filled color-block — the strongest "graphic design" statement. Still warm, slightly cooler.</p>
+      <div class="sk" style="background:#edefe7; color:#283024;">
+        <div class="sk-side" style="background:#fbfcf9; border-right:1px solid #e3e7db;">
+          <div class="sk-brand" style="color:#283024;"><span class="sk-dot" style="background:#7d9070;"></span>Penni</div>
+          <div class="sk-nav" style="background:#dde6d4; color:#4d5e42; font-weight:600;"><span class="sk-ico" style="background:#7d9070;"></span>Kojelauta</div>
+          <div class="sk-nav" style="color:#878d7c;"><span class="sk-ico" style="background:#dde0d4;"></span>Tositteet</div>
+          <div class="sk-nav" style="color:#878d7c;"><span class="sk-ico" style="background:#dde0d4;"></span>Laskut</div>
+          <div class="sk-nav" style="color:#878d7c;"><span class="sk-ico" style="background:#dde0d4;"></span>Raportit</div>
+          <div class="sk-nav" style="color:#878d7c;"><span class="sk-ico" style="background:#dde0d4;"></span>Tilikartta</div>
+          <div class="sk-nav" style="color:#878d7c;"><span class="sk-ico" style="background:#dde0d4;"></span>Asetukset</div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-head">
+            <div>
+              <div class="sk-hi" style="font-family:'Inter',system-ui,sans-serif; font-weight:750; color:#283024; letter-spacing:-.6px;">Hei, Yritys Oy</div>
+              <div class="sk-sub" style="color:#9aa090;">Hyvää perjantaita · 26. kesäkuuta 2026</div>
+            </div>
+            <div class="sk-av" style="background:#dde6d4; color:#4d5e42;">YO</div>
+          </div>
+          <div class="sk-body">
+            <div class="sk-kpis">
+              <div class="sk-kpi" style="background:#6f8467;"><div class="sk-klab" style="color:#d7e1cf;">Tulos</div><div class="sk-knum" style="color:#ffffff;">24 130,50</div></div>
+              <div class="sk-kpi" style="background:#fbfcf9; border:1px solid #e3e7db;"><div class="sk-klab" style="color:#9aa090;">Pankki</div><div class="sk-knum" style="color:#283024;">8 642,10</div></div>
+              <div class="sk-kpi" style="background:#e8e2d2;"><div class="sk-klab" style="color:#998c6e;">Saatavat</div><div class="sk-knum" style="color:#5c513a;">3 210,00</div></div>
+              <div class="sk-kpi" style="background:#eccbbd;"><div class="sk-klab" style="color:#a85a38;">ALV-velka</div><div class="sk-knum" style="color:#8f4a2e;">1 458,75</div></div>
+            </div>
+            <div class="sk-list" style="background:#fbfcf9; border:1px solid #e3e7db;">
+              <table class="sk-tbl">
+                <tr class="sk-hdr" style="color:#b3b8a8;"><td>Pvm</td><td>Selite</td><td class="sk-r">Summa €</td></tr>
+                <tr style="border-top:1px solid #eef0e8;"><td style="color:#b3b8a8;">26.06.</td><td>Myyntilasku · Asiakas Oy</td><td class="sk-r" style="color:#4d5e42;">+1 240,00</td></tr>
+                <tr style="border-top:1px solid #eef0e8;"><td style="color:#b3b8a8;">25.06.</td><td>Osto · Toimistotarvike</td><td class="sk-r" style="color:#8f4a2e;">−86,40</td></tr>
+                <tr style="border-top:1px solid #eef0e8;"><td style="color:#b3b8a8;">24.06.</td><td>Tiliote · Pankki</td><td class="sk-r" style="color:#4d5e42;">+2 000,00</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

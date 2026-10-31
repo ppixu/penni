@@ -1,0 +1,38 @@
+{
+  "name": "@penni/desktop",
+  "productName": "Penni",
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "main": "./dist/paa.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.preload.json",
+    "dev": "pnpm build && electron dist/paa.js",
+    "dev:packaged": "pnpm run paketoi && open out/Penni-darwin-arm64/Penni.app",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "paketoi": "node scripts/paketoi.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@penni/asiakas": "workspace:*",
+    "@penni/engine": "workspace:*",
+    "@penni/kysy": "workspace:*",
+    "@penni/luku": "workspace:*",
+    "@penni/server": "workspace:*",
+    "@penni/storage-sqlite": "workspace:*",
+    "@penni/tuonti": "workspace:*",
+    "@penni/tyokalut": "workspace:*"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "@electron/rebuild": "^3.7.1",
+    "@types/node": "^22.10.2",
+    "electron": "^33.3.1",
+    "fastify": "^4.28.1",
+    "prebuild-install": "^7.1.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

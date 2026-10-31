@@ -1,0 +1,8 @@
+// Q5-spike: paikallinen `wrangler dev` -Worker jonka `ai`-sidonta välittää kutsut Workers AI:lle.
+// Ei deployta eikä luo tiliresursseja; ajo: pnpm --filter @penni/kuitti-validointi worker
+{
+  "name": "kuitti-validointi-ai",
+  "main": "index.ts",
+  "compatibility_date": "2026-03-01",
+  "ai": { "binding": "AI" }
+}

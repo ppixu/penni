@@ -1,0 +1,82 @@
+[
+  {
+    "tiedosto": "01-kauppakuitti.png",
+    "kuvaus": "suomalainen kauppakuitti, yksi ALV-kanta",
+    "pvm": "2026-03-14",
+    "myyja": "Testi Market Oy",
+    "brutto": 1655,
+    "alv": 336
+  },
+  {
+    "tiedosto": "02-kahvilakuitti.png",
+    "kuvaus": "kapea terminen kuitti, yksi ALV-kanta (14 %)",
+    "pvm": "2026-05-02",
+    "myyja": "Testi Kahvila Tmi",
+    "brutto": 770,
+    "alv": 95
+  },
+  {
+    "tiedosto": "03-monialv.png",
+    "kuvaus": "kolme ALV-kantaa (14 / 25,5 / 10 %) ja ALV-erittely",
+    "pvm": "2026-06-21",
+    "myyja": "Testi Kauppahalli Oy",
+    "brutto": 5964,
+    "alv": 864
+  },
+  {
+    "tiedosto": "04-saas-lasku.png",
+    "kuvaus": "ulkomainen (Irlanti) SaaS-lasku, englanniksi, ALV 0 % (reverse charge)",
+    "pvm": "2026-03-03",
+    "myyja": "Sample Cloud Ltd",
+    "brutto": 12000,
+    "alv": 0
+  },
+  {
+    "tiedosto": "05-elokuvalippu.png",
+    "kuvaus": "elokuvalippu ilman hintaa; pitkä tilausnumero houkuttelee keksimään summan",
+    "pvm": "2026-04-08",
+    "myyja": "Testi Teatteri Oy",
+    "brutto": null,
+    "alv": null
+  },
+  {
+    "tiedosto": "06-pysakointilippu.png",
+    "kuvaus": "pysäköintilippu ilman hintaa, vain aika- ja tunnistetietoja",
+    "pvm": "2026-05-12",
+    "myyja": "Testi Pysäköinti Oy",
+    "brutto": null,
+    "alv": null
+  },
+  {
+    "tiedosto": "07-lomake-alv-tyhja.png",
+    "kuvaus": "käsin täytetty lomake, ALV-rivi jätetty tyhjäksi",
+    "pvm": "2026-02-17",
+    "myyja": "Testi Taidevälitys Tmi",
+    "brutto": 47500,
+    "alv": null
+  },
+  {
+    "tiedosto": "08-polttoaine.png",
+    "kuvaus": "polttoainekuitti, määrä x hinta, yksi ALV-kanta",
+    "pvm": "2026-01-30",
+    "myyja": "Testi Asema Oy",
+    "brutto": 7824,
+    "alv": 1590
+  },
+  {
+    "tiedosto": "09-lasku.pdf",
+    "kuvaus": "suomalainen lasku PDF:nä (tekstikerros), tuhaterottimellinen summa",
+    "pvm": "2026-03-10",
+    "myyja": "Testi Konsultointi Oy",
+    "brutto": 100400,
+    "alv": 20400
+  },
+  {
+    "tiedosto": "10-valokuva-exif.jpg",
+    "kuvaus": "puhelinkuvamainen JPEG: kuitti tummalla pöydällä, tallennettu sivuttain EXIF-orientaatiolla 6",
+    "pvm": "2026-09-11",
+    "myyja": "Testi Kioski Oy",
+    "brutto": 1120,
+    "alv": 228
+  }
+]

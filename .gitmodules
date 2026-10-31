@@ -1,0 +1,3 @@
+[submodule "kitsas-source"]
+	path = kitsas-source
+	url = https://github.com/artoh/kitupiikki.git

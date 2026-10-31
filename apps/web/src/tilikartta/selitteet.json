@@ -1,0 +1,5049 @@
+[
+  [
+    1,
+    "Vastaavaa",
+    "Yrityksen varat: kaikki mitä yritys omistaa tai mitä sille ollaan velkaa, esim. koneet, varasto, saatavat ja pankkitilin rahat. Taseen vasen puoli."
+  ],
+  [
+    10,
+    "Pysyvät vastaavat",
+    "Omaisuus, joka on tarkoitettu yrityksen käyttöön pitkäksi aikaa, yleensä yli vuodeksi: esim. koneet, kalusteet, ohjelmistot ja pitkäaikaiset sijoitukset."
+  ],
+  [
+    102,
+    "Kehittämismenot",
+    "Uuden tuotteen tai menetelmän kehittämiskulut, jotka on päätetty kirjata omaisuudeksi ja poistaa usean vuoden aikana, koska niiden odotetaan tuottavan tuloa pitkään."
+  ],
+  [
+    1021,
+    "Kehittämismenot",
+    "Aktivoidut kehittämismenot, poistetaan enintään 5 vuodessa. Ei: tavalliset tuotekehityksen kulut, jotka kirjataan heti kuluksi → 8300 Tuotekehityspalvelut."
+  ],
+  [
+    103,
+    "Aineettomat oikeudet",
+    "Ostetut oikeudet, joilla ei ole fyysistä muotoa, esim. patentit, tekijänoikeudet, tavaramerkit ja lisenssit. Ne poistetaan niiden käyttöaikana."
+  ],
+  [
+    1031,
+    "Patentit",
+    "Ostetut tai itse hankitut patentit, joita käytetään liiketoiminnassa useita vuosia. Ei: patentin hakemis- ja ylläpitokulut, jotka kirjataan kuluksi → 8310."
+  ],
+  [
+    1033,
+    "Tekijänoikeudet",
+    "Ostetut tekijänoikeudet, esim. oikeus käyttää toisen tekemää teosta, kuvaa tai tekstiä pitkään liiketoiminnassa."
+  ],
+  [
+    1035,
+    "Tavaramerkkioikeudet",
+    "Ostetut tavaramerkki- tai tuotemerkkioikeudet, joita käytetään useita vuosia. Ei: oman tavaramerkin rekisteröintimaksut kuluna → 8310."
+  ],
+  [
+    1037,
+    "Lisenssimaksut",
+    "Kertamaksut pitkäaikaisesta oikeudesta käyttää toisen patenttia, mallia tai tuotemerkkiä. Ei: kuukausittaiset lisenssimaksut → kuluksi."
+  ],
+  [
+    1039,
+    "Toimilupaoikeudet",
+    "Ostetut toimiluvat, jotka ovat voimassa useita vuosia, esim. viranomaisen myöntämä luvanvarainen oikeus, josta on maksettu kertamaksu."
+  ],
+  [
+    1041,
+    "Atk-ohjelmien lisenssimaksut",
+    "Kertamaksulla ostetut, pitkään käytettävät ohjelmistolisenssit. Ei: kuukausi- tai vuosimaksulliset ohjelmistot ja pilvipalvelut → 7660."
+  ],
+  [
+    1043,
+    "Puhelinliittymät",
+    "Siirto- tai myyntikelpoisten puhelinliittymien liittymismaksut. Niistä ei tehdä poistoja. Ei: puhelinlaskut → 8500 tai 8510."
+  ],
+  [
+    1045,
+    "Hälytysliittymät",
+    "Hälytys- ja valvontajärjestelmän liittymismaksut, jotka ovat siirrettävissä. Niistä ei tehdä poistoja. Ei: vartioinnin kuukausimaksut → 7460."
+  ],
+  [
+    1049,
+    "Muut aineettomat oikeudet",
+    "Muut ostetut aineettomat oikeudet, jotka eivät sovi edellisille tileille, esim. ostettu asiakasrekisteri tai verkkotunnus."
+  ],
+  [
+    105,
+    "Liikearvo",
+    "Liikearvo syntyy, kun ostat liiketoiminnan ja maksat siitä enemmän kuin sen omaisuuden arvo on, esim. asiakassuhteista ja maineesta. Poistetaan yleensä enintään 10 vuodessa."
+  ],
+  [
+    1051,
+    "Liikearvo",
+    "Liiketoimintakaupassa maksettu osuus, joka ylittää ostettujen koneiden, varaston ym. arvon, esim. asiakaskunnasta ja nimestä maksettu hinta."
+  ],
+  [
+    1055,
+    "Fuusiotili",
+    "Yritysten sulautumisessa syntyvä erotus, jota ei vielä ole kohdistettu tarkemmin. Käytetään vain sulautumisen yhteydessä."
+  ],
+  [
+    1057,
+    "Fuusioaktiiva",
+    "Sulautumisessa syntynyt erotus, jota ei voi kohdistaa yksittäisille omaisuuserille. Poistetaan suunnitelman mukaan. Käytetään vain sulautumisen yhteydessä."
+  ],
+  [
+    106,
+    "Konserniliikearvo",
+    "Konsernitilinpäätöksessä syntyvä liikearvo, kun emoyhtiö on ostanut tytäryhtiön. Ei koske tavallista pienyritystä."
+  ],
+  [
+    1061,
+    "Konserniliikearvo",
+    "Konsernitilinpäätöksen liikearvo tytäryhtiön osakkeiden hankinnasta. Ei koske tavallista pienyritystä, jolla ei ole tytäryhtiöitä."
+  ],
+  [
+    107,
+    "Muut pitkävaikutteiset menot",
+    "Isommat menot, jotka hyödyttävät yritystä useana vuonna mutta eivät ole konkreettista tavaraa, esim. vuokratilan remontti tai ohjelmistot. Ne poistetaan usean vuoden aikana."
+  ],
+  [
+    1071,
+    "Mainos- ja markkinatutkimusmenot",
+    "Poikkeuksellisen suuret mainos- tai tutkimusmenot, joiden hyöty kestää useita vuosia. Ei: tavallinen mainonta kuluksi, esim. 8070 Ilmoitusmainonta tai 8090 Internetmainonta."
+  ],
+  [
+    1073,
+    "Osakehuoneiston perusparannusmenot",
+    "Perusparannukset yrityksen omistamaan osakehuoneistoon, esim. toimitilan remontti, joka parantaa tilaa pysyvästi. Ei: tavalliset korjaukset → 7430."
+  ],
+  [
+    1075,
+    "Vuokrahuoneiston perusparannusmenot",
+    "Perusparannukset vuokrattuun toimitilaan, esim. väliseinät tai sähkötyöt, jotka jäävät vuokranantajalle. Poistetaan vuokra-ajan kuluessa. Ei: pienet korjaukset → 7430."
+  ],
+  [
+    1081,
+    "Atk-ohjelmat",
+    "Ostetut ohjelmistot, joiden käyttöikä on yli 3 vuotta ja hinta yli 1 200 euroa, poistetaan usean vuoden aikana. Ei: halvat ohjelmat ja kuukausimaksut → 7660."
+  ],
+  [
+    1089,
+    "Muut pitkävaikutteiset menot",
+    "Muut useana vuonna hyödyttävät menot, jotka eivät sovi edellisille tileille, esim. palautuskelvoton liittymismaksu tai pitkäaikaisen vuokrasopimuksen kertamaksu."
+  ],
+  [
+    109,
+    "Ennakkomaksut",
+    "Etukäteen maksetut summat aineettomista hyödykkeistä, esim. ohjelmistosta tai lisenssistä, jota ei ole vielä saatu käyttöön."
+  ],
+  [
+    1091,
+    "Ennakkomaksut aineettomista hyödykkeistä",
+    "Ennakkomaksu esim. ohjelmistoprojektista tai lisenssistä ennen kuin se on valmis tai toimitettu. Siirretään oikealle tilille, kun hankinta on valmis."
+  ],
+  [
+    11,
+    "Aineelliset hyödykkeet",
+    "Fyysinen omaisuus, jota yritys käyttää pitkään: esim. maa-alueet, rakennukset, koneet, autot ja kalusteet."
+  ],
+  [
+    110,
+    "Maa- ja vesialueet",
+    "Maapohja ja vesialueet, kuten tontit. Maasta ei tehdä poistoja, koska se ei kulu käytössä."
+  ],
+  [110, "Omistuskiinteistöt", "Yrityksen itse omistamat tontit ja muut maa-alueet."],
+  [
+    1101,
+    "Maa- ja vesialueet",
+    "Yrityksen omistamat tontit, pellot, metsämaa ja vesialueet. Niistä ei tehdä poistoja. Ei: tontilla oleva rakennus → 1121 tai 1125."
+  ],
+  [
+    1105,
+    "Liittymismaksut",
+    "Omistuskiinteistön sähkö-, vesi- ja kaukolämpöliittymien maksut, jotka ovat palautus- tai siirtokelpoisia. Niistä ei tehdä poistoja."
+  ],
+  [
+    1109,
+    "Arvonkorotukset maa- ja vesialueista",
+    "Maa-alueen arvonkorotus, jos maan todellinen arvo on pysyvästi selvästi kirjanpitoarvoa suurempi. Harvinainen; vastaerä kirjataan omaan pääomaan."
+  ],
+  [
+    111,
+    "Kiinteistöjen vuokraoikeudet",
+    "Ostetut oikeudet vuokrata maa-alue pitkäksi aikaa, esim. vuokratontin vuokraoikeus."
+  ],
+  [
+    1111,
+    "Maanvuokraoikeudet",
+    "Rahalla ostettu, siirrettävä oikeus vuokratonttiin tai muuhun maa-alueeseen. Ei: kuukausittainen maanvuokra → 7200."
+  ],
+  [
+    1113,
+    "Liittymismaksut vuokrakiinteistöistä",
+    "Vuokratulle kiinteistölle maksetut sähkö-, vesi- tai kaukolämpöliittymien maksut."
+  ],
+  [
+    112,
+    "Rakennukset ja rakennelmat",
+    "Yrityksen omistamat rakennukset, kuten toimisto-, tuotanto- ja varastorakennukset, sekä rakennelmat. Poistetaan käyttöajan kuluessa."
+  ],
+  [
+    112,
+    "Omistusrakennukset ja -rakennelmat",
+    "Yrityksen itse omistamat rakennukset ja rakennelmat."
+  ],
+  [
+    1121,
+    "Rakennukset 7% menojäännöspoisto",
+    "Tehdas-, varasto-, myymälä- ja muut vastaavat rakennukset; verotuksessa poisto enintään 7 % vuodessa jäljellä olevasta arvosta."
+  ],
+  [
+    1125,
+    "Rakennukset 4% menojäännöspoisto",
+    "Asuin-, toimisto- ja muut vastaavat rakennukset; verotuksessa poisto enintään 4 % vuodessa jäljellä olevasta arvosta."
+  ],
+  [
+    1131,
+    "Rakennusten tekniset laitteet  25% menojäännöspoisto",
+    "Rakennuksen tekniset laitteet, esim. hissit, ilmanvaihto ja sähkölaitteet, jotka palvelevat yritystoimintaa; poisto enintään 25 % vuodessa."
+  ],
+  [
+    1135,
+    "Väestönsuojat ym. max. 25% tasapoisto",
+    "Väestönsuojat, palontorjuntalaitteet ja vastaavat; niistä voi tehdä tasapoiston, enintään 25 % hankintamenosta vuodessa."
+  ],
+  [
+    1141,
+    "Rakennelmat 20% menojäännöspoisto",
+    "Rakennelmat, esim. varastosäiliöt, katokset ja muut kevyet rakennelmat; poisto enintään 20 % vuodessa jäljellä olevasta arvosta."
+  ],
+  [
+    1143,
+    "Muut rakennukset ja rakennelmat",
+    "Muut rakennukset ja rakennelmat, jotka eivät sovi edellisille tileille, esim. pienet varastorakennukset."
+  ],
+  [
+    1145,
+    "Arvonkorotukset (vanhat rakennuksista tehdyt)",
+    "Aiemmin rakennuksista tehdyt arvonkorotukset. Harvinainen; uusia kirjauksia tänne tehdään vain poikkeustapauksissa."
+  ],
+  [
+    115,
+    "Rakennusten ja rakennelmien vuokraoikeudet",
+    "Ostetut oikeudet käyttää toisen omistamaa rakennusta pitkäaikaisesti."
+  ],
+  [
+    1151,
+    "Rakennusten vuokraoikeudet",
+    "Rahalla ostettu, siirrettävä oikeus vuokrattuun rakennukseen. Ei: kuukausivuokra toimitilasta → 7230."
+  ],
+  [
+    116,
+    "Koneet ja kalusto",
+    "Yrityksen koneet, laitteet, ajoneuvot ja kalusteet, joita käytetään yli 3 vuotta. Poistetaan vuosittain, verotuksessa enintään 25 % jäljellä olevasta arvosta."
+  ],
+  [
+    1161,
+    "Koneet ja laitteet",
+    "Esim. tietokoneet, työkalut ja koneet, joiden käyttöikä on yli 3 vuotta ja hinta yli 1 200 euroa. Ei: pienhankinnat → 7750, atk-pienhankinnat → 7690."
+  ],
+  [
+    1165,
+    "Tuotannon koneet ja laitteet",
+    "Tuotannossa käytettävät koneet ja laitteet, esim. valmistuslinjat, työstökoneet ja tuotantolaitteet, joiden käyttöikä on yli 3 vuotta."
+  ],
+  [
+    1171,
+    "Kuorma- ja pakettiautot",
+    "Yrityksen kuorma- ja pakettiautot. Pakettiauton arvonlisävero on yleensä vähennettävissä. Ei: henkilöautot → 1173."
+  ],
+  [
+    1173,
+    "Henkilöautot",
+    "Yrityksen henkilöautot. Henkilöauton hankinnan arvonlisäveroa ei yleensä saa vähentää. Ei: pakettiautot → 1171, taksit ja vuokra-autot → 1175."
+  ],
+  [
+    1175,
+    "Ammattiautot",
+    "Ammattikäytössä olevat autot, kuten taksit, ajokoulu- ja vuokra-autot, joiden arvonlisävero on vähennettävissä."
+  ],
+  [
+    1179,
+    "Muut ajoneuvot ja alukset",
+    "Muut ajoneuvot ja alukset, esim. traktorit, työkoneet, moottorikelkat, perävaunut ja veneet."
+  ],
+  [
+    1201,
+    "Kalusto ja muu irtain",
+    "Esim. toimistokalusteet, hyllyt ja muu irtaimisto, jonka käyttöikä on yli 3 vuotta ja hinta yli 1 200 euroa. Ei: pienhankinnat → 7750."
+  ],
+  [
+    1209,
+    "Vuokrattava kalusto",
+    "Kalusto, jota yritys vuokraa asiakkailleen, esim. vuokrattavat työkoneet, välineet tai laitteet."
+  ],
+  [
+    1211,
+    "Vapaa-ajan asuntojen kalusto ja muu irtaimisto",
+    "Yrityksen vapaa-ajan asunnon kalusteet ja muu irtaimisto, esim. huonekalut ja kodinkoneet."
+  ],
+  [
+    1213,
+    "Työsuhdeasuntojen kalusto ja muu irtaimisto",
+    "Työntekijöille vuokrattavien työsuhdeasuntojen kalusteet ja muu irtaimisto."
+  ],
+  [
+    1241,
+    "Käyttöönottamattomat koneet ja kalusto",
+    "Ostetut koneet ja kalusto, joita ei ole vielä otettu käyttöön. Poistot alkavat vasta käyttöönotosta, jolloin hankinta siirretään oikealle tilille."
+  ],
+  [
+    1249,
+    "Muut koneet ja kalusto",
+    "Muut koneet ja kalusto, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    130,
+    "Muut aineelliset hyödykkeet",
+    "Muu fyysinen pitkäaikainen omaisuus, esim. pihojen päällysteet, laiturit, kotieläimet sekä taide- ja keräilyesineet."
+  ],
+  [
+    1301,
+    "Maa-ainesten ottopaikat",
+    "Soran-, hiekan- tai kiviaineksen ottopaikat. Poistot tehdään sen mukaan, kuinka paljon ainesta on otettu."
+  ],
+  [
+    1303,
+    "Maa- ja vesirakennukset",
+    "Maa- ja vesirakenteet, esim. yksityistiet, sillat, laiturit, padot ja kanavat."
+  ],
+  [
+    1305,
+    "Piha-asfaltit",
+    "Pihojen ja pysäköintialueiden asfaltoinnit ja muut päällysteet. Ei: päällysteen paikkaukset ja korjaukset → 7430."
+  ],
+  [
+    1315,
+    "Elävä käyttöomaisuus",
+    "Eläimet, joita käytetään pitkään liiketoiminnassa, esim. siitos-, tuotanto- tai ratsastuseläimet. Ei: myyntiin kasvatettavat eläimet → vaihto-omaisuus."
+  ],
+  [
+    1329,
+    "Muut poistokelpoiset aineelliset hyödykkeet",
+    "Muut poistettavat aineelliset hyödykkeet, jotka eivät sovi muille tileille."
+  ],
+  [
+    1331,
+    "Taide-esineet",
+    "Yrityksen omistamat taideteokset, esim. toimiston maalaukset ja veistokset. Niiden arvo ei kulu, joten poistoja ei tehdä."
+  ],
+  [
+    1335,
+    "Keräilyhyödykkeet",
+    "Keräilyesineet, esim. antiikki, kolikot tai postimerkit, joiden arvo säilyy. Niistä ei tehdä poistoja."
+  ],
+  [
+    1339,
+    "Muut aineelliset hyödykkeet (ei poistokelpoiset)",
+    "Muu aineellinen omaisuus, jonka arvo ei kulu käytössä, joten siitä ei tehdä poistoja."
+  ],
+  [
+    138,
+    "Ennakkomaksut ja keskeneräiset hankinnat",
+    "Koneista, laitteista tai rakennuksista etukäteen maksetut summat sekä hankinnat, jotka ovat vielä kesken, esim. rakenteilla oleva rakennus."
+  ],
+  [
+    1381,
+    "Ennakkomaksut aineellisista hyödykkeistä",
+    "Koneesta, ajoneuvosta tai muusta käyttöomaisuudesta etukäteen maksettu summa ennen toimitusta. Siirretään oikealle tilille, kun hankinta on toimitettu."
+  ],
+  [
+    1391,
+    "Keskeneräiset käyttöomaisuushankinnat",
+    "Käyttöomaisuus, jonka hankinta tai rakentaminen on kesken, esim. rakenteilla oleva rakennus. Siirretään oikealle tilille, kun se valmistuu."
+  ],
+  [
+    14,
+    "Sijoitukset",
+    "Pitkäaikaiset sijoitukset, esim. toisten yritysten osakkeet, asunto-osakkeet ja pitkäaikaiset lainasaamiset, joita ei ole tarkoitus myydä pian."
+  ],
+  [
+    140,
+    "Osuudet saman konsernin yrityksissä",
+    "Osakkeet muissa samaan konserniin kuuluvissa yrityksissä, esim. tytäryhtiössä. Koskee vain yrityksiä, joilla on emo- tai tytäryhtiöitä."
+  ],
+  [
+    1401,
+    "Tytäryritysten osakkeet",
+    "Tytäryhtiön osakkeet, eli yhtiön, jossa yritys omistaa yli puolet äänivallasta."
+  ],
+  [
+    1403,
+    "Emoyrityksen osakkeet",
+    "Emoyhtiön osakkeet, jos tytäryhtiö omistaa osakkeita omassa emoyhtiössään. Harvinainen."
+  ],
+  [1405, "Sisaryritysten osakkeet", "Saman emoyhtiön alla olevien sisaryhtiöiden osakkeet."],
+  [
+    1407,
+    "Muut konserniosuudet",
+    "Muut osuudet samaan konserniin kuuluvissa yrityksissä, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    1409,
+    "Arvonkorotus konserniosuuksista",
+    "Konserniyritysten osakkeista tehdyt arvonkorotukset. Harvinainen."
+  ],
+  [
+    141,
+    "Saamiset saman konsernin yrityksiltä",
+    "Pitkäaikaiset lainat ja muut saamiset samaan konserniin kuuluvilta yrityksiltä, esim. tytäryhtiölle annettu laina."
+  ],
+  [
+    1411,
+    "Pitkäaikaiset saamiset saman konsernin yrityksiltä",
+    "Konserniyrityksille annetut lainat ja muut saamiset, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    1413,
+    "Konserniyrityksille annetut pääomalainat",
+    "Konserniyritykselle annetut pääomalainat eli lainat, joilla on muita velkoja heikompi etuoikeus."
+  ],
+  [
+    142,
+    "Osuudet omistusyhteysyrityksissä",
+    "Osakkeet ja osuudet yrityksissä, joissa yritys omistaa merkittävän osuuden, yleensä 20–50 %, mutta ei määräysvaltaa."
+  ],
+  [
+    1421,
+    "Osakkuusyritysten osakkeet",
+    "Osakkuusyhtiöiden osakkeet, eli yhtiöiden, joissa yrityksellä on huomattava vaikutusvalta, yleensä 20–50 % äänistä."
+  ],
+  [
+    1423,
+    "Osakkuusyritysosuudet",
+    "Osuudet osakkuusyrityksissä, jotka eivät ole osakeyhtiöitä, esim. osuudet henkilöyhtiöissä."
+  ],
+  [
+    1425,
+    "Muut omistusyhteysyritysosakkeet",
+    "Osakkeet muissa omistusyhteysyrityksissä, joissa omistusta on vähintään 20 % mutta ei huomattavaa vaikutusvaltaa."
+  ],
+  [
+    1427,
+    "Muut omistusyhteysyritysosuudet",
+    "Muut osuudet omistusyhteysyrityksissä, jotka eivät ole osakkeita."
+  ],
+  [
+    1429,
+    "Arvonkorotus omistusyhteysyritysosuuksista",
+    "Omistusyhteysyritysten osuuksista tehdyt arvonkorotukset. Harvinainen."
+  ],
+  [
+    143,
+    "Saamiset omistusyhteysyrityksiltä",
+    "Pitkäaikaiset lainat ja muut saamiset yrityksiltä, joissa yrityksellä on omistusyhteys."
+  ],
+  [
+    1431,
+    "Pitkäaikaiset saamiset omistusyhteysyrityksiltä",
+    "Omistusyhteysyrityksille annetut lainat ja saamiset, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    144,
+    "Muut osakkeet ja osuudet",
+    "Pitkäaikaiseksi sijoitukseksi omistetut osakkeet ja osuudet muissa yrityksissä, esim. asunto-osakkeet, pörssiosakkeet ja osuuspankin osuudet."
+  ],
+  [
+    1441,
+    "Huoneisto-osakkeet",
+    "Asunto- tai kiinteistöosakeyhtiön osakkeet, esim. yrityksen omistaman toimitilan tai asunnon osakkeet. Niistä ei tehdä poistoja. Ei: vastikkeet → 7220."
+  ],
+  [
+    1447,
+    "Pörssiosakkeet",
+    "Pitkäaikaiseksi sijoitukseksi ostetut pörssiyhtiöiden osakkeet. Ei: pian myytäväksi ostetut osakkeet → 1881."
+  ],
+  [
+    1453,
+    "Muut osakkeet",
+    "Muiden kuin pörssiyhtiöiden osakkeet, esim. pienen paikallisen yhtiön osakkeet, jotka on hankittu pitkäaikaiseksi sijoitukseksi."
+  ],
+  [
+    1457,
+    "Pankkiosuudet",
+    "Osuuspankin osuudet, esim. OP:n osuusmaksut, jotka maksetaan liityttäessä pankin omistaja-asiakkaaksi."
+  ],
+  [
+    1461,
+    "Sijoitusrahasto-osuudet",
+    "Pitkäaikaiseksi sijoitukseksi ostetut sijoitusrahastojen osuudet. Ei: lyhytaikaiset rahastosijoitukset → 1891."
+  ],
+  [
+    1465,
+    "Puhelinosuudet",
+    "Puhelinosuuskunnan osuudet, joita on aikanaan maksettu puhelinliittymän saamiseksi. Nykyään harvinainen."
+  ],
+  [1467, "Muut osuudet", "Muut osuudet, esim. osuuskauppojen tai muiden osuuskuntien osuusmaksut."],
+  [
+    1469,
+    "Arvonkorotus muista  osakkeista ja osuuksista",
+    "Muista osakkeista ja osuuksista tehdyt arvonkorotukset. Harvinainen; vastaerä kirjataan omaan pääomaan."
+  ],
+  [
+    147,
+    "Muut saamiset",
+    "Pitkäaikaiset saamiset, jotka eivät ole myyntisaamisia, esim. annetut lainat ja ostetut joukkovelkakirjat, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1471,
+    "Pitkäaikaiset lainasaamiset",
+    "Muille annetut lainat, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    1473,
+    "Pitkäaikaiset joukkovelkakirjalainat",
+    "Pitkäaikaiseksi sijoitukseksi ostetut joukkovelkakirjalainat eli esim. yritysten tai valtion liikkeelle laskemat lainapaperit."
+  ],
+  [
+    1475,
+    "Pitkäaikaiset saamistodistukset",
+    "Pitkäaikaiset saamistodistukset, esim. sijoitustodistukset, joiden laina-aika on yli vuoden."
+  ],
+  [
+    1477,
+    "Pitkäaikaiset optiolainat",
+    "Ostetut optiolainat, joihin liittyy oikeus merkitä lainan antaneen yhtiön osakkeita."
+  ],
+  [
+    1479,
+    "Pitkäaikaiset vaihtovelkakirjalainat",
+    "Ostetut vaihtovelkakirjalainat, jotka voi vaihtaa lainan antaneen yhtiön osakkeiksi."
+  ],
+  [
+    1481,
+    "Pitkäaikaiset nollakorkolainat",
+    "Ostetut nollakorkoiset lainapaperit, joiden tuotto syntyy siitä, että ne ostetaan alle nimellisarvon."
+  ],
+  [
+    1483,
+    "Liittymismaksusaamiset",
+    "Palautettavat liittymismaksut, esim. sähkö- tai vesiliittymästä, jotka saadaan takaisin, kun liittymä puretaan."
+  ],
+  [
+    1489,
+    "Muut pitkäaikaiset saamiset",
+    "Muut pitkäaikaiset saamiset, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    15,
+    "Vaihtuvat vastaavat",
+    "Lyhytaikainen omaisuus, joka vaihtuu jatkuvasti: varasto, asiakkaiden maksamattomat laskut, muut saatavat sekä kassa ja pankkitilit."
+  ],
+  [
+    150,
+    "Vaihto-omaisuus",
+    "Varasto: myyntiin tarkoitetut tavarat, raaka-aineet sekä keskeneräiset ja valmiit tuotteet. Ostot kirjataan kuluksi, ja varaston arvo päivitetään tänne tilinpäätöksessä."
+  ],
+  [
+    150,
+    "Aineet ja tarvikkeet",
+    "Varastossa olevat raaka-aineet ja tarvikkeet, joista valmistetaan tuotteita."
+  ],
+  [
+    1501,
+    "Aineet ja tarvikkeet",
+    "Tilinpäätöshetken varastossa olevien raaka-aineiden ja tarvikkeiden arvo. Ei: vuoden aikaiset ostot → 4000; varaston muutos → 4400."
+  ],
+  [151, "Keskeneräiset tuotteet", "Tuotteet, joiden valmistus on kesken tilinpäätöshetkellä."],
+  [
+    1511,
+    "Keskeneräiset tuotteet",
+    "Keskeneräisten tuotteiden arvo tilinpäätöshetkellä, esim. puolivalmiit tuotteet. Ei: varaston muutos tuloslaskelmassa → 3610."
+  ],
+  [152, "Valmiit tuotteet", "Itse valmistetut, myyntivalmiit tuotteet varastossa."],
+  [
+    1521,
+    "Valmiit tuotteet",
+    "Itse valmistettujen, myyntivalmiiden tuotteiden arvo varastossa tilinpäätöshetkellä. Ei: varaston muutos → 3600."
+  ],
+  [
+    153,
+    "Tavarat",
+    "Valmiina ostetut tavarat, jotka myydään sellaisenaan eteenpäin, esim. kaupan myyntitavarat."
+  ],
+  [
+    1531,
+    "Tavarat",
+    "Jälleenmyyntiin ostettujen tavaroiden varastoarvo tilinpäätöshetkellä. Ei: vuoden aikaiset tavaraostot → 4000; varaston muutos → 4410."
+  ],
+  [
+    1533,
+    "Matkalla olevat tavarat",
+    "Tavarat, jotka on jo ostettu ja omistettu, mutta jotka ovat vielä kuljetuksessa tilinpäätöshetkellä."
+  ],
+  [
+    154,
+    "Muu vaihto-omaisuus",
+    "Muu myyntiin tarkoitettu omaisuus, esim. myyntiä varten rakennetut kiinteistöt tai kaupankäyntiin hankitut arvopaperit."
+  ],
+  [
+    1541,
+    "Kiinteistöt",
+    "Kiinteistöt, jotka on hankittu tai rakennettu myytäviksi, esim. rakennusliikkeen myyntikohteet. Ei: oma käyttö → 1101 tai 1121."
+  ],
+  [
+    1543,
+    "Arvopaperit",
+    "Arvopaperit, joilla yritys käy kauppaa liiketoimintanaan. Ei: sijoitukseksi ostetut osakkeet → 1447 tai 1881."
+  ],
+  [1549, "Muu vaihto-omaisuus", "Muu vaihto-omaisuus, joka ei sovi edellisille tileille."],
+  [
+    155,
+    "Ennakkomaksut",
+    "Tavarantoimittajille etukäteen maksetut summat tavaroista tai aineista, joita ei ole vielä saatu."
+  ],
+  [
+    1551,
+    "Ennakkomaksut vaihto-omaisuudesta",
+    "Toimittajalle etukäteen maksettu summa varastotavaroista tai raaka-aineista ennen toimitusta."
+  ],
+  [
+    16,
+    "Pitkäaikaiset saamiset",
+    "Saamiset, jotka erääntyvät maksettaviksi vasta yli vuoden päästä, esim. pitkät osamaksukaupat ja pitkäaikaiset lainat."
+  ],
+  [160, "Myyntisaamiset", "Asiakkailta saatavat myyntisaamiset, joiden maksuaika on yli vuoden."],
+  [
+    1601,
+    "Pitkäaikaiset myyntisaamiset",
+    "Asiakkaiden laskut, jotka erääntyvät maksettaviksi vasta yli vuoden päästä. Ei: tavalliset maksamattomat myyntilaskut → 1701."
+  ],
+  [
+    1621,
+    "Pitkäaikaiset valuuttamääräiset myyntisaamiset",
+    "Ulkomaan valuutassa olevat myyntisaamiset, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1623,
+    "Pitkäaikaiset osamaksusaamiset",
+    "Osamaksukaupan saamiset asiakkailta, jotka erääntyvät yli vuoden päästä. Ei: vuoden sisällä erääntyvät erät → 1723."
+  ],
+  [
+    163,
+    "Saamiset saman konsernin yrityksiltä",
+    "Pitkäaikaiset saamiset samaan konserniin kuuluvilta yrityksiltä. Koskee vain yrityksiä, joilla on emo- tai tytäryhtiöitä."
+  ],
+  [
+    1631,
+    "Pitkäaikaiset konsernimyyntisaamiset",
+    "Konserniyrityksille myydyistä tuotteista tai palveluista saatavat, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1633,
+    "Pitkäaikaiset konsernisiirtosaamiset",
+    "Konserniyrityksiltä saatavat siirtosaamiset (jaksotukset), jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1635,
+    "Pitkäaikaiset konsernilainasaamiset",
+    "Konserniyrityksille annetut lainat, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [1639, "Pitkäaikaiset muut konsernisaamiset", "Muut pitkäaikaiset saamiset konserniyrityksiltä."],
+  [
+    164,
+    "Saamiset omistusyhteysyrityksiltä",
+    "Pitkäaikaiset saamiset yrityksiltä, joissa yrityksellä on omistusyhteys (yleensä vähintään 20 % omistus)."
+  ],
+  [
+    1641,
+    "Pitkäaikaiset omistusyhteysyritysmyyntisaamiset",
+    "Omistusyhteysyrityksille myydyistä tuotteista tai palveluista saatavat, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1643,
+    "Pitkäaikaiset omistusyhteysyrityssiirtosaamiset",
+    "Omistusyhteysyrityksiltä saatavat siirtosaamiset (jaksotukset), jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    1645,
+    "Pitkäaikaiset omistusyhteysyrityslainasaamiset",
+    "Omistusyhteysyrityksille annetut lainat, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    1649,
+    "Pitkäaikaiset muut omistusyhteysyrityssaamiset",
+    "Muut pitkäaikaiset saamiset omistusyhteysyrityksiltä."
+  ],
+  [
+    165,
+    "Lainasaamiset",
+    "Annetut lainat, jotka maksetaan takaisin yli vuoden päästä, esim. työntekijöille tai osakkaille annetut lainat."
+  ],
+  [
+    1651,
+    "Pitkäaikaiset saamiset työntekijöiltä",
+    "Työntekijöille annetut lainat, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    1653,
+    "Pitkäaikaiset saamiset johdolta",
+    "Yrityksen johdolle, esim. toimitusjohtajalle tai hallituksen jäsenelle, annetut lainat, joiden laina-aika on yli vuoden."
+  ],
+  [
+    1655,
+    "Pitkäaikaiset saamiset osakkailta ja omaisilta",
+    "Osakkaille tai heidän omaisilleen annetut lainat, jotka maksetaan takaisin yli vuoden päästä. Ei: verotettavaksi tuloksi katsottavat osakaslainat → 1656."
+  ],
+  [
+    1656,
+    "Pitkäaikaiset saamiset osakkailta ja omaisilta (veronalaiset)",
+    "Osakkaille tai heidän omaisilleen annetut pitkäaikaiset lainat, jotka verotetaan lainansaajan pääomatulona (ns. osakaslaina)."
+  ],
+  [
+    1657,
+    "Pitkäaikaiset muut lähipiirilainat",
+    "Muille lähipiiriin kuuluville, esim. omistajien sukulaisille tai lähiyrityksille, annetut lainat, joiden laina-aika on yli vuoden."
+  ],
+  [
+    1659,
+    "Pitkäaikaiset muut lainasaamiset",
+    "Muut annetut lainat, jotka maksetaan takaisin yli vuoden päästä."
+  ],
+  [
+    166,
+    "Muut saamiset",
+    "Muut pitkäaikaiset saamiset, esim. yli vuodeksi annetut vakuudet ja talletukset."
+  ],
+  [
+    1665,
+    "Pitkäaikaiset vakuustalletukset",
+    "Vakuudeksi annetut talletukset, jotka saadaan takaisin vasta yli vuoden päästä."
+  ],
+  [
+    1667,
+    "Pitkäaikaiset maksetut vuokravakuudet",
+    "Toimitilan tai muun vuokrakohteen vuokravakuus, joka palautuu vasta yli vuoden päästä. Ei: lyhytaikaiset vuokravakuudet → 1767."
+  ],
+  [
+    1669,
+    "Pitkäaikaiset muut saamiset",
+    "Muut pitkäaikaiset saamiset, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    167,
+    "Maksamattomat osakkeet/osuudet",
+    "Merkityt mutta vielä maksamattomat osakkeet tai osuudet, joiden maksuaika on yli vuoden."
+  ],
+  [
+    1671,
+    "Pitkäaikaiset maksamattomat osakkeet / osuudet",
+    "Osakkaiden merkitsemät mutta maksamatta olevat osakkeet tai osuudet, kun maksu erääntyy yli vuoden päästä."
+  ],
+  [
+    168,
+    "Siirtosaamiset",
+    "Jaksotuserät, jotka realisoituvat vasta yli vuoden päästä, esim. useammaksi vuodeksi etukäteen maksetut kulut."
+  ],
+  [
+    1681,
+    "Pitkäaikaiset siirtosaamiset",
+    "Etukäteen maksetut kulut tai kertyneet tulot, jotka kohdistuvat yli vuoden päähän, esim. usean vuoden vuokra maksettu kerralla."
+  ],
+  [
+    169,
+    "Laskennalliset verosaamiset",
+    "Tilinpäätöksessä laskettu tuleva verohyöty, esim. vahvistetuista tappioista. Lähinnä isoissa yrityksissä."
+  ],
+  [
+    1691,
+    "Pitkäaikaiset laskennalliset verosaamiset",
+    "Pitkäaikaiset laskennalliset verosaamiset. Pienyrityksen ei yleensä tarvitse kirjata näitä."
+  ],
+  [
+    170,
+    "Lyhytaikaiset saamiset",
+    "Saamiset, jotka erääntyvät maksettaviksi vuoden sisällä, esim. asiakkaiden laskut, arvonlisäverosaamiset ja etukäteen maksetut kulut."
+  ],
+  [170, "Myyntisaamiset", "Asiakkaille lähetetyt laskut, joita ei ole vielä maksettu."],
+  [
+    1701,
+    "Myyntisaamiset",
+    "Asiakkaille lähetetyt, vielä maksamattomat myyntilaskut. Kun asiakas maksaa, saaminen kuitataan pankkitilille, esim. 1910."
+  ],
+  [
+    1702,
+    "Myyntisaamiset 2",
+    "Varatili myyntisaamisille, jos niitä halutaan seurata erikseen, esim. liiketoiminnan osan tai laskutuskanavan mukaan."
+  ],
+  [
+    1703,
+    "Myyntisaamiset 3",
+    "Varatili myyntisaamisille, jos niitä halutaan seurata erikseen, esim. liiketoiminnan osan tai laskutuskanavan mukaan."
+  ],
+  [
+    1705,
+    "Myymäläsaamiset",
+    "Myymälämyynnistä syntyneet saatavat, esim. kassan myynnit, joita ei ole vielä tilitetty pankkitilille."
+  ],
+  [
+    1707,
+    "Provisiosaamiset",
+    "Ansaitut provisiot ja välityspalkkiot, joita ei ole vielä saatu maksuna."
+  ],
+  [
+    1711,
+    "Luottokorttisaamiset",
+    "Luottokorttimaksut, jotka maksunvälittäjä tilittää pankkitilille vasta myöhemmin. Ei: välittäjän perimät palkkiot → 8010."
+  ],
+  [
+    1713,
+    "Pankkikorttisaamiset",
+    "Pankkikorttimaksut, jotka maksunvälittäjä tilittää pankkitilille vasta myöhemmin."
+  ],
+  [
+    1715,
+    "Myyntisaamiset ennakkolaskuista",
+    "Asiakkaille lähetetyt, vielä maksamattomat ennakkolaskut, eli laskut ennen tuotteen tai palvelun toimittamista."
+  ],
+  [
+    1717,
+    "Factoring-myyntisaamiset matkalla",
+    "Rahoitusyhtiölle myydyt (factoroidut) laskut, joiden rahat eivät ole vielä tulleet pankkitilille."
+  ],
+  [
+    1718,
+    "Factoring-myyntisaamiset laskutili",
+    "Factoring-yhtiön kanssa käytävä laskutili, jolla seurataan rahoitusyhtiölle siirrettyjä myyntilaskuja."
+  ],
+  [1719, "Factoring-osamaksusaamiset", "Rahoitusyhtiölle siirretyt osamaksukaupan saamiset."],
+  [
+    1721,
+    "Myyntisaamiset, valuuttamääräiset",
+    "Ulkomaan valuutassa, esim. dollareissa, laskutetut maksamattomat myyntilaskut."
+  ],
+  [
+    1723,
+    "Osamaksusaamiset",
+    "Osamaksukaupan saamiset asiakkailta, jotka erääntyvät vuoden sisällä. Ei: yli vuoden päästä erääntyvät → 1623."
+  ],
+  [
+    1727,
+    "Siirtyvät myyntisaamiset/selvittelytili",
+    "Väliaikainen selvittelytili myyntisaamisille, esim. maksuille, joita ei vielä pystytä kohdistamaan oikeaan laskuun."
+  ],
+  [1729, "Muut myyntisaamiset", "Muut myyntisaamiset, jotka eivät sovi edellisille tileille."],
+  [
+    173,
+    "Saamiset saman konsernin yrityksiltä",
+    "Lyhytaikaiset saamiset samaan konserniin kuuluvilta yrityksiltä. Koskee vain yrityksiä, joilla on emo- tai tytäryhtiöitä."
+  ],
+  [
+    1731,
+    "Konsernimyyntisaamiset",
+    "Konserniyrityksille lähetetyt, vielä maksamattomat myyntilaskut."
+  ],
+  [
+    1733,
+    "Konsernisiirtosaamiset",
+    "Konserniyrityksiltä saatavat jaksotuserät (siirtosaamiset), jotka erääntyvät vuoden sisällä."
+  ],
+  [
+    1735,
+    "Konsernilainasaamiset",
+    "Konserniyrityksille annetut lainat, jotka maksetaan takaisin vuoden sisällä."
+  ],
+  [1739, "Muut konsernisaamiset", "Muut lyhytaikaiset saamiset konserniyrityksiltä."],
+  [
+    174,
+    "Saamiset omistusyhteysyrityksiltä",
+    "Lyhytaikaiset saamiset yrityksiltä, joissa yrityksellä on omistusyhteys (yleensä vähintään 20 % omistus)."
+  ],
+  [
+    1741,
+    "Omistusyhteysyritysmyyntisaamiset",
+    "Omistusyhteysyrityksille lähetetyt, vielä maksamattomat myyntilaskut."
+  ],
+  [
+    1743,
+    "Omistusyhteysyrityssiirtosaamiset",
+    "Omistusyhteysyrityksiltä saatavat jaksotuserät (siirtosaamiset), jotka erääntyvät vuoden sisällä."
+  ],
+  [
+    1745,
+    "Omistusyhteysyrityslainasaamiset",
+    "Omistusyhteysyrityksille annetut lainat, jotka maksetaan takaisin vuoden sisällä."
+  ],
+  [
+    1749,
+    "Muut omistusyhteysyrityssaamiset",
+    "Muut lyhytaikaiset saamiset omistusyhteysyrityksiltä."
+  ],
+  [
+    175,
+    "Lainasaamiset",
+    "Annetut lainat, jotka maksetaan takaisin vuoden sisällä, esim. työntekijöille tai osakkaille annetut lainat."
+  ],
+  [
+    1751,
+    "Saamiset työntekijöiltä",
+    "Työntekijöille annetut lyhytaikaiset lainat, esim. palkkaennakot. Ei: matka- ja kuluennakot → 1769."
+  ],
+  [
+    1753,
+    "Saamiset johdolta",
+    "Yrityksen johdolle annetut lainat, jotka maksetaan takaisin vuoden sisällä."
+  ],
+  [
+    1755,
+    "Saamiset osakkailta ja omaisilta",
+    "Osakkaille tai heidän omaisilleen annetut lainat, jotka maksetaan takaisin vuoden sisällä. Ei: verotettavaksi tuloksi katsottavat osakaslainat → 1756."
+  ],
+  [
+    1756,
+    "Saamiset osakkailta ja omaisilta (veronalaiset)",
+    "Osakkaille tai heidän omaisilleen annetut lyhytaikaiset lainat, jotka verotetaan lainansaajan pääomatulona (ns. osakaslaina)."
+  ],
+  [
+    1757,
+    "Muut lähipiirilainat",
+    "Muille lähipiiriin kuuluville, esim. omistajien sukulaisille tai lähiyrityksille, annetut lainat, joiden laina-aika on alle vuoden."
+  ],
+  [1759, "Muut lainasaamiset", "Muut annetut lainat, jotka maksetaan takaisin vuoden sisällä."],
+  [
+    176,
+    "Muut saamiset",
+    "Muut lyhytaikaiset saamiset, esim. verottajalta saatavat palautukset, vuokravakuudet ja vakuutuskorvaukset."
+  ],
+  [
+    1761,
+    "Verosaamiset",
+    "Verottajalta saatavat palautukset, esim. liikaa maksetut ennakkoverot tai muut oma-aloitteisten verojen palautukset. Ei: arvonlisäveron palautus → 1762."
+  ],
+  [
+    1762,
+    "Palautettava arvonlisävero",
+    "Arvonlisäveroilmoituksen mukainen palautus, kun vähennettävää veroa on ollut enemmän kuin maksettavaa. Kirjautuu alv-tilityksessä."
+  ],
+  [
+    1763,
+    "Arvonlisäverosaamiset",
+    "Ostojen vähennettävä arvonlisävero kertyy tänne kirjausten yhteydessä automaattisesti. Alv-tilitys siirtää sen pois. Ei: maksettava alv → 2939."
+  ],
+  [
+    17631,
+    "Maksuperusteinen arvonlisäverosaaminen",
+    "Maksuperusteisessa arvonlisäverotuksessa ostojen vähennettävä alv odottaa tällä tilillä, kunnes ostolasku on maksettu."
+  ],
+  [
+    1764,
+    "Anotut arvonlisäveropalautukset",
+    "Erikseen haetut arvonlisäveron palautukset, esim. toisesta EU-maasta haettu alv-palautus, jota ei ole vielä saatu."
+  ],
+  [
+    1765,
+    "Vakuustalletukset",
+    "Lyhytaikaisesti vakuudeksi annetut talletukset, esim. tarjous- tai urakkavakuudet. Ei: vuokravakuudet → 1767."
+  ],
+  [
+    1767,
+    "Maksetut vuokravakuudet",
+    "Toimitilan tai muun vuokrakohteen vuokravakuus, joka palautuu vuokrasuhteen päättyessä. Ei: kuukausivuokra → 7230."
+  ],
+  [
+    1769,
+    "Kuluennakot työntekijöille",
+    "Työntekijöille etukäteen maksetut matka- tai kuluennakot, jotka selvitetään myöhemmin kululaskulla."
+  ],
+  [
+    1771,
+    "Vahingonkorvaussaamiset",
+    "Saatavat vahingonkorvaukset, esim. vakuutusyhtiöltä odotettava korvaus. Ei: kun korvaus on tuloa → 3730."
+  ],
+  [
+    1777,
+    "Selvittelytili",
+    "Väliaikainen tili erille, joiden oikeaa kirjausta ei vielä tiedetä. Tili pitää tyhjentää selvittämällä erät ennen tilinpäätöstä."
+  ],
+  [1779, "Muut saamiset", "Muut lyhytaikaiset saamiset, jotka eivät sovi edellisille tileille."],
+  [
+    1781,
+    "Maksamattomat osakkeet/osuudet",
+    "Osakkeet tai osuudet, jotka on merkitty mutta joiden maksua ei ole vielä saatu."
+  ],
+  [
+    1781,
+    "Osakemerkintäsaamiset",
+    "Osakkaiden merkitsemien mutta vielä maksamattomien osakkeiden maksut, esim. osakeyhtiön perustamisessa tai osakeannissa."
+  ],
+  [1783, "Maksamattomat osuudet", "Osuuskunnan jäsenten maksamatta olevat osuusmaksut."],
+  [
+    180,
+    "Siirtosaamiset",
+    "Jaksotukset: tälle tilikaudelle kuuluvat tulot, joita ei ole vielä saatu, sekä etukäteen maksetut kulut, jotka kuuluvat seuraavalle kaudelle."
+  ],
+  [
+    1801,
+    "Palkkamenot (siirtosaamiset)",
+    "Etukäteen maksetut palkat, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    1803,
+    "Eläkevakuutusmaksut (siirtosaamiset)",
+    "Etukäteen maksetut eläkevakuutusmaksut, esim. YEL- tai TyEL-maksut, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    1804,
+    "Sairausvakuutusmaksut (siirtosaamiset)",
+    "Etukäteen maksetut sairausvakuutusmaksut, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    1805,
+    "Työnantajan pakolliset vakuutusmaksut (siirtosaamiset)",
+    "Etukäteen maksetut työnantajan pakolliset vakuutusmaksut, esim. tapaturma- ja työttömyysvakuutus, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    1809,
+    "Vuokramenot (siirtosaamiset)",
+    "Etukäteen maksetut vuokrat, esim. tammikuun vuokra maksettu jo joulukuussa, kun tilikausi päättyy vuodenvaihteessa."
+  ],
+  [
+    1811,
+    "Korkomenot (siirtosaamiset)",
+    "Etukäteen maksetut korot, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    1813,
+    "Tuloverot (siirtosaamiset)",
+    "Tuloverot, joita on maksettu ennakkoon enemmän kuin tilikauden vero on, eli odotettava veronpalautus."
+  ],
+  [
+    1819,
+    "Muut menoennakot (siirtosaamiset)",
+    "Muut etukäteen maksetut kulut, jotka kuuluvat seuraavalle tilikaudelle, esim. vuoden vakuutusmaksu tai ohjelmistotilaus."
+  ],
+  [
+    1831,
+    "Vuokratulot (siirtosaamiset)",
+    "Tälle tilikaudelle kuuluvat vuokratulot, joita ei ole vielä saatu."
+  ],
+  [
+    1833,
+    "Korkotulot (siirtosaamiset)",
+    "Tälle tilikaudelle kertyneet korkotulot, joita ei ole vielä maksettu, esim. talletuksen kertynyt korko."
+  ],
+  [
+    1837,
+    "Valmistusasteen mukaiset tulot (siirtosaamiset)",
+    "Pitkäaikaisen projektin tuotot, jotka kirjataan tuotoiksi valmistumisasteen mukaan ennen kuin asiakasta on laskutettu."
+  ],
+  [
+    1839,
+    "Muut tulojäämät (siirtosaamiset)",
+    "Muut tälle tilikaudelle kuuluvat tulot, joita ei ole vielä saatu tai laskutettu."
+  ],
+  [
+    1841,
+    "Ostojen alennukset (siirtosaamiset)",
+    "Tavarantoimittajilta saatavat alennukset ja hyvitykset, esim. vuosihyvitykset, jotka on ansaittu mutta joita ei ole vielä saatu."
+  ],
+  [
+    1843,
+    "Laskennalliset kurssitappiot (siirtosaamiset)",
+    "Valuuttamääräisten erien laskennalliset kurssierot, jotka jaksotetaan tilinpäätöksessä. Harvinainen pienyrityksessä."
+  ],
+  [
+    1845,
+    "Arvonlisäverosaamiset ennakkomaksuista (siirtosaamiset)",
+    "Vähennettävä arvonlisävero maksetuista ennakkolaskuista, kun alv kohdistetaan vasta myöhemmälle kaudelle."
+  ],
+  [
+    1847,
+    "Veronhyvityssaamiset (siirtosaamiset)",
+    "Saatavat veronhyvitykset, esim. osinkoihin liittyvät. Harvinainen pienyrityksessä."
+  ],
+  [
+    1849,
+    "Muut siirtosaamiset",
+    "Muut jaksotuserät: tälle kaudelle kuuluvat saamatta olevat tulot tai etukäteen maksetut, seuraavalle kaudelle kuuluvat kulut."
+  ],
+  [
+    186,
+    "Rahoitusarvopaperit",
+    "Lyhytaikaiseksi sijoitukseksi ostetut osakkeet, rahasto-osuudet ja muut arvopaperit, jotka on tarkoitus myydä pian."
+  ],
+  [
+    186,
+    "Osuudet saman konsernin yrityksissä",
+    "Lyhytaikaiseksi sijoitukseksi omistetut osakkeet samaan konserniin kuuluvissa yrityksissä."
+  ],
+  [
+    1861,
+    "Tytäryritysten osakkeet (rahoitusomaisuus)",
+    "Tytäryhtiöiden osakkeet, jotka on tarkoitus myydä pian. Harvinainen."
+  ],
+  [
+    1863,
+    "Emoyrityksen osakkeet (rahoitusomaisuus)",
+    "Emoyhtiön osakkeet, jotka on tarkoitus myydä pian. Harvinainen."
+  ],
+  [
+    1865,
+    "Sisaryritysten osakkeet (rahoitusomaisuus)",
+    "Sisaryhtiöiden osakkeet, jotka on tarkoitus myydä pian. Harvinainen."
+  ],
+  [
+    1867,
+    "Muut konserniosuudet (rahoitusomaisuus)",
+    "Muut konserniyritysten osuudet, jotka on tarkoitus myydä pian. Harvinainen."
+  ],
+  [
+    188,
+    "Muut osakkeet ja osuudet",
+    "Lyhytaikaiseksi sijoitukseksi ostetut muiden yritysten osakkeet ja osuudet."
+  ],
+  [
+    1881,
+    "Muut osakkeet ja osuudet (rahoitusomaisuus)",
+    "Osakkeet ja osuudet, jotka on ostettu lyhytaikaiseksi sijoitukseksi, esim. kassavarojen tilapäinen sijoitus. Ei: pitkäaikaiset sijoitukset → 1447."
+  ],
+  [
+    189,
+    "Muut arvopaperit",
+    "Muut lyhytaikaiset sijoitukset, esim. rahasto-osuudet ja sijoitustodistukset."
+  ],
+  [
+    1891,
+    "Muut rahoitusarvopaperit",
+    "Muut lyhytaikaiset rahoitusarvopaperit, esim. korko- tai rahamarkkinarahastot ja sijoitustodistukset."
+  ],
+  [19, "Rahat ja pankkisaamiset", "Yrityksen käteinen raha ja pankkitilien saldot."],
+  [190, "Rahat", "Yrityksen käteisvarat kassassa."],
+  [
+    1900,
+    "Käteisvarat",
+    "Yrityksen kassassa oleva käteinen raha, esim. käteismyynnit ja vaihtokassa. Ei: pankkitilin rahat → 1910."
+  ],
+  [1905, "Valuuttakassat", "Yrityksen käteisvarat ulkomaan valuuttana."],
+  [191, "Pankkisaamiset", "Yrityksen pankkitilien saldot ja talletukset."],
+  [
+    1910,
+    "Pankkitili 1",
+    "Yrityksen pääasiallinen pankkitili. Tänne kirjautuvat tilin kautta kulkevat maksut, ja saldon pitäisi täsmätä tiliotteeseen."
+  ],
+  [
+    1919,
+    "Pankkitili 1 shekkitililimiitti",
+    "Pankkitili 1:n luottolimiitin käyttö, kun tili on miinuksella."
+  ],
+  [
+    1920,
+    "Pankkitili 2",
+    "Yrityksen toinen pankkitili, jos tilejä on useampi. Kullekin pankkitilille oma kirjanpitotili."
+  ],
+  [
+    1929,
+    "Pankkitili 2 shekkitililimiitti",
+    "Pankkitili 2:n luottolimiitin käyttö, kun tili on miinuksella."
+  ],
+  [1930, "Pankkitili 3", "Yrityksen kolmas pankkitili, jos tilejä on useampi."],
+  [1940, "Pankkitili 4", "Yrityksen neljäs pankkitili, jos tilejä on useampi."],
+  [1950, "Pankkitili 5", "Yrityksen viides pankkitili, jos tilejä on useampi."],
+  [
+    1960,
+    "Lyhytaikaiset talletukset",
+    "Lyhytaikaiset talletukset, esim. määräaikaistalletus, josta rahat saa takaisin alle vuoden kuluessa."
+  ],
+  [
+    1961,
+    "Lyhytaikaiset lähdeveronalaiset talletukset",
+    "Lyhytaikaiset talletukset, joiden korosta pankki pidättää lähdeveron."
+  ],
+  [
+    1970,
+    "Sijoitustili",
+    "Pankin sijoitus- tai säästötili, jolla pidetään yrityksen ylimääräisiä varoja."
+  ],
+  [1984, "Valuuttatili", "Pankkitili, jolla pidetään ulkomaan valuuttaa, esim. dollareita."],
+  [1986, "Valuuttatalletukset", "Ulkomaan valuutassa olevat määräaikaistalletukset."],
+  [
+    199,
+    "Rahansiirrot ja täsmäytykset",
+    "Väliaikaiset tilit rahojen siirroille ja pankkisaldojen täsmäyttämiselle."
+  ],
+  [
+    1991,
+    "Täsmäytykset",
+    "Väliaikainen tili pankkisaldon ja kirjanpidon välisten erojen selvittämiseen. Selvittämättä jäävä pieni ero → 8890 Täsmäytyserot."
+  ],
+  [
+    1995,
+    "Rahansiirrot matkalla",
+    "Rahansiirrot yrityksen omien tilien välillä, kun raha lähtee yhdeltä tililtä ja saapuu toiselle eri päivänä, esim. kassasta pankkiin."
+  ],
+  [
+    1996,
+    "Virhemaksut",
+    "Väärin tulleet tai vahingossa maksetut maksut, jotka palautetaan maksajalle tai peritään takaisin."
+  ],
+  [
+    2,
+    "Vastattavaa",
+    "Taseen oikea puoli: mistä yrityksen varat on rahoitettu. Jakautuu omaan pääomaan (omistajan rahat ja kertyneet voitot) ja vieraaseen pääomaan (velat muille)."
+  ],
+  [
+    20,
+    "Oma pääoma",
+    "Omistajien osuus yrityksestä: sijoitettu pääoma ja kertyneet voitot tai tappiot. Oma pääoma ei ole velkaa kenellekään ulkopuoliselle."
+  ],
+  [
+    200,
+    "Osakepääoma",
+    "Osakeyhtiön osakkeista maksettu pääoma ja siihen liittyvät sidotut rahastot. Näitä ei voi jakaa omistajille osinkona."
+  ],
+  [
+    2001,
+    "Osakepääoma",
+    "Osakeyhtiön osakepääoma, esim. perustettaessa merkitty ja maksettu summa. Ei: osakkaan myöhempi sijoitus ilman osakepääoman korotusta → 2061 Sijoitetun vapaan pääoman rahasto."
+  ],
+  [
+    2011,
+    "Osakeanti",
+    "Uusista osakkeista saadut maksut, kun osakeanti on kesken eikä korotusta ole vielä rekisteröity. Rekisteröinnin jälkeen summa siirretään osakepääomaan (2001)."
+  ],
+  [
+    2021,
+    "Ylikurssirahasto",
+    "Vanhan osakeyhtiölain aikaan osakkeista nimellisarvon yli maksettu osuus. Sidottua omaa pääomaa; nykyisin vastaava sijoitus kirjataan yleensä 2061 SVOP-rahastoon."
+  ],
+  [
+    2031,
+    "Arvonkorotusrahasto",
+    "Sidottu rahasto, johon on kirjattu pysyvän omaisuuden (esim. maa-alueen) arvonkorotus. Harvinainen pienyrityksessä."
+  ],
+  [
+    205,
+    "Muut rahastot",
+    "Muut oman pääoman rahastot. Pienyrityksessä yleisin on sijoitetun vapaan pääoman rahasto (SVOP), johon osakkaat voivat sijoittaa rahaa ilman uusia osakkeita."
+  ],
+  [
+    2051,
+    "Vararahasto",
+    "Vararahasto on sidottua omaa pääomaa, johon vanhan lain aikaan siirrettiin osa voitoista. Nykyisin uusia siirtoja tehdään harvoin."
+  ],
+  [
+    2061,
+    "Sijoitetun vapaan pääoman rahasto",
+    "SVOP-rahasto: osakkaan yhtiöön sijoittama raha, josta ei tule osakepääomaa. Voidaan myöhemmin palauttaa vapaana pääomana. Ei: osakkaan laina yhtiölle → 2941 Velat osakkaille."
+  ],
+  [
+    2071,
+    "Yhtiöjärjestyksen mukainen rahasto",
+    "Rahasto, jonka perustamisesta tai käytöstä määrätään yhtiöjärjestyksessä tai säännöissä. Harvinainen."
+  ],
+  [
+    2081,
+    "Muut rahastot",
+    "Muut oman pääoman rahastot, jotka eivät sovi edellisille tileille. Harvinainen."
+  ],
+  [210, "Osuuspääoma", "Osuuskunnan jäseniltä saadut osuusmaksut. Käytössä vain osuuskunnissa."],
+  [
+    2101,
+    "Osuuspääoma",
+    "Osuuskunnan jäsenten maksamat osuusmaksut (jäsenyyteen kuuluvat perusosuudet)."
+  ],
+  [2103, "Lisäosuuspääoma", "Osuuskunnan jäsenten maksamat lisäosuudet perusosuuden lisäksi."],
+  [
+    215,
+    "Pääomapanokset",
+    "Avoimen yhtiön ja kommandiittiyhtiön yhtiömiesten yhtiöön sijoittamat pääomapanokset, eli yhtiösopimuksen mukaiset sijoitukset."
+  ],
+  [
+    2151,
+    "Pääomapanos, yhtiömies A",
+    "Yhtiömies A:n pääomapanos (yleensä avoin yhtiö). Yhtiösopimuksen mukainen sijoitus yhtiöön. Ei: tilikauden aikaiset rahan sijoitukset → 2341."
+  ],
+  [
+    2153,
+    "Pääomapanos, yhtiömies B",
+    "Yhtiömies B:n pääomapanos (yleensä avoin yhtiö). Toinen samanlainen tili toiselle yhtiömiehelle."
+  ],
+  [
+    2171,
+    "Pääomapanos, yhtiömies A",
+    "Kommandiittiyhtiön vastuunalaisen yhtiömiehen A pääomapanos yhtiösopimuksen mukaan."
+  ],
+  [
+    2173,
+    "Pääomapanos, yhtiömies B",
+    "Kommandiittiyhtiön vastuunalaisen yhtiömiehen B pääomapanos. Toinen samanlainen tili toiselle yhtiömiehelle."
+  ],
+  [
+    2181,
+    "Äänettömän yhtiömiehen C panos",
+    "Kommandiittiyhtiön äänettömän yhtiömiehen C sijoittama panos. Äänetön yhtiömies vastaa veloista vain panoksensa verran."
+  ],
+  [
+    2183,
+    "Äänettömän yhtiömiehen D panos",
+    "Kommandiittiyhtiön äänettömän yhtiömiehen D panos. Toinen samanlainen tili toiselle äänettömälle yhtiömiehelle."
+  ],
+  [
+    220,
+    "Peruspääoma",
+    "Yhdistyksen, säätiön tai muun yhteisön perustamisvaiheessa saatu tai sääntöjen mukainen pysyvä pääoma."
+  ],
+  [
+    2201,
+    "Peruspääoma",
+    "Yhteisön peruspääoma, esim. säätiön perustamisvaiheessa saatu pääoma tai yhdistyksen pysyvä pääoma."
+  ],
+  [
+    225,
+    "Edellisten tilikausien voitto (tappio)",
+    "Aiempien vuosien voitot ja tappiot, joita ei ole jaettu omistajille, sekä niistä tehdyt voitonjaot (osingot, voitto-osuudet)."
+  ],
+  [
+    2251,
+    "Edellisten tilikausien voitto/tappio",
+    "Aiempien vuosien kertynyt voitto tai tappio. Edellisen vuoden tulos siirtyy tänne. Ei: kuluvan vuoden tulos, joka lasketaan automaattisesti → 2371."
+  ],
+  [
+    2261,
+    "Osingonjako",
+    "Yhtiökokouksen päättämä osinko vähentää omaa pääomaa tällä tilillä. Ei: maksamaton osinko velkana → 2943 Voitonjakovelat."
+  ],
+  [
+    2265,
+    "Omista osakkeista maksettu määrä",
+    "Yhtiön ostamista omista osakkeista maksettu hinta, joka vähentää vapaata omaa pääomaa."
+  ],
+  [
+    2271,
+    "Osuuskorot",
+    "Osuuskunnan jäsenilleen maksamat korot osuusmaksuista (osuuskunnan voitonjakoa)."
+  ],
+  [
+    2291,
+    "Voitto-osuus yhtiömies A",
+    "Avoimen yhtiön yhtiömies A:n osuus yhtiön voitosta tai tappiosta."
+  ],
+  [
+    2293,
+    "Voitto-osuus yhtiömies B",
+    "Avoimen yhtiön yhtiömies B:n osuus yhtiön voitosta tai tappiosta. Toinen samanlainen tili toiselle yhtiömiehelle."
+  ],
+  [
+    2311,
+    "Voitto-osuus vastuunalainen yhtiömies A",
+    "Kommandiittiyhtiön vastuunalaisen yhtiömiehen A osuus voitosta tai tappiosta."
+  ],
+  [
+    2313,
+    "Voitto-osuus vastuunalainen yhtiömies B",
+    "Kommandiittiyhtiön vastuunalaisen yhtiömiehen B voitto-osuus. Toinen samanlainen tili toiselle yhtiömiehelle."
+  ],
+  [
+    2321,
+    "Voitto-osuus äänetön yhtiömies C",
+    "Kommandiittiyhtiön äänettömän yhtiömiehen C osuus voitosta, yleensä yhtiösopimuksen mukainen korko panokselle."
+  ],
+  [
+    2323,
+    "Voitto-osuus äänetön yhtiömies D",
+    "Äänettömän yhtiömiehen D voitto-osuus. Toinen samanlainen tili toiselle äänettömälle yhtiömiehelle."
+  ],
+  [
+    233,
+    "Pääomavajaus",
+    "Yhtiömiehen pääomavajaus: hänen pääomaosuutensa on negatiivinen, kun yksityisnostot ja tappiot ovat ylittäneet panokset ja voitto-osuudet."
+  ],
+  [2331, "Pääomavajaus yhtiömies A", "Yhtiömies A:n negatiivinen pääomaosuus (pääomavajaus)."],
+  [
+    2332,
+    "Pääomavajaus yhtiömies B",
+    "Yhtiömies B:n negatiivinen pääomaosuus (pääomavajaus). Toinen samanlainen tili."
+  ],
+  [
+    2337,
+    "Pääomavajaus",
+    "Yhtiön tai yhtiömiesten pääomavajaus, kun sitä ei eritellä yhtiömiehittäin."
+  ],
+  [
+    234,
+    "Yksityistilit tilikaudella",
+    "Yksityistili = omistajan ja yrityksen väliset rahansiirrot toiminimessä ja henkilöyhtiössä: omat sijoitukset yritykseen ja nostot yrityksestä omaan käyttöön."
+  ],
+  [
+    2341,
+    "Yksityissijoitukset rahana yhtiömies A",
+    "Yhtiömies A:n yhtiöön tilikauden aikana siirtämä oma raha, esim. talletus omalta tililtä yhtiön pankkitilille."
+  ],
+  [
+    2343,
+    "Muut yksityissijoitukset yhtiömies A",
+    "Yhtiömies A:n muut sijoitukset kuin raha, esim. yhtiön kulu maksettu omalla kortilla tai omaisuutta tuotu yhtiön käyttöön."
+  ],
+  [
+    2345,
+    "Yksityissijoitukset rahana yhtiömies B",
+    "Yhtiömies B:n rahana tekemät yksityissijoitukset yhtiöön."
+  ],
+  [
+    2347,
+    "Muut yksityissijoitukset  yhtiömies B",
+    "Yhtiömies B:n muut kuin rahana tehdyt sijoitukset, esim. yhtiön kulu maksettu omilla rahoilla."
+  ],
+  [
+    2351,
+    "Yksityisnostot rahana yhtiömies A",
+    "Yhtiömies A:n rahana nostamat varat omaan käyttöön, esim. siirto yhtiön tililtä omalle tilille. Ei: palkka, jota henkilöyhtiön yhtiömies ei voi itselleen maksaa."
+  ],
+  [
+    2353,
+    "Muut yksityisnostot yhtiömies A",
+    "Yhtiömies A:n muut yksityisnostot, esim. yhtiön tavaroiden otto omaan käyttöön tai yksityiset kulut yhtiön tililtä."
+  ],
+  [
+    2355,
+    "Yksityisnostot rahana yhtiömies B",
+    "Yhtiömies B:n rahana nostamat varat omaan käyttöön."
+  ],
+  [
+    2357,
+    "Muut yksityisnostot  yhtiömies B",
+    "Yhtiömies B:n muut yksityisnostot, esim. tavarat omaan käyttöön tai yksityiset kulut yhtiön tililtä."
+  ],
+  [
+    2361,
+    "Yksityissijoitukset rahana",
+    "Toiminimen omistajan yritykseen siirtämä oma raha, esim. talletus omalta tililtä yrityksen tilille."
+  ],
+  [
+    2363,
+    "Muut yksityissijoitukset",
+    "Toiminimen omistajan muut sijoitukset, esim. yrityksen kulu maksettu omalla kortilla tai oma tavara otettu yrityksen käyttöön."
+  ],
+  [
+    2365,
+    "Yksityisnostot rahana",
+    "Toiminimen omistajan rahana nostamat varat omaan käyttöön, esim. siirto yrityksen tililtä omalle tilille. Toiminimen omistaja ei maksa itselleen palkkaa."
+  ],
+  [
+    2367,
+    "Muut yksityisnostot",
+    "Muut yksityisnostot, esim. yrityksen tavarat omaan käyttöön tai yksityiset ostot yrityksen tililtä tai kortilla."
+  ],
+  [
+    237,
+    "Tilikauden tulos",
+    "Kuluvan tilikauden voitto tai tappio, eli tuottojen ja kulujen erotus. Lasketaan automaattisesti tuloslaskelmasta."
+  ],
+  [
+    2371,
+    "Tilikauden voitto/tappio",
+    "Kuluvan vuoden voitto tai tappio lasketaan automaattisesti tuloslaskelmasta; tälle tilille ei kirjata itse."
+  ],
+  [
+    238,
+    "Pääomalainat",
+    "Pääomalaina on osakeyhtiölain mukainen laina, jonka pääoman ja koron saa maksaa vain vapaasta omasta pääomasta. Konkurssissa se maksetaan muiden velkojen jälkeen."
+  ],
+  [
+    2381,
+    "Pääomalaina",
+    "Pääomalaina silloin, kun se esitetään omassa pääomassa. Vieraaseen pääomaan merkittävä pääomalaina → 2601 tai 2801."
+  ],
+  [
+    239,
+    "Vähemmistöosuudet",
+    "Vähemmistöosuudet liittyvät vain konsernitilinpäätökseen: tytäryhtiön oma pääoma, joka kuuluu muille kuin emoyhtiölle."
+  ],
+  [
+    2391,
+    "Vähemmistöosuus",
+    "Konsernitilinpäätöksessä tytäryhtiön ulkopuolisten omistajien osuus. Ei koske tavallista pienyritystä."
+  ],
+  [
+    24,
+    "Tilinpäätössiirtojen kertymä",
+    "Tilinpäätöksessä tehdyt verotukseen liittyvät siirrot, kuten poistoero ja verotusperusteiset varaukset. Niillä voi tasata verotettavaa tulosta."
+  ],
+  [
+    240,
+    "Poistoero",
+    "Poistoero = verotuksessa tehtyjen poistojen ja kirjanpidon suunnitelman mukaisten poistojen kertynyt erotus. Muutos kirjataan tileille 975x."
+  ],
+  [
+    2405,
+    "Kehittämismenojen poistoero",
+    "Kehittämismenojen kertynyt poistoero. Vuotuinen muutos → 9750."
+  ],
+  [
+    2407,
+    "Aineettomien oikeuksien poistoero",
+    "Aineettomien oikeuksien (esim. lisenssit, patentit) kertynyt poistoero. Vuotuinen muutos → 9750."
+  ],
+  [2411, "Liikearvon poistoero", "Liikearvon kertynyt poistoero. Vuotuinen muutos → 9750."],
+  [
+    2421,
+    "Muiden pitkävaikutteisten menojen poistoero",
+    "Muiden pitkävaikutteisten menojen (esim. vuokratilan perusparannukset) kertynyt poistoero. Vuotuinen muutos → 9750."
+  ],
+  [2431, "Rakennusten poistoero", "Rakennusten kertynyt poistoero. Vuotuinen muutos → 9760."],
+  [
+    2441,
+    "Koneiden ja kaluston poistoero",
+    "Koneiden ja kaluston kertynyt poistoero. Vuotuinen muutos → 9770."
+  ],
+  [
+    2449,
+    "Muiden aineellisten hyödykkeiden poistoero",
+    "Muiden aineellisten hyödykkeiden kertynyt poistoero. Vuotuinen muutos → 9780."
+  ],
+  [
+    245,
+    "Verotusperusteiset varaukset",
+    "Verolain sallimat varaukset, joilla voi siirtää verotettavaa tuloa myöhemmille vuosille. Muutokset kirjataan tileille 98xx."
+  ],
+  [
+    2451,
+    "Käyttöomaisuuden jälleenhankintavaraus",
+    "Varaus tulevaa käyttöomaisuuden hankintaa varten (jälleenhankintavaraus). Pienentää tämän vuoden verotettavaa tuloa. Muutos → 9800."
+  ],
+  [
+    2453,
+    "Toimitilan jälleenhankintavaraus",
+    "Varaus uuden toimitilan hankintaa varten. Muutos → 9810."
+  ],
+  [
+    2461,
+    "Luottotappiovaraus",
+    "Vanha verotusperusteinen varaus tulevia luottotappioita varten. Käytössä lähinnä vanhoissa kirjanpidoissa."
+  ],
+  [2471, "Takuuvaraus", "Verotusperusteinen varaus tulevia takuukorjauksia varten. Muutos → 9820."],
+  [
+    2481,
+    "Toimintavaraus",
+    "Vanha verotusperusteinen toimintavaraus. Käytössä lähinnä vanhoissa kirjanpidoissa. Muutos → 9830."
+  ],
+  [
+    2491,
+    "Hankintamenon muutosvaraus",
+    "Verotusperusteinen hankintamenon muutosvaraus. Harvinainen. Muutos → 9840."
+  ],
+  [
+    2493,
+    "Asuintalovaraus",
+    "Vanha verotusperusteinen asuintalovaraus. Käytössä lähinnä vanhoissa kirjanpidoissa."
+  ],
+  [
+    2499,
+    "Muut verotusperusteiset varaukset",
+    "Muut verotusperusteiset varaukset, jotka eivät sovi edellisille tileille. Muutos → 9850."
+  ],
+  [
+    25,
+    "Pakolliset varaukset",
+    "Pakollinen varaus = tuleva meno tai menetys, johon yritys on jo sitoutunut mutta jonka määrä tai ajankohta on epävarma, esim. takuukorjaukset tai oikeudenkäynti."
+  ],
+  [
+    2501,
+    "Eläkevaraukset",
+    "Varaus tulevista eläkkeistä, joista yritys itse vastaa. Harvinainen pienyrityksessä."
+  ],
+  [
+    2501,
+    "Eläkevaraukset",
+    "Varaus tulevista eläkemenoista, joista yritys vastaa itse (ei eläkevakuutusyhtiö)."
+  ],
+  [
+    253,
+    "Verovaraukset",
+    "Varaus todennäköisesti maksettavista lisäveroista, joiden määrä ei ole vielä varma."
+  ],
+  [
+    2531,
+    "Verovaraukset",
+    "Varaus todennäköisistä lisäveroista, esim. kesken olevasta veroriidasta. Ei: tilikauden tavallinen tuloveroarvio → 2968."
+  ],
+  [
+    255,
+    "Muut pakolliset varaukset",
+    "Muut pakolliset varaukset, esim. oikeudenkäynnit, hinnanalennukset ja pitkät hankkeet."
+  ],
+  [
+    2551,
+    "Oikeudenkäyntivaraus",
+    "Varaus todennäköisistä kuluista käynnissä olevasta tai uhkaavasta oikeudenkäynnistä."
+  ],
+  [
+    2561,
+    "Hinnanlaskuvaraus",
+    "Varaus todennäköisistä hinnanalennuksista, joihin yritys on jo sitoutunut."
+  ],
+  [
+    2571,
+    "Pitkäaikaishankkeiden pakolliset varaukset",
+    "Varaus pitkäaikaisen hankkeen (esim. urakan) odotetuista tappioista tai tulevista menoista."
+  ],
+  [
+    2581,
+    "Muut pakolliset varaukset",
+    "Muut pakolliset varaukset, esim. takuukorjaukset tai tappiolliset sopimukset."
+  ],
+  [
+    259,
+    "Konsernireservi",
+    "Konsernireservi syntyy vain konsernitilinpäätöksessä, kun tytäryhtiö on ostettu alle sen nettovarallisuuden."
+  ],
+  [
+    2591,
+    "Konsernireservi",
+    "Konsernitilinpäätökseen liittyvä erä. Ei koske tavallista pienyritystä."
+  ],
+  [
+    26,
+    "Vieras pääoma",
+    "Vieras pääoma = yrityksen velat muille, esim. pankkilainat, maksamattomat laskut, verovelat ja palkkavelat."
+  ],
+  [
+    26,
+    "Pitkäaikainen vieras pääoma",
+    "Velat, jotka erääntyvät maksettaviksi yli vuoden kuluttua, esim. pitkä pankkilaina. Seuraavan 12 kk lyhennykset esitetään lyhytaikaisina (282x)."
+  ],
+  [
+    260,
+    "Pääomalainat",
+    "Pääomalaina, joka esitetään vieraassa pääomassa ja erääntyy yli vuoden päästä. Sen saa maksaa takaisin vain vapaasta omasta pääomasta."
+  ],
+  [
+    2601,
+    "Pitkäaikainen pääomalaina",
+    "Pääomalaina, joka erääntyy yli vuoden päästä ja esitetään velkana. Ei: omassa pääomassa esitettävä pääomalaina → 2381."
+  ],
+  [
+    261,
+    "Vaihtovelkakirjalainat",
+    "Vaihtovelkakirjalaina on laina, jonka lainanantaja voi vaihtaa yhtiön osakkeiksi. Harvinainen pienyrityksessä."
+  ],
+  [
+    2611,
+    "Pitkäaikaiset vaihtovelkakirjalainat",
+    "Pitkäaikainen vaihtovelkakirjalaina, jonka voi myöhemmin vaihtaa osakkeiksi."
+  ],
+  [
+    262,
+    "Joukkovelkakirjalainat",
+    "Joukkovelkakirjalaina on monelta sijoittajalta kerralla otettu laina, joka on jaettu pieniin osiin. Harvinainen pienyrityksessä."
+  ],
+  [
+    2612,
+    "Pitkäaikaiset joukkovelkakirjalainat",
+    "Pitkäaikainen joukkovelkakirjalaina eli monelta sijoittajalta otettu, osiin jaettu laina."
+  ],
+  [
+    2613,
+    "Pitkäaikaiset obligaatiolainat",
+    "Pitkäaikainen obligaatiolaina (vakuudellinen joukkovelkakirjalaina)."
+  ],
+  [
+    2614,
+    "Pitkäaikaiset debentuurilainat",
+    "Pitkäaikainen debentuurilaina: joukkovelkakirjalaina, joka maksetaan konkurssissa muiden velkojen jälkeen."
+  ],
+  [2615, "Muut pitkäaikaiset joukkovelkakirjalainat", "Muut pitkäaikaiset joukkovelkakirjalainat."],
+  [
+    262,
+    "Lainat rahoituslaitoksilta",
+    "Pankeilta ja rahoitusyhtiöiltä otetut lainat, jotka erääntyvät yli vuoden päästä. Korot ovat kuluja (946x–947x), eivät velan lyhennystä."
+  ],
+  [
+    2621,
+    "Pitkäaikainen rahoituslaitoslaina 1",
+    "Pankkilainan pääoma, joka maksetaan yli vuoden päästä. Ei: korot → 9460; seuraavan 12 kk lyhennykset → 2821."
+  ],
+  [
+    2622,
+    "Pitkäaikainen rahoituslaitoslaina 2",
+    "Toinen pitkäaikainen pankkilaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2623,
+    "Pitkäaikainen rahoituslaitoslaina 3",
+    "Kolmas pitkäaikainen pankkilaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2631,
+    "Pitkäaikainen rahoitusyhtiölaina 1",
+    "Rahoitusyhtiön laina, esim. auton tai koneen rahoitus, joka maksetaan yli vuoden päästä. Ei: korot → 9470; seuraavan 12 kk lyhennykset → 2831."
+  ],
+  [
+    2632,
+    "Pitkäaikainen rahoitusyhtiölaina 2",
+    "Toinen pitkäaikainen rahoitusyhtiölaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2633,
+    "Pitkäaikainen rahoitusyhtiölaina 3",
+    "Kolmas pitkäaikainen rahoitusyhtiölaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2639,
+    "Pitkäaikainen factoringluottotili",
+    "Pitkäaikainen factoringluotto, jossa rahoitusyhtiö maksaa myyntilaskut etukäteen."
+  ],
+  [
+    2641,
+    "Pankki 1 shekkitililimiitti",
+    "Pankkitilin luottolimiitin käytetty määrä velkana (pankki 1). Harvinainen."
+  ],
+  [
+    2642,
+    "Pankki 2 shekkitililimiitti",
+    "Toisen pankkitilin luottolimiitin käytetty määrä velkana (pankki 2). Harvinainen."
+  ],
+  [
+    2649,
+    "Muut pitkäaikaiset lainat rahoituslaitoksilta",
+    "Muut pitkäaikaiset lainat pankeilta tai rahoituslaitoksilta."
+  ],
+  [
+    265,
+    "Eläkelainat",
+    "Työeläkevakuutusyhtiöiltä otetut lainat (esim. TyEL-maksujen takaisinlainaus), jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    2651,
+    "Pitkäaikaiset eläkelainat",
+    "Pitkäaikainen laina työeläkeyhtiöltä. Ei: maksamattomat TyEL-maksut → 2931."
+  ],
+  [
+    266,
+    "Saadut ennakot",
+    "Asiakkailta etukäteen saadut maksut, joita vastaava toimitus tapahtuu vasta yli vuoden päästä."
+  ],
+  [
+    2661,
+    "Pitkäaikaiset saadut ennakot",
+    "Asiakkaan ennakkomaksu, jota vastaava työ tai tavara toimitetaan vasta yli vuoden päästä. Ei: tavalliset ennakot → 2861."
+  ],
+  [
+    267,
+    "Ostovelat",
+    "Toimittajille maksettavat laskut, joiden maksuaika on yli vuoden. Harvinainen."
+  ],
+  [
+    2671,
+    "Pitkäaikaiset ostovelat",
+    "Ostolaskut, joiden maksuaika on yli vuoden. Ei: tavalliset maksamattomat ostolaskut → 2871."
+  ],
+  [
+    2681,
+    "Pitkäaikaiset osamaksuvelat",
+    "Osamaksukaupan velka, joka maksetaan yli vuoden päästä. Seuraavan 12 kk erät → 2881."
+  ],
+  [
+    269,
+    "Rahoitusvekselit",
+    "Rahoitusvekseli on velkakirjan kaltainen maksusitoumus, jolla otetaan lainaa. Harvinainen."
+  ],
+  [
+    2691,
+    "Pitkäaikaiset rahoitusvekselit",
+    "Pitkäaikaiset rahoitusvekselit eli vekselillä otettu laina, joka erääntyy yli vuoden päästä."
+  ],
+  [
+    270,
+    "Velat saman konsernin yrityksille",
+    "Pitkäaikaiset velat emo-, tytär- tai sisaryhtiöille. Koskee vain yrityksiä, jotka kuuluvat konserniin."
+  ],
+  [
+    2701,
+    "Pitkäaikaiset saadut ennakot konserniyrityksiltä",
+    "Konserniyhtiöltä saadut ennakkomaksut, jotka kuittautuvat yli vuoden päästä."
+  ],
+  [
+    2703,
+    "Pitkäaikaiset ostovelat konserniyrityksille",
+    "Konserniyhtiölle maksettavat ostolaskut, joiden maksuaika on yli vuoden."
+  ],
+  [
+    2705,
+    "Pitkäaikaiset rahoitusvekselit konserniyrityksiltä",
+    "Konserniyhtiöltä vekselillä otettu pitkäaikainen laina."
+  ],
+  [
+    2707,
+    "Pitkäaikaiset muut velat konserniyrityksille",
+    "Muut konserniyhtiölle maksettavat pitkäaikaiset velat, esim. laina emoyhtiöltä."
+  ],
+  [
+    2709,
+    "Pitkäaikaiset siirtovelat konserniyrityksille",
+    "Konserniyhtiöille kuuluvat pitkäaikaiset siirtovelat (jaksotetut menot tai tuloennakot)."
+  ],
+  [
+    271,
+    "Velat omistusyhteysyrityksille",
+    "Pitkäaikaiset velat omistusyhteysyrityksille eli yrityksille, joista omistetaan merkittävä osa (yleensä vähintään 20 %), mutta jotka eivät ole konsernia."
+  ],
+  [
+    2711,
+    "Pitkäaikaiset saadut ennakot omistusyhteysyrityksiltä",
+    "Omistusyhteysyritykseltä saadut ennakot, jotka kuittautuvat yli vuoden päästä."
+  ],
+  [
+    2713,
+    "Pitkäaikaiset ostovelat omistusyhteysyrityksiltä",
+    "Omistusyhteysyritykselle maksettavat ostolaskut, joiden maksuaika on yli vuoden."
+  ],
+  [
+    2715,
+    "Pitkäaikaiset rahoitusvekselit omistusyhteysyrityksiltä",
+    "Omistusyhteysyritykseltä vekselillä otettu pitkäaikainen laina."
+  ],
+  [
+    2717,
+    "Pitkäaikaiset muut velat omistusyhteysyrityksiltä",
+    "Muut omistusyhteysyritykselle maksettavat pitkäaikaiset velat."
+  ],
+  [
+    2719,
+    "Pitkäaikaiset siirtovelat omistusyhteysyrityksiltä",
+    "Omistusyhteysyrityksille kuuluvat pitkäaikaiset siirtovelat."
+  ],
+  [
+    272,
+    "Muut velat",
+    "Muut pitkäaikaiset velat, esim. laina osakkaalta tai saadut vuokravakuudet."
+  ],
+  [
+    2721,
+    "Pitkäaikaiset velat työntekijöille",
+    "Työntekijöille maksettavat velat, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    2723,
+    "Pitkäaikaiset velat johdolle",
+    "Yrityksen johdolle (esim. toimitusjohtaja, hallitus) maksettavat velat, jotka erääntyvät yli vuoden päästä."
+  ],
+  [
+    2725,
+    "Pitkäaikaiset velat osakkaille",
+    "Osakaslaina eli osakkaan yhtiölle antama laina, joka maksetaan yli vuoden päästä. Ei: osakkaan sijoitus pääomaksi → 2061."
+  ],
+  [
+    2731,
+    "Pitkäaikaiset optiolainat",
+    "Pitkäaikaiset optiolainat eli lainat, joihin liittyy oikeus merkitä yhtiön osakkeita."
+  ],
+  [
+    2741,
+    "Pitkäaikaiset saadut vuokravakuudet",
+    "Vuokralaiselta saatu vakuusraha, joka palautetaan yli vuoden päästä. Vakuus on velkaa, ei tuloa."
+  ],
+  [
+    2749,
+    "Pitkäaikaiset muut velat",
+    "Muut pitkäaikaiset velat, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    275,
+    "Siirtovelat",
+    "Siirtovelka = kirjanpidon jaksotus: meno, joka kuuluu tälle vuodelle mutta maksetaan myöhemmin, tai etukäteen saatu tulo. Tässä yli vuoden päähän ulottuvat."
+  ],
+  [
+    2751,
+    "Pitkäaikaiset siirtovelat",
+    "Siirtovelat, jotka purkautuvat vasta yli vuoden päästä, esim. monen vuoden vuokra saatu etukäteen."
+  ],
+  [
+    28,
+    "Lyhytaikainen vieras pääoma",
+    "Velat, jotka erääntyvät maksettaviksi vuoden sisällä, esim. maksamattomat ostolaskut, verovelat, palkkavelat ja lainojen seuraavat lyhennykset."
+  ],
+  [
+    280,
+    "Pääomalainat",
+    "Pääomalaina, joka esitetään vieraassa pääomassa ja erääntyy vuoden sisällä."
+  ],
+  [
+    2801,
+    "Lyhytaikainen pääomalaina",
+    "Pääomalaina tai sen osa, joka erääntyy vuoden sisällä. Sen saa maksaa vain vapaasta omasta pääomasta."
+  ],
+  [
+    281,
+    "Joukkovelkakirjalainat",
+    "Joukkovelkakirjalainat tai niiden osat, jotka erääntyvät vuoden sisällä. Harvinainen pienyrityksessä."
+  ],
+  [
+    2811,
+    "Joukkovelkakirjalainat",
+    "Joukkovelkakirjalaina tai sen osa, joka erääntyy vuoden sisällä."
+  ],
+  [2813, "Obligaatiolainat", "Obligaatiolaina tai sen osa, joka erääntyy vuoden sisällä."],
+  [2814, "Debentuurilainat", "Debentuurilaina tai sen osa, joka erääntyy vuoden sisällä."],
+  [2815, "Muut joukkovelkakirjalainat", "Muut vuoden sisällä erääntyvät joukkovelkakirjalainat."],
+  [
+    2817,
+    "Vaihtovelkakirjalainat",
+    "Vaihtovelkakirjalainat tai niiden osat, jotka erääntyvät vuoden sisällä."
+  ],
+  [
+    2817,
+    "Vaihtovelkakirjalainat",
+    "Vaihtovelkakirjalaina (voidaan vaihtaa osakkeiksi), joka erääntyy vuoden sisällä."
+  ],
+  [
+    282,
+    "Lainat rahoituslaitoksilta",
+    "Pankki- ja rahoitusyhtiölainat, jotka maksetaan vuoden sisällä, sekä pitkien lainojen seuraavan 12 kk lyhennykset."
+  ],
+  [
+    2821,
+    "Pitkäaikaisen rahoituslaitoslainan 1 lyhennyserät",
+    "Pitkäaikaisen pankkilainan 1 seuraavan 12 kk lyhennykset. Ei: lainan korot → 9460."
+  ],
+  [
+    2822,
+    "Pitkäaikaisen rahoituslaitoslainan 2 lyhennyserät",
+    "Pitkäaikaisen pankkilainan 2 seuraavan 12 kk lyhennykset. Varatili toiselle lainalle."
+  ],
+  [
+    2823,
+    "Pitkäaikaisen rahoituslaitoslainan 3 lyhennyserät",
+    "Pitkäaikaisen pankkilainan 3 seuraavan 12 kk lyhennykset. Varatili kolmannelle lainalle."
+  ],
+  [
+    2825,
+    "Lyhytaikainen rahoituslaitoslaina 1",
+    "Pankkilaina, joka maksetaan kokonaan takaisin vuoden sisällä. Ei: korot → 9460."
+  ],
+  [
+    2826,
+    "Lyhytaikainen rahoituslaitoslaina 2",
+    "Toinen lyhytaikainen pankkilaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2827,
+    "Lyhytaikainen rahoituslaitoslaina 3",
+    "Kolmas lyhytaikainen pankkilaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2831,
+    "Pitkäaikaisen rahoitusyhtiölainan 1 lyhennyserät",
+    "Pitkäaikaisen rahoitusyhtiölainan 1 seuraavan 12 kk lyhennykset. Ei: korot → 9470."
+  ],
+  [
+    2832,
+    "Pitkäaikaisen rahoitusyhtiölainan 2 lyhennyserät",
+    "Pitkäaikaisen rahoitusyhtiölainan 2 seuraavan 12 kk lyhennykset. Varatili toiselle lainalle."
+  ],
+  [
+    2833,
+    "Pitkäaikaisen rahoitusyhtiölainan 3 lyhennyserät",
+    "Pitkäaikaisen rahoitusyhtiölainan 3 seuraavan 12 kk lyhennykset. Varatili kolmannelle lainalle."
+  ],
+  [
+    2835,
+    "Lyhytaikainen rahoitusyhtiölaina 1",
+    "Rahoitusyhtiön laina, joka maksetaan vuoden sisällä, esim. lyhyt laite- tai autorahoitus. Ei: korot → 9470."
+  ],
+  [
+    2836,
+    "Lyhytaikainen rahoitusyhtiölaina 2",
+    "Toinen lyhytaikainen rahoitusyhtiölaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2837,
+    "Lyhytaikainen rahoitusyhtiölaina 3",
+    "Kolmas lyhytaikainen rahoitusyhtiölaina. Varatili, jotta lainat pysyvät erillään."
+  ],
+  [
+    2841,
+    "Factoring-luottotili",
+    "Factoringluotto: rahoitusyhtiö on maksanut myyntilaskuja etukäteen, ja velka kuittautuu, kun asiakkaat maksavat."
+  ],
+  [
+    2849,
+    "Muut lyhytaikaiset lainat rahoituslaitoksilta",
+    "Muut vuoden sisällä maksettavat lainat pankeilta tai rahoituslaitoksilta."
+  ],
+  [
+    285,
+    "Eläkelainat",
+    "Työeläkeyhtiöiltä otettujen lainojen osuus, joka maksetaan vuoden sisällä."
+  ],
+  [
+    2851,
+    "Lyhytaikaiset eläkelainat",
+    "Työeläkeyhtiön lainan vuoden sisällä maksettava osuus. Ei: maksamattomat TyEL-maksut → 2931."
+  ],
+  [
+    286,
+    "Saadut ennakot",
+    "Asiakkailta etukäteen saadut maksut ennen kuin tavara tai palvelu on toimitettu. Ennakko on velkaa asiakkaalle, kunnes toimitus tehdään."
+  ],
+  [
+    2861,
+    "Saadut ennakot",
+    "Asiakkaan maksama ennakko ennen toimitusta, esim. käsiraha tai varausmaksu. Kun työ tehdään, ennakko siirretään myynniksi."
+  ],
+  [
+    287,
+    "Ostovelat",
+    "Maksamattomat laskut ja muut ostoihin liittyvät velat, jotka maksetaan vuoden sisällä."
+  ],
+  [
+    2871,
+    "Ostovelat",
+    "Toimittajilta saadut ostolaskut, joita ei ole vielä maksettu. Velka poistuu, kun lasku maksetaan pankista. Ei: yrityksen luottokortilla tehdyt ostot → 2882."
+  ],
+  [
+    2872,
+    "Ostovelat 2",
+    "Toinen ostovelkatili, jos ostolaskuja halutaan seurata erikseen. Varatili."
+  ],
+  [
+    2873,
+    "Ostovelat 3",
+    "Kolmas ostovelkatili, jos ostolaskuja halutaan seurata erikseen. Varatili."
+  ],
+  [
+    2877,
+    "Ostovelat investoinneista",
+    "Maksamattomat laskut käyttöomaisuuden hankinnoista, esim. koneesta tai laitteesta. Ei: tavalliset ostolaskut → 2871."
+  ],
+  [
+    2879,
+    "Ostovelat ennakkolaskuista",
+    "Toimittajien ennakkolaskut, joita ei ole vielä maksettu (lasku ennen toimitusta)."
+  ],
+  [
+    2881,
+    "Osamaksuvelat",
+    "Osamaksukaupan velka, joka maksetaan vuoden sisällä, esim. osamaksulla ostetun laitteen seuraavat erät."
+  ],
+  [
+    2882,
+    "Luottokorttiostot",
+    "Yrityksen luottokortilla tehdyt ostot, kunnes korttilasku maksetaan. Kulut kirjataan ostopäivälle, ja velka kuittautuu korttilaskun maksulla."
+  ],
+  [
+    2883,
+    "Pankkikorttiostot",
+    "Pankkikortilla maksetut ostot, jotka eivät ole vielä veloittuneet pankkitililtä. Tili nollautuu, kun veloitus näkyy tiliotteella."
+  ],
+  [
+    2888,
+    "Maksuliikennetili",
+    "Välitili maksuliikenteelle, esim. maksut, jotka on lähetetty mutta joita ei vielä ole veloitettu pankkitililtä."
+  ],
+  [
+    2889,
+    "Muut ostovelat",
+    "Muut ostoihin liittyvät maksamattomat velat, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    289,
+    "Rahoitusvekselit",
+    "Vekselillä otetut lainat, jotka erääntyvät vuoden sisällä. Harvinainen."
+  ],
+  [
+    2891,
+    "Rahoitusvekselit",
+    "Rahoitusvekselit eli vekselillä otettu laina, joka erääntyy vuoden sisällä."
+  ],
+  [
+    290,
+    "Velat saman konsernin yrityksille",
+    "Lyhytaikaiset velat emo-, tytär- tai sisaryhtiöille. Koskee vain yrityksiä, jotka kuuluvat konserniin."
+  ],
+  [
+    2901,
+    "Saadut ennakot konserniyrityksiltä",
+    "Konserniyhtiöltä saadut ennakkomaksut, jotka kuittautuvat vuoden sisällä."
+  ],
+  [2903, "Ostovelat konserniyrityksille", "Konserniyhtiölle maksamattomat ostolaskut."],
+  [
+    2905,
+    "Rahoitusvekselit konserniyrityksiltä",
+    "Konserniyhtiöltä vekselillä otettu lyhytaikainen laina."
+  ],
+  [
+    2907,
+    "Muut velat konserniyrityksille",
+    "Muut vuoden sisällä maksettavat velat konserniyhtiöille."
+  ],
+  [
+    2909,
+    "Siirtovelat konserniyrityksille",
+    "Konserniyhtiöille kuuluvat lyhytaikaiset siirtovelat (jaksotetut menot tai tuloennakot)."
+  ],
+  [
+    291,
+    "Velat omistusyhteysyrityksille",
+    "Lyhytaikaiset velat omistusyhteysyrityksille eli yrityksille, joista omistetaan merkittävä osa (yleensä vähintään 20 %)."
+  ],
+  [
+    2911,
+    "Saadut ennakot omistusyhteysyrityksiltä",
+    "Omistusyhteysyritykseltä saadut ennakot, jotka kuittautuvat vuoden sisällä."
+  ],
+  [
+    2913,
+    "Ostovelat omistusyhteysyrityksille",
+    "Omistusyhteysyritykselle maksamattomat ostolaskut."
+  ],
+  [
+    2915,
+    "Rahoitusvekselit omistusyhteysyrityksiltä",
+    "Omistusyhteysyritykseltä vekselillä otettu lyhytaikainen laina."
+  ],
+  [
+    2917,
+    "Muut velat omistusyhteysyrityksille",
+    "Muut vuoden sisällä maksettavat velat omistusyhteysyrityksille."
+  ],
+  [
+    2919,
+    "Siirtovelat omistusyhteysyrityksille",
+    "Omistusyhteysyrityksille kuuluvat lyhytaikaiset siirtovelat."
+  ],
+  [
+    292,
+    "Muut velat",
+    "Muut lyhytaikaiset velat, esim. verovelat (ALV, ennakonpidätykset), TyEL-velka, velat osakkaille ja päätetyt maksamattomat osingot."
+  ],
+  [
+    2920,
+    "Verovelka (oma-aloitteiset verot)",
+    "OmaVerossa ilmoitettavat ja maksettavat verot (ALV, ennakonpidätykset, työnantajan sairausvakuutusmaksu), kun laskelma on tehty. Velka kuittautuu, kun maksu OmaVeroon tehdään."
+  ],
+  [
+    2921,
+    "Ennakonpidätysvelka",
+    "Palkoista pidätetty ennakonpidätys, jota ei ole vielä maksettu Verohallinnolle. Usein käytetään sen sijaan yhteistä OmaVero-tiliä 2920."
+  ],
+  [
+    2922,
+    "Maksettava arvonlisävero",
+    "Kauden maksettava arvonlisävero ALV-ilmoituksen jälkeen. Määrä siirretään tililtä verovelaksi (2920) veron eräpäivänä OmaVeron maksutilanteen mukaan."
+  ],
+  [
+    2923,
+    "Sairausvakuutusmaksuvelka",
+    "Maksamaton työnantajan sairausvakuutusmaksu. Usein käytetään sen sijaan yhteistä OmaVero-tiliä 2920."
+  ],
+  [
+    2925,
+    "Jäsenmaksutilitysvelka",
+    "Palkoista pidätetyt ammattiliiton jäsenmaksut, jotka tilitetään liitolle."
+  ],
+  [
+    2926,
+    "Jäsenmaksutilitysvelka 2",
+    "Toinen jäsenmaksutilitysvelka, jos tilitetään usealle liitolle. Varatili."
+  ],
+  [
+    2927,
+    "Jäsenmaksutilitysvelka 3",
+    "Kolmas jäsenmaksutilitysvelka, jos tilitetään usealle liitolle. Varatili."
+  ],
+  [
+    2931,
+    "TyEL-velka",
+    "Maksamattomat TyEL-maksut (työnantajan ja työntekijän osuus), jotka maksetaan työeläkeyhtiölle. Ei: yrittäjän oma YEL → 6100."
+  ],
+  [
+    2933,
+    "Ulosottotilitysvelka",
+    "Työntekijän palkasta ulosottoon pidätetty määrä, joka tilitetään ulosottovirastolle."
+  ],
+  [
+    2935,
+    "Tilitysvelat",
+    "Muut palkoista tai asiakkailta pidätetyt rahat, jotka pitää tilittää eteenpäin."
+  ],
+  [
+    2937,
+    "Maksuunpantu verovelka",
+    "Verohallinnon maksettavaksi määräämä vero, esim. jäännösvero, jota ei ole vielä maksettu."
+  ],
+  [
+    2938,
+    "Maksuunpantu ennakkoverovelka",
+    "Maksamattomat ennakkoverot, jotka Verohallinto on määrännyt maksettaviksi."
+  ],
+  [
+    2939,
+    "Arvonlisäverovelka",
+    "Myynneistä kertyvä arvonlisävero kirjautuu tänne automaattisesti. ALV-ilmoituksen yhteydessä saldo siirtyy maksettavaksi (2922 tai 2920). Ei: ostojen ALV → 1763."
+  ],
+  [
+    29391,
+    "Maksuperusteinen arvonlisäverovelka",
+    "Maksuperusteisessa ALV:ssä myyntilaskun ALV odottaa tällä tilillä, kunnes asiakas maksaa laskun. Vasta silloin vero kuuluu tilitettäväksi."
+  ],
+  [
+    29392,
+    "Arvonlisäverovelka ennakkolaskuista",
+    "Ennakkolaskun arvonlisävero odottaa tällä tilillä, kunnes se tulee tilitettäväksi."
+  ],
+  [
+    2940,
+    "Velat työntekijöille",
+    "Työntekijöille maksettavat velat, esim. maksamattomat nettopalkat tai kulukorvaukset."
+  ],
+  [
+    2941,
+    "Velat osakkaille",
+    "Osakaslaina ja muut velat osakkaille, esim. osakkaan yhtiön puolesta maksama kulu. Ei: osakkaan sijoitus pääomaksi → 2061."
+  ],
+  [
+    2942,
+    "Velat johdolle",
+    "Yrityksen johdolle (esim. toimitusjohtaja, hallitus) maksettavat velat, esim. maksamattomat palkkiot tai kulukorvaukset."
+  ],
+  [
+    2943,
+    "Voitonjakovelat",
+    "Päätetyt, vielä maksamattomat osingot tai voitto-osuudet. Velka kuittautuu, kun osinko maksetaan. Päätös kirjataan vastapuolelle 2261."
+  ],
+  [
+    2944,
+    "Optiolainat",
+    "Lyhytaikaiset optiolainat eli lainat, joihin liittyy oikeus merkitä yhtiön osakkeita."
+  ],
+  [
+    2945,
+    "Saadut vuokravakuudet",
+    "Vuokralaiselta tai asiakkaalta saatu vakuusraha, joka palautetaan myöhemmin. Vakuus on velkaa, ei tuloa."
+  ],
+  [
+    2947,
+    "Selvittelytili",
+    "Väliaikainen tili epäselville erille, jotka selvitetään myöhemmin. Saldon pitäisi olla nolla tilinpäätöksessä. Ks. myös 1777."
+  ],
+  [
+    2949,
+    "Muut lyhytaikaiset velat",
+    "Muut lyhytaikaiset velat, jotka eivät sovi edellisille tileille."
+  ],
+  [
+    295,
+    "Siirtovelat",
+    "Siirtovelka = jaksotus: meno, joka kuuluu tälle vuodelle mutta maksetaan vasta myöhemmin, tai etukäteen saatu tulo, joka kuuluu seuraavalle vuodelle."
+  ],
+  [
+    2951,
+    "Vuokratulot (siirtovelat)",
+    "Etukäteen saatu vuokra, joka kuuluu seuraavalle tilikaudelle."
+  ],
+  [
+    2953,
+    "Korkotulot (siirtovelat)",
+    "Etukäteen saadut korot, jotka kuuluvat seuraavalle tilikaudelle."
+  ],
+  [
+    2955,
+    "Jaksotetut investointiavustukset (siirtovelat)",
+    "Saatu investointiavustus, joka tuloutetaan vähitellen hankitun omaisuuden poistojen tahdissa."
+  ],
+  [
+    2959,
+    "Muut tuloennakot (siirtovelat)",
+    "Muut etukäteen saadut tulot, jotka kuuluvat seuraavalle tilikaudelle, esim. ennalta laskutettu vuosimaksu."
+  ],
+  [
+    2961,
+    "Palkkamenot (siirtovelat)",
+    "Tämän tilikauden palkat, jotka maksetaan vasta seuraavalla kaudella. Ei: lomapalkkavelka → 2962."
+  ],
+  [
+    2962,
+    "Lomapalkkamenot (siirtovelat)",
+    "Lomapalkkavelka: työntekijöiden ansaitsemat, vielä pitämättömät lomat ja lomarahat tilinpäätöshetkellä."
+  ],
+  [
+    2963,
+    "Eläkevakuutusmaksut (siirtovelat)",
+    "Tilikaudelle kuuluvat eläkevakuutusmaksut (esim. lomapalkkavelan TyEL), jotka maksetaan myöhemmin."
+  ],
+  [
+    2964,
+    "Sairausvakuutusmaksut (siirtovelat)",
+    "Tilikaudelle kuuluvat työnantajan sairausvakuutusmaksut, jotka maksetaan myöhemmin."
+  ],
+  [
+    2965,
+    "Työnantajan pakolliset vakuutusmaksut (siirtovelat)",
+    "Tilikaudelle kuuluvat pakolliset vakuutusmaksut (esim. tapaturma- ja työttömyysvakuutus), jotka maksetaan myöhemmin."
+  ],
+  [
+    2966,
+    "Vuokramenot (siirtovelat)",
+    "Tilikaudelle kuuluva vuokra, jota ei ole vielä laskutettu tai maksettu."
+  ],
+  [
+    2967,
+    "Korkomenot (siirtovelat)",
+    "Tilikaudelle kuuluvat lainan korot, jotka maksetaan vasta seuraavalla kaudella."
+  ],
+  [
+    2968,
+    "Tuloverot (siirtovelat)",
+    "Tilikauden tuloverosta vielä maksamatta oleva osuus. Kirjataan yhdessä 9940 Tilikauden verojaksotus kanssa."
+  ],
+  [
+    2969,
+    "Muut menojäämät (siirtovelat)",
+    "Tälle tilikaudelle kuuluvat kulut, jotka laskutetaan vasta seuraavalla kaudella, esim. joulukuun sähkö tai tilinpäätöksen kirjanpitopalkkio."
+  ],
+  [
+    2971,
+    "Myynnin alennukset (siirtovelat)",
+    "Tämän vuoden myynnistä asiakkaille luvatut alennukset tai hyvitykset, jotka maksetaan myöhemmin."
+  ],
+  [
+    2973,
+    "Vastaiset menot ja menetykset (siirtovelat)",
+    "Tämän tilikauden tuloihin liittyvät todennäköiset tulevat menot tai menetykset, joiden määrä on jo tiedossa."
+  ],
+  [
+    2975,
+    "Laskennalliset kurssivoitot (siirtovelat)",
+    "Valuuttamääräisten erien kurssimuutoksista syntyneet, vielä toteutumattomat kurssivoitot."
+  ],
+  [
+    2977,
+    "Arvonlisäverovelat ennakkomaksuista (siirtovelat)",
+    "Asiakkailta saatuihin ennakkomaksuihin liittyvä arvonlisävero, joka on jaksotettu."
+  ],
+  [
+    2979,
+    "Muut siirtovelat",
+    "Yleinen siirtovelkatili: tälle tilikaudelle kuuluvat kulut, jotka maksetaan myöhemmin, tai etukäteen saadut tulot. Ei: tavallinen maksamaton ostolasku → 2871."
+  ],
+  [
+    298,
+    "Laskennalliset verovelat",
+    "Laskennallinen verovelka = tuleville vuosille siirtyvä vero, joka johtuu kirjanpidon ja verotuksen ajoituseroista. Pienyrityksessä harvinainen."
+  ],
+  [
+    2981,
+    "Laskennalliset verovelat",
+    "Laskennalliset verovelat. Käytetään lähinnä suurten yritysten tai konsernien tilinpäätöksissä."
+  ],
+  [
+    3,
+    "Tuloslaskelma",
+    "Tuloslaskelma näyttää, mitä tilikaudella tuli sisään ja mitä meni kuluihin. Tulot ja kulut vähennetään toisistaan, ja lopputuloksena on voitto tai tappio."
+  ],
+  [
+    3,
+    "Myyntituotot",
+    "Myyntituotot ovat tuloja yrityksen varsinaisesta toiminnasta, eli tavaroiden ja palveluiden myynnistä asiakkaille. Niistä muodostuu liikevaihto."
+  ],
+  [
+    30,
+    "Yleiset myyntitilit",
+    "Tavalliset myyntitilit kotimaan myynnille. Useimmille riittää yksi tili, mutta myynnin voi jakaa useammalle tilille esimerkiksi tuoteryhmittäin."
+  ],
+  [
+    3000,
+    "Myynti",
+    "Kotimaan myynti, tavarat ja palvelut: yleensä ALV 25,5 %, alennetut 14 % ja 10 % valitaan riville. Ei: avustukset → 3800, satunnaiset vuokratulot → 3750–3790."
+  ],
+  [
+    3010,
+    "Myynti 2",
+    "Varatili myynnin jakamiseen, esim. tuote- tai palveluryhmittäin, jotta näet, mistä tulot tulevat. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3020,
+    "Myynti 3",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3030,
+    "Myynti 4",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3040,
+    "Myynti 5",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3050,
+    "Myynti 6",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3060,
+    "Myynti 7",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3070,
+    "Myynti 8",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3080,
+    "Myynti 9",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3090,
+    "Myynti 10",
+    "Varatili myynnin jakamiseen esim. tuote- tai palveluryhmittäin. Toimii kuten 3000 Myynti."
+  ],
+  [
+    3110,
+    "Rakentamispalveluiden myynti (käänn. verovelv.)",
+    "Rakentamispalvelut (myös rakennustyövoiman vuokraus) rakennusalan yritykselle: lasku ilman ALV:a, merkintä ”käännetty verovelvollisuus”, ja ostaja tilittää veron."
+  ],
+  [
+    320,
+    "Oheispalvelut",
+    "Pääliiketoiminnan ohessa tarjotuista pienistä lisäpalveluista saatavat tulot, esim. myymälässä tai kahvilassa: puhelin, rahapelit ja automaatit."
+  ],
+  [
+    3200,
+    "Puhelintuotot",
+    "Tulot, kun asiakkaat käyttävät liikkeen puhelinta tai puhelinpalveluja maksua vastaan."
+  ],
+  [
+    3210,
+    "Veikkaustuotot",
+    "Rahapelien myynnistä saatavat asiamiespalkkiot, esim. kioskissa tai kaupassa. Tarkista ALV-käsittely: rahapelien välitys on yleensä arvonlisäverotonta."
+  ],
+  [
+    3220,
+    "Automaattituotot",
+    "Tulot liiketiloissa olevista automaateista, esim. myynti- tai peliautomaateista."
+  ],
+  [
+    3230,
+    "Muut oheispalvelutuotot",
+    "Muut pääliiketoiminnan ohessa tarjotut pienet lisäpalvelut, joille ei ole omaa tiliä tässä ryhmässä."
+  ],
+  [
+    325,
+    "Toimitusveloitukset ja osamaksulisät",
+    "Laskulle lisättävät erilliset veloitukset: toimituskulut, rahti, laskutuslisä ja osamaksulisä. ALV menee yleensä samalla kannalla kuin itse myynti."
+  ],
+  [
+    3250,
+    "Laskutuslisät",
+    "Asiakkaalta veloitettava laskutuslisä, esim. paperilaskun lisämaksu. Ei: viivästyskorot → 9170 Korkotuotot myyntisaamisista."
+  ],
+  [
+    3260,
+    "Kuljetusvakuutukset",
+    "Asiakkaalta veloitettu kuljetusvakuutus, kun tavara vakuutetaan toimituksen ajaksi asiakkaan laskuun."
+  ],
+  [
+    3270,
+    "Kuljetusveloitukset",
+    "Asiakkaalta laskutetut rahti-, posti- ja toimitusmaksut, esim. verkkokaupan toimituskulut. ALV samalla kannalla kuin myyty tavara."
+  ],
+  [
+    3280,
+    "Muut toimitusveloitukset",
+    "Muut asiakkaalta laskutetut toimitukseen liittyvät maksut, esim. pakkaus- tai käsittelymaksut."
+  ],
+  [
+    3290,
+    "Osamaksulisät",
+    "Lisämaksu, jonka asiakas maksaa ostaessaan osamaksulla. Ei: osamaksusaamisen korko → 9180 Korkotuotot osamaksusaamisista."
+  ],
+  [
+    330,
+    "Komissiokauppa ja agentuuri",
+    "Kun myyt toisen lukuun: komissiokaupassa omissa nimissäsi päämiehen tavaraa, agentuurissa päämiehen nimissä palkkiota vastaan."
+  ],
+  [
+    3300,
+    "Komissiomyynti",
+    "Komissiokaupan myynnit: myyt omissa nimissäsi tavaraa, joka kuuluu päämiehelle, ja tilität myyntihinnan omalla palkkiollasi vähennettynä."
+  ],
+  [
+    3310,
+    "Komissio-ostot",
+    "Komissiotavaroiden hankinnat eli päämiehelle tilitettävä osuus komissiomyynnistä. Pienentää komissiomyyntiä, jolloin myyntituotoksi jää oma palkkiosi."
+  ],
+  [
+    3320,
+    "Välityspalvelutuotot",
+    "Palkkiot, kun välität toisen tavaroita tai palveluita tämän nimissä, esim. agentuuri tai välitystoiminta pääliiketoimintana. Verollinen palvelu, yleensä ALV 25,5 %."
+  ],
+  [
+    3330,
+    "Tavaravienti",
+    "Myynti Suomen arvonlisäveroalueen ulkopuolelle: Ahvenanmaalle, muihin EU-maihin ja EU:n ulkopuolelle. Myynti on usein Suomessa ALV:tonta, mutta ehtoja on."
+  ],
+  [
+    3330,
+    "Tavaramyynti Ahvenanmaalle",
+    "Tavaroiden myynti Ahvenanmaalle. Ahvenanmaa on EU:n arvonlisäveroalueen ulkopuolella, joten myynti käsitellään kuin vienti: ei Suomen ALV:a, tulliselvitys tarvitaan."
+  ],
+  [
+    3350,
+    "Yhteisömyynti EMU-maat",
+    "Tavaramyynti ALV-rekisteröidylle yritykselle euromaassa (esim. Saksa, Viro). ALV 0 %, ostajan ALV-tunnus laskulle ja yhteenvetoilmoitus. Ei: kuluttajille → 3000."
+  ],
+  [
+    3360,
+    "Yhteisömyynti muut EU-maat",
+    "Tavaramyynti ALV-rekisteröidylle yritykselle muussa EU-maassa (esim. Ruotsi, Puola). ALV 0 %, ostajan ALV-tunnus laskulle ja yhteenvetoilmoitus."
+  ],
+  [
+    3370,
+    "Kolmikantamyynti",
+    "Kolmen EU-maan yritysten ketjukauppa, jossa tavara kulkee suoraan ensimmäiseltä myyjältä viimeiselle ostajalle. Laskuun ja yhteenvetoilmoitukseen tulee erityismerkinnät."
+  ],
+  [
+    3380,
+    "Myynti yhteisön ulkopuolelle",
+    "Vienti EU:n ulkopuolelle, esim. Norjaan, Isoon-Britanniaan tai Yhdysvaltoihin. Myynti on ALV 0 %, kun tavaran vienti on todennettu (vientiselvitys)."
+  ],
+  [
+    3390,
+    "Palveluiden myynti EU-maihin",
+    "Palvelut toisen EU-maan yritykselle: lasku ilman ALV:a, ostajan ALV-tunnus ja merkintä ”käännetty verovelvollisuus”, yhteenvetoilmoitus. Ei: kuluttajille → 3000."
+  ],
+  [
+    340,
+    "Myynti, käytetyt tavarat ja taide-, keräily- ja antiikkiesineet",
+    "Käytettyjen tavaroiden ja taide-, keräily- ja antiikkiesineiden myynti. ALV joko normaalisti koko hinnasta tai marginaaliverotuksella vain katteesta."
+  ],
+  [
+    3400,
+    "Myynti käytetyt tavarat",
+    "Käytettyjen tavaroiden myynti tavallisella ALV:lla koko myyntihinnasta, esim. kun ostossa on vähennetty ALV. Ei: marginaaliverotettu myynti → 3410."
+  ],
+  [
+    3410,
+    "Myynti käytetyt tavarat marginaalimenettely",
+    "Käytetyt tavarat marginaaliverotuksella: ALV lasketaan vain ostohinnan ja myyntihinnan erotuksesta verokausittain ALV-ilmoitusta annettaessa. Ostot → 4160."
+  ],
+  [
+    3420,
+    "Myynti taide-, keräily- ja antiikkiesineet",
+    "Taide-, keräily- ja antiikkiesineiden myynti tavallisella ALV:lla koko myyntihinnasta. Ei: marginaaliverotettu myynti → 3430."
+  ],
+  [
+    3430,
+    "Myynti taide-, keräily-ja antiikkiesineet marginaalimenettely",
+    "Taide-, keräily- ja antiikkiesineet marginaaliverotuksella: ALV lasketaan vain katteesta verokausittain ALV-ilmoitusta annettaessa. Ostot → 4180."
+  ],
+  [
+    344,
+    "Myynti, arvopaperit ja kiinteistöt",
+    "Vain yrityksille, joiden varsinaista liiketoimintaa on kiinteistöjen tai arvopapereiden kauppa, vuokraus tai sijoittaminen. Muuten käytä muita tuottoja tai rahoitustuottoja."
+  ],
+  [
+    3440,
+    "Kiinteistöjen myynti",
+    "Kiinteistöjen myynti, kun kiinteistökauppa on yrityksen liiketoimintaa. Yleensä ALV-vapaa. Ei: oman toimitilan tai muun käyttöomaisuuden myyntivoitto → 3650."
+  ],
+  [
+    3450,
+    "Vuokratuotot",
+    "Vuokratulot, kun vuokraus on yrityksen päätoimintaa, esim. vuokranantajayhtiö. Ei: satunnainen vuokratulo sivussa → 3750–3790."
+  ],
+  [
+    3460,
+    "Arvopapereiden myynti",
+    "Arvopapereiden myynti, kun arvopaperikauppa on yrityksen liiketoimintaa (vaihto-omaisuutta). Ostot → 4210."
+  ],
+  [
+    3470,
+    "Osinkotuotot",
+    "Osingot, kun sijoittaminen on yrityksen päätoimintaa. Ei: tavallisen yrityksen saamat osingot → rahoitustuotot, esim. 9090 Osinkotuotot (verovapaat)."
+  ],
+  [
+    3480,
+    "Korkotuotot",
+    "Korot, kun rahoitus tai lainaus on yrityksen päätoimintaa. Ei: tavallisen yrityksen talletus- ja pankkikorot → 9220 Korkotuotot pankkisaamisista."
+  ],
+  [
+    3490,
+    "Muut kiinteistö-  ja arvopaperituotot",
+    "Muut kiinteistöihin ja arvopapereihin liittyvät tuotot yrityksille, joiden päätoimintaa tämä on."
+  ],
+  [
+    35,
+    "Myynnin oikaisuerät",
+    "Liikevaihdosta vähennettävät erät, kuten jälkikäteen myönnetyt alennukset, myynnin määrään perustuvat verot ja myynnin valuuttakurssierot."
+  ],
+  [
+    3500,
+    "Myynnin alennukset",
+    "Jälkikäteen myönnetyt alennukset, esim. kassa-alennus tai vuosihyvitys; myynnin ALV pienenee samalla. Suoraan laskulla annettu alennus vähennetään jo myynnistä."
+  ],
+  [
+    3510,
+    "Yhteisömyynnin alennukset EMU-maat",
+    "Euromaihin tehdyn yhteisömyynnin jälkikäteen myönnetyt alennukset ja hyvitykset (ALV 0 %). Vastaa myyntiä 3350."
+  ],
+  [
+    3520,
+    "Yhteisömyynnin alennukset muut EU-maat",
+    "Muihin EU-maihin tehdyn yhteisömyynnin jälkikäteen myönnetyt alennukset ja hyvitykset (ALV 0 %). Vastaa myyntiä 3360."
+  ],
+  [
+    3550,
+    "Apteekkimaksu",
+    "Vain apteekeille: liikevaihdon perusteella valtiolle maksettava apteekkimaksu, joka vähennetään liikevaihdosta."
+  ],
+  [
+    3560,
+    "Muut välilliset verot",
+    "Muut suoraan myynnin määrään perustuvat verot, kuten valmisteverot, jotka vähennetään liikevaihdosta. Ei: arvonlisävero, se kirjautuu ALV-tileille automaattisesti."
+  ],
+  [
+    3570,
+    "Maksut asiakkaan puolesta",
+    "Asiakkaan puolesta maksetut kulut, jotka veloitetaan asiakkaalta sellaisenaan edelleen (läpikulkuerät), ettei ne kasvata liikevaihtoa."
+  ],
+  [
+    3580,
+    "Myynnin valuuttakurssierot",
+    "Ero, kun valuuttamääräinen myyntilasku maksetaan eri kurssilla kuin se kirjattiin. Esim. dollarilasku tuottaa maksupäivänä vähemmän tai enemmän euroja."
+  ],
+  [
+    3590,
+    "Muut myynnin oikaisuerät",
+    "Muut liikevaihtoa oikaisevat erät, joille ei ole omaa tiliä tässä ryhmässä."
+  ],
+  [
+    360,
+    "Valmiiden ja keskeneräisten tuotteiden varastojen lisäys tai vähennys",
+    "Itse valmistettujen tuotteiden varaston arvon muutos tilikauden aikana. Kasvu on tuottoa, pieneneminen kulua. Ei: ostettujen kauppatavaroiden varasto → 4410."
+  ],
+  [
+    3600,
+    "Valmiiden tuotteiden varaston muutos",
+    "Tilinpäätöksessä kirjattava muutos itse valmistettujen, myyntivalmiiden tuotteiden varaston arvossa alkuun verrattuna."
+  ],
+  [
+    3610,
+    "Keskeneräisten tuotteiden varaston muutos",
+    "Tilinpäätöksessä kirjattava muutos keskeneräisten tuotteiden (esim. kesken olevat työt ja tilaustuotteet) varaston arvossa."
+  ],
+  [
+    3620,
+    "Valmiiden ja keskeneräisten tuotteiden varastojen arvonalennus",
+    "Kirjaus, kun valmiiden tai keskeneräisten tuotteiden arvo laskee hankintamenoa alemmaksi, esim. vanhentuneet tai vaurioituneet tuotteet."
+  ],
+  [
+    363,
+    "Valmistus omaan käyttöön",
+    "Kun teet itse yrityksen käyttöön pitkäaikaista omaisuutta, esim. rakennat varaston tai kehität ohjelmiston. Työn ja aineiden arvo siirretään taseeseen tämän tuoton kautta."
+  ],
+  [
+    3630,
+    "Valmistus omaan käyttöön, aineettomat hyödykkeet",
+    "Itse tehdyt aineettomat hyödykkeet, kuten oma ohjelmisto tai kehittämismenot, joiden kulut aktivoidaan taseeseen poistettavaksi."
+  ],
+  [
+    3640,
+    "Valmistus omaan käyttöön, aineelliset hyödykkeet",
+    "Itse rakennetut tai valmistetut aineelliset hyödykkeet, kuten rakennus, kone tai laite, joiden kulut aktivoidaan taseeseen poistettavaksi."
+  ],
+  [
+    365,
+    "Liiketoiminnan muut tuotot",
+    "Muut kuin myynnistä tulevat liiketoiminnan tuotot, esim. käyttöomaisuuden myyntivoitot, avustukset, vuokrat ja vakuutuskorvaukset. Eivät kuulu liikevaihtoon."
+  ],
+  [
+    3650,
+    "Käyttöomaisuuden myyntivoitot",
+    "Voitto, kun myyt käyttöomaisuutta, esim. auton tai koneen, yli sen poistamattoman arvon. Ei: luovutustappio → 8850 Käyttöomaisuuden luovutustappiot."
+  ],
+  [
+    3660,
+    "Myyntivoitto liiketoimintakaupoista",
+    "Voitto, kun myyt koko liiketoiminnan tai sen osan, esim. liiketoimintayksikön tai sivuliikkeen."
+  ],
+  [
+    3677,
+    "Käyttöoikeusosakkeiden myyntivoitot (verovapaat)",
+    "Osakkeiden luovutusvoitot, jotka ovat verotuksessa verovapaita. Käytä vain, kun verovapauden edellytykset täyttyvät; muuten → 3650."
+  ],
+  [
+    3680,
+    "Poikkeukselliset käyttöomaisuuden myyntivoitot",
+    "Harvinainen ja olennainen kertaluonteinen käyttöomaisuuden myyntivoitto, esim. toimitilakiinteistön myynti, joka halutaan erottaa tavallisista."
+  ],
+  [
+    3697,
+    "Poikkeukselliset käyttöomaisuusosakkeiden myyntivoitot",
+    "Harvinaiset ja olennaiset kertaluonteiset käyttöomaisuuteen kuuluvien osakkeiden myyntivoitot."
+  ],
+  [
+    3700,
+    "Leasinghyvitykset",
+    "Leasingyhtiöltä saadut hyvitykset, esim. kun leasingkohde myydään sopimuksen päätyttyä ja ylijäämä hyvitetään sinulle."
+  ],
+  [
+    3710,
+    "Keskeytysvakuutuskorvaukset",
+    "Vakuutuskorvaus menetetystä katteesta, kun toiminta keskeytyi esim. tulipalon tai konerikon vuoksi. Ei ALV:a."
+  ],
+  [
+    3720,
+    "Vakuutusten takaisinostoarvot",
+    "Rahat, jotka saat takaisin, kun puret säästötyyppisen vakuutuksen ja vakuutusyhtiö maksaa sen takaisinostoarvon."
+  ],
+  [
+    3730,
+    "Saadut vahingonkorvaukset",
+    "Toiselta osapuolelta saadut korvaukset aiheutuneesta vahingosta, esim. sopimusrikkomuksesta tai omaisuusvahingosta. Ei ALV:a. Ei: Kelan sairausvakuutuskorvaus → 5470."
+  ],
+  [
+    3750,
+    "Vuokratuotot kiinteistöistä",
+    "Vuokratulot kiinteistöistä tai maa-alueista, kun vuokraus ei ole päätoimintaa. Asuinvuokra on ALV-vapaa; liiketilan vuokra voi olla vapaaehtoisesti verollista."
+  ],
+  [
+    3760,
+    "Vuokratuotot huoneistoista",
+    "Vuokratulot huoneistoista, esim. kun vuokraat osan toimitilasta toiselle yritykselle tai asunnon vuokralle."
+  ],
+  [
+    3770,
+    "Vuokratuotot henkilöstön virkistystiloista",
+    "Vuokratulot, kun henkilöstö maksaa yrityksen virkistystilojen, esim. lomamökin, käytöstä."
+  ],
+  [
+    3780,
+    "Vuokratuotot koneista ja kalustosta",
+    "Vuokratulot yrityksen koneiden, laitteiden ja kaluston satunnaisesta vuokraamisesta. ALV 25,5 %. Ei: jos vuokraus on päätoimintaa → 3000."
+  ],
+  [
+    3790,
+    "Muut vuokratuotot",
+    "Muut vuokratulot, joille ei ole omaa tiliä, esim. autopaikkojen tai varastotilan vuokraus."
+  ],
+  [
+    3800,
+    "Saadut avustukset",
+    "Viranomaisilta saadut avustukset, esim. ELY-keskuksen kehittämisavustus. Ei ALV:a. Ei: starttiraha on yrittäjän omaa tuloa; yritystilille maksettuna → 2361."
+  ],
+  [
+    3810,
+    "Saadut työllistämiskorvaukset",
+    "Palkkatuki ja muut korvaukset, joita saat työttömän työllistämisestä."
+  ],
+  [
+    3820,
+    "Saadut oppisopimuskorvaukset",
+    "Koulutuskorvaukset, joita työnantaja saa oppisopimusopiskelijan kouluttamisesta."
+  ],
+  [
+    3840,
+    "Saadut tuet",
+    "Muut saadut tuet, joille ei ole omaa tiliä, esim. kustannus- tai energiatuet. Ei ALV:a."
+  ],
+  [
+    3850,
+    "Työvoiman vuokraustuotot",
+    "Tulot, kun vuokraat omia työntekijöitäsi satunnaisesti toiselle yritykselle. Ei: jos henkilöstövuokraus on päätoimintaa → 3000."
+  ],
+  [
+    3860,
+    "Kuljetuspalvelutuotot",
+    "Sivussa myydyt kuljetuspalvelut, esim. kun kuljetat satunnaisesti toisen yrityksen tavaraa. Ei: jos kuljetus on päätoimintaa → 3000."
+  ],
+  [
+    3870,
+    "Toimistopalvelutuotot",
+    "Sivussa myydyt toimistopalvelut, esim. kopiointi, postitus tai kirjanpitoapu toiselle yritykselle."
+  ],
+  [
+    3880,
+    "Tietoliikennepalvelutuotot",
+    "Sivussa myydyt tietoliikennepalvelut, esim. verkkoyhteyden jakaminen naapuriyritykselle."
+  ],
+  [
+    3890,
+    "Muut palvelutuotot",
+    "Muut pääliiketoiminnan ulkopuoliset palvelutuotot, joille ei ole omaa tiliä."
+  ],
+  [
+    3900,
+    "Rojaltit",
+    "Korvaukset tekijänoikeuden, patentin tai tavaramerkin käyttöoikeudesta. Huom: tekijän itse saamat tekijänoikeuskorvaukset voivat olla ALV-vapaita."
+  ],
+  [
+    3910,
+    "Provisiot",
+    "Satunnaiset välityspalkkiot, esim. kun suosittelet asiakkaan toiselle yritykselle. Ei: jos välitys on päätoimintaa → 3320."
+  ],
+  [
+    3920,
+    "Lisenssimaksut",
+    "Tulot, kun annat toiselle luvan käyttää esim. ohjelmistoasi, menetelmääsi tai tuotemerkkiäsi."
+  ],
+  [
+    3930,
+    "Asiamiespalkkiot",
+    "Palkkiot, joita saat toimiessasi toisen yrityksen asiamiehenä pääliiketoiminnan ohessa."
+  ],
+  [
+    3950,
+    "Muut palkkiot ja korvaukset",
+    "Muut sivutuloina saadut palkkiot ja korvaukset, joille ei ole omaa tiliä."
+  ],
+  [
+    3980,
+    "Fuusiovoitto",
+    "Kirjanpidollinen voitto, joka voi syntyä yritysten sulautuessa (fuusio). Verotuksessa ei veronalaista tuloa. Harvinainen, yleensä vain osakeyhtiöillä."
+  ],
+  [
+    3990,
+    "Muut liiketoiminnan muut tuotot",
+    "Muut liiketoiminnan tuotot, joille ei löydy sopivampaa tiliä yltä. Tarkista ensin, sopiiko tulo johonkin tarkempaan tiliin."
+  ],
+  [
+    4,
+    "Materiaalit ja palvelut",
+    "Kulut siitä, mikä menee suoraan myymiisi tuotteisiin ja palveluihin: myyntiin ostettu tavara, raaka-aineet ja alihankinta. Yleiset juoksevat kulut ovat tileillä 7000–8800."
+  ],
+  [
+    40,
+    "Aineet, tarvikkeet ja tavarat",
+    "Fyysiset tavarat ja materiaalit, joita ostat myyntiä tai valmistusta varten, sekä varaston muutos tilikauden lopussa. Palveluostot ovat ryhmässä Ulkopuoliset palvelut (4450–)."
+  ],
+  [
+    40,
+    "Ostot tilikauden aikana",
+    "Kaikki tilikauden aikana tehdyt tavara- ja materiaaliostot sekä niihin liittyvät tuonnit, rahdit ja oikaisut (alennukset, palautukset). Vuoden lopun varastonmuutos kirjataan erikseen tileille 4400–4440."
+  ],
+  [
+    40,
+    "Aine-, tarvike- ja tavaraostot",
+    "Tavallisten, pääosin kotimaasta ostettujen myyntitavaroiden ja raaka-aineiden ostotilit; tuonti on omassa ryhmässään (4090–). Ostot 2–7 ovat varatilejä ostojen jakamiseen esim. tuoteryhmittäin."
+  ],
+  [
+    4000,
+    "Ostot",
+    "Tavara ja materiaali, jonka myyt eteenpäin tai josta teet myytävän tuotteen, esim. kaupan tuotteet tai raaka-aineet. Ei: oma käyttö kuten toimistotarvikkeet (8620), ohjelmistot (7660), puhelin (8510)."
+  ],
+  [
+    4010,
+    "Ostot 2",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4020,
+    "Ostot 3",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4030,
+    "Ostot 4",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4040,
+    "Ostot 5",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4050,
+    "Ostot 6",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4060,
+    "Ostot 7",
+    "Varatili ostojen jakamiseen esim. tuoteryhmän tai ALV-käsittelyn mukaan, jos haluat seurata niitä erikseen tilistä 4000."
+  ],
+  [
+    4070,
+    "Ostot välitysmyynti",
+    "Ostot tavaroista, joita myyt omissa nimissäsi toisen lukuun (esim. komissio- tai välitysmyynti), jos haluat pitää ne erillään tavallisista ostoista (4000)."
+  ],
+  [
+    4080,
+    "Ostot, ostaja verovelvollinen",
+    "Kotimaan ostot, joissa myyjä ei lisää laskuun ALV:tä vaan ostajana ilmoitat sen itse (käännetty verovelvollisuus), esim. metalliromu. Ei: rakennuspalvelut (4458)."
+  ],
+  [
+    409,
+    "Tavaratuonti",
+    "Tavarat, jotka tuot Suomeen EU:n arvonlisäveroalueen ulkopuolelta tai Ahvenanmaalta tai ostat muista EU-maista. Näissä ALV hoidetaan eri tavalla kuin kotimaan ostoissa."
+  ],
+  [
+    4090,
+    "Tavaraostot Ahvenanmaalta",
+    "Tavarat, jotka ostat Ahvenanmaalta. Ahvenanmaa on EU:n arvonlisäveroalueen ulkopuolella, joten ostoa käsitellään verotuksessa maahantuontina."
+  ],
+  [
+    4100,
+    "Verot ja muut maksut Ahvenanmaan maahantuonnissa",
+    "Ahvenanmaalta tuotujen tavaroiden tuonnissa maksetut verot ja maksut, esim. valmisteverot. Vähennettävissä oleva tuonnin ALV ei ole kulu vaan menee ALV-ilmoitukselle."
+  ],
+  [
+    4110,
+    "Yhteisöhankinnat",
+    "Tavarat, jotka ostat toisessa EU-maassa olevalta yritykseltä ilman ALV:tä; ilmoitat veron itse ja vähennät sen samalla. Ei: EU-palveluostot (4470)."
+  ],
+  [
+    4120,
+    "Välittäjän kolmikantaosto",
+    "Kolmikantakauppa, jossa olet välissä: ostat tavaran yhdestä EU-maasta ja myyt sen toiseen EU-maahan, ja tavara kulkee suoraan myyjältä asiakkaalle. Myynti tilille 3370."
+  ],
+  [
+    4130,
+    "Ostot tuonti",
+    "Tavarat, jotka tuot EU:n ulkopuolelta, esim. Kiinasta, Britanniasta tai Yhdysvalloista. Tullit ja muut tuontimaksut kirjataan erikseen tilille 4140."
+  ],
+  [
+    4140,
+    "Tullit, verot ja muut maksut tullattaessa",
+    "Tullauksessa maksetut tullit, valmisteverot ja muut maksut. Vähennettävissä oleva tuonnin ALV ei ole kulu vaan menee ALV-ilmoitukselle; huolitsijan palkkio tilille 4320."
+  ],
+  [
+    415,
+    "Ostot, käytetyt tavarat ja taide- keräily- ja antiikkiesineet",
+    "Käytettyjen tavaroiden sekä taide-, keräily- ja antiikkiesineiden ostot jälleenmyyntiin. Osaan voi soveltaa marginaaliverotusta, jossa ALV lasketaan vain myyntikatteesta."
+  ],
+  [
+    4150,
+    "Ostot käytetyt tavarat",
+    "Jälleenmyyntiin ostetut käytetyt tavarat, joita myyt normaalein ALV-säännöin, esim. ALV-laskulla yritykseltä ostettu käytetty tuote."
+  ],
+  [
+    4160,
+    "Ostot käytetyt tavarat marginaalimenettely",
+    "Jälleenmyyntiin ostetut käytetyt tavarat, joihin sovellat marginaaliverotusta, esim. yksityishenkilöltä ostettu käytetty puhelin. Myynti tilille 3410."
+  ],
+  [
+    4170,
+    "Ostot taide, keräily- ja antiikkiesineet",
+    "Jälleenmyyntiin ostetut taide-, keräily- ja antiikkiesineet, joita myyt normaalein ALV-säännöin."
+  ],
+  [
+    4180,
+    "Ostot taide, keräily- ja antiikkiesineet marginaalimenettely",
+    "Jälleenmyyntiin ostetut taide-, keräily- ja antiikkiesineet, joihin sovellat marginaaliverotusta (ALV vain katteesta). Myynti tilille 3430."
+  ],
+  [
+    420,
+    "Ostot, arvopaperit ja kiinteistöt",
+    "Kiinteistöt ja arvopaperit, jotka ostat myydäksesi ne eteenpäin osana liiketoimintaa (vaihto-omaisuus). Pitkäaikaiseen omaan käyttöön tai sijoitukseksi ostetut kuuluvat taseeseen."
+  ],
+  [
+    4200,
+    "Kiinteistöostot",
+    "Kiinteistöt, joita ostat jälleenmyyntiin osana liiketoimintaa, esim. kiinteistökauppaa tai rakennuttamista. Ei: oma toimitila tai rakennus (tase 1101–1143)."
+  ],
+  [
+    4210,
+    "Arvopapereiden ostot",
+    "Arvopaperit, joilla käyt kauppaa osana liiketoimintaa (vaihto-omaisuutta). Ei: yrityksen sijoitukset tai kassavarojen sijoittaminen (rahoitusarvopaperit, esim. 1891)."
+  ],
+  [
+    4220,
+    "Muut vaihto-omaisuusosakkeiden kulut",
+    "Muut kulut vaihto-omaisuutena pidetyistä osakkeista, esim. myymättömien asunto-osakkeiden vastikkeet tai osakekaupan kulut."
+  ],
+  [
+    423,
+    "Ostojen oikaisuerät",
+    "Erät, jotka muuttavat ostojen lopullista hintaa: jälkikäteen saadut alennukset, palautukset, ostorahdit, tuontikulut, oma käyttö ja valuuttakurssierot."
+  ],
+  [
+    4230,
+    "Ostojen alennukset",
+    "Toimittajalta jälkikäteen saadut alennukset ja hyvitykset ostoista, esim. vuosibonus, käteisalennus tai hinnanalennushyvitys."
+  ],
+  [
+    4240,
+    "Yhteisöhankintojen alennukset",
+    "Toisesta EU-maasta tehtyjen tavarahankintojen (4110) jälkikäteen saadut alennukset ja hyvitykset."
+  ],
+  [
+    4260,
+    "Palautetut tavarat ja päällykset",
+    "Toimittajalle palautetut tavarat ja palautuspakkaukset, joista saat hyvityksen, esim. hyvityslasku virheellisestä erästä tai pantit."
+  ],
+  [
+    4270,
+    "Saadut vahingonkorvaukset",
+    "Korvaukset ostetuille tavaroille sattuneista vahingoista, esim. kuljetusvahingon korvaus. Ei: muut saadut vahingonkorvaukset (3730)."
+  ],
+  [
+    4280,
+    "Saadut avustukset materiaalihankintoihin",
+    "Avustukset, jotka on myönnetty nimenomaan materiaalien tai tavaroiden hankintaan. Ei: yleiset toiminta-avustukset (3800)."
+  ],
+  [
+    4290,
+    "Ostorahdit",
+    "Rahti- ja toimituskulut, jotka maksat ostamiesi tavaroiden kuljettamisesta sinulle. Ei: asiakkaalle lähetettyjen tavaroiden rahdit (8020)."
+  ],
+  [
+    4300,
+    "Yhteisökuljetus",
+    "Toisessa EU-maassa olevalta kuljetusyritykseltä ostettu kuljetus, jonka laskussa ei ole ALV:tä vaan ilmoitat sen itse."
+  ],
+  [
+    4310,
+    "Ostojen kuljetusvakuutusmaksut",
+    "Vakuutusmaksut, jotka maksat ostettujen tavaroiden kuljetuksen ajaksi, esim. rahtivakuutus."
+  ],
+  [
+    4320,
+    "Tuontihuolinta",
+    "Tulliselvityksen tai huolintaliikkeen palkkiot tavaroiden maahantuonnissa. Ei: myynnin huolinta (8030)."
+  ],
+  [
+    4330,
+    "Muut hankintakulut",
+    "Muut tavaran hankintaan suoraan liittyvät kulut, joita ei ole omalla tilillään, esim. tavaran tarkastus- tai pakkauskulut ennen varastoon ottoa."
+  ],
+  [
+    4340,
+    "Yksityiskäyttö",
+    "Myyntitavara tai materiaali, jonka otat yrityksestä omaan yksityiseen käyttöösi; vähentää ostoja. Siitä voi joutua maksamaan ALV:n. Vastatili esim. 2367 Muut yksityisnostot."
+  ],
+  [
+    4350,
+    "Liikkeen käyttö",
+    "Myyntiin ostettu tavara, jonka otat yrityksen omaan käyttöön, esim. kaupan hyllystä otetut siivousaineet. Vähentää ostoja ja siirtää kulun oikealle kulutilille."
+  ],
+  [
+    4360,
+    "Myynti henkilökunnalle",
+    "Tavaroiden myynti omalle henkilökunnalle ostohintaan tai alennuksella, kun se kirjataan ostojen vähennykseksi eikä myynniksi."
+  ],
+  [
+    4370,
+    "Ostojen valuuttakurssierot",
+    "Ero, joka syntyy kun ulkomaanvaluutassa oleva ostolasku maksetaan eri kurssiin kuin se kirjattiin. Ei: rahoituksen kurssierot (9260/9620)."
+  ],
+  [
+    4380,
+    "Rakentamispalvelun oman käytön arvonlisävero",
+    "Rakennuspalvelun oman käytön ALV, jonka voi joutua maksamaan, jos yritys rakentaa tai korjauttaa kiinteistöä omaan, ei-verolliseen käyttöönsä, esim. vuokrattavaksi asunnoksi."
+  ],
+  [
+    4390,
+    "Muut ostojen oikaisuerät",
+    "Muut ostoja korjaavat erät, joille ei ole omaa tiliä, esim. ostojen pyöristyserot tai jälkikäteen tulevat hinnankorotukset."
+  ],
+  [
+    440,
+    "Varastojen lisäys tai vähennys",
+    "Tilikauden lopun korjaus: jos varastossa on enemmän tavaraa kuin alussa, kasvu pienentää kuluja; jos vähemmän, ero lisää kuluja. Näin kulu näkyy sinä vuonna, kun tavara myydään."
+  ],
+  [
+    4400,
+    "Aine- ja tarvikevaraston muutos",
+    "Raaka-aine- ja tarvikevaraston arvon muutos tilikauden alusta loppuun. Varaston arvo taseessa tilillä 1501."
+  ],
+  [
+    4410,
+    "Tavaravaraston muutos",
+    "Myyntitavaravaraston arvon muutos tilikauden alusta loppuun, laskettuna inventaarion perusteella. Varaston arvo taseessa tilillä 1531."
+  ],
+  [
+    4420,
+    "Muun vaihto-omaisuusvaraston muutos",
+    "Muun vaihto-omaisuuden, esim. vaihto-omaisuuskiinteistöjen tai -arvopapereiden, varaston arvon muutos tilikauden aikana."
+  ],
+  [
+    4440,
+    "Aine-, tarvike-, tavara- ja muiden vaihto-omaisuusvarast. arvonalennus",
+    "Varaston arvon alaskirjaus, kun tavara on vanhentunut, vaurioitunut tai myytävissä vain alle hankintahinnan, esim. epäkurantti varasto."
+  ],
+  [
+    445,
+    "Ulkopuoliset palvelut",
+    "Ulkopuolisilta ostetut palvelut, jotka ovat suoraan osa asiakkaille myymääsi työtä tai tuotetta, esim. alihankinta. Yleiset palvelut kuten kirjanpito (8380) ovat kulutileillä."
+  ],
+  [
+    4450,
+    "Alihankinta",
+    "Toisen yrityksen tai freelancerin tekemä osa asiakastyöstäsi, esim. alihankkijan koodaama osa asiakasprojektia. Ei: kirjanpito (8380), mainostoimisto (8050), laki- ja konsultointipalvelut (8410)."
+  ],
+  [
+    4458,
+    "Rakentamispalveluiden osto (käänn. verovelv.)",
+    "Rakennuspalvelut, joissa ostajana ilmoitat ALV:n itse, koska myyjä ei lisää sitä laskuun (rakennusalan käännetty verovelvollisuus). Koskee vain rakennusalan yrityksiä ostajina."
+  ],
+  [
+    4460,
+    "Alihankinta 2",
+    "Varatili alihankinnan jakamiseen esim. projektin tai työlajin mukaan, jos haluat seurata sitä erikseen tilistä 4450."
+  ],
+  [
+    4470,
+    "Palveluiden osto EU-maista",
+    "Toisessa EU-maassa olevalta yritykseltä ostetut palvelut, joiden laskussa ei ole ALV:tä vaan ilmoitat sen itse, esim. ulkomainen alihankkija asiakastyöhön."
+  ],
+  [
+    4480,
+    "Vuokrattu työvoima",
+    "Henkilöstövuokrausyritykseltä vuokratut työntekijät, jotka tekevät tuotanto- tai asiakastyötä. Ei: toimistotyöhön vuokrattu työvoima (8370)."
+  ],
+  [
+    4490,
+    "Muut ulkopuoliset palvelut",
+    "Muut tuotantoon tai asiakastöihin liittyvät ostopalvelut, joille ei ole omaa tiliä, esim. laboratoriotestit tai painotyöt osana tuotetta."
+  ],
+  [
+    5,
+    "Henkilöstökulut",
+    "Kaikki työntekijöistä aiheutuvat kulut: palkat, luontoisedut ja sivukulut kuten eläke- ja vakuutusmaksut. Toiminimiyrittäjän omat nostot eivät ole palkkaa (2365)."
+  ],
+  [
+    5,
+    "Palkat ja palkkiot",
+    "Bruttopalkat ja -palkkiot, joista toimitetaan ennakonpidätys. Työnantajan eläke- ja vakuutusmaksut kirjataan erikseen tileille 6100–6490."
+  ],
+  [
+    50,
+    "Työntekijöiden palkat ja palkkiot",
+    "Tavallisten työntekijöiden palkat, lisät, luontoisedut ja palkkiot. Toimitusjohtajan ja hallituksen palkat ovat ryhmässä Johdon palkat (5600–), osakkaiden ja omaisten ryhmässä 5800–."
+  ],
+  [
+    50,
+    "Työssäoloajan normaalipalkat",
+    "Työntekijöiden peruspalkka tehdystä työajasta, kuukausi- tai tuntipalkkana. Lomapalkat ja sairausajan palkat ovat omissa ryhmissään (5300–)."
+  ],
+  [
+    5000,
+    "Työntekijäpalkat",
+    "Työntekijöiden bruttopalkat, kun et erittele kuukausi- ja tuntipalkkoja. Ei: yrittäjän omat nostot (2365), YEL (6100) tai työnantajan TyEL (6130)."
+  ],
+  [
+    5010,
+    "Kuukausipalkat",
+    "Kuukausipalkkaisten työntekijöiden peruspalkat, jos haluat erottaa ne tuntipalkoista."
+  ],
+  [
+    5020,
+    "Tuntipalkat",
+    "Tuntipalkkaisten työntekijöiden palkat tehdyistä tunneista, jos haluat erottaa ne kuukausipalkoista."
+  ],
+  [
+    5050,
+    "Ulkomaan työskentelyn palkat",
+    "Palkat työstä, jota työntekijä tekee ulkomailla, eriteltynä kotimaan palkoista."
+  ],
+  [
+    5060,
+    "Palkat, lähdeveronalaiset",
+    "Palkat ulkomailla asuville henkilöille, joiden palkasta peritään lähdevero ennakonpidätyksen sijaan, esim. lyhytaikainen ulkomainen työntekijä."
+  ],
+  [
+    5090,
+    "Palkkojen jaksotus",
+    "Palkkojen kohdistaminen oikealle tilikaudelle, esim. joulukuun työstä tammikuussa maksettu palkka kirjataan vanhalle vuodelle (vastatili 2961)."
+  ],
+  [
+    51,
+    "Lisät ja korvaukset",
+    "Peruspalkan päälle maksettavat lisät ja ennakonpidätyksen alaiset korvaukset, kuten ylityökorvaukset, vuorolisät, veronalaiset päivärahat ja bonukset."
+  ],
+  [
+    5100,
+    "Ylityönlisät",
+    "Ylityöstä maksettavat korotetut korvaukset, esim. 50 % tai 100 % ylityökorotukset."
+  ],
+  [
+    5110,
+    "Muut palkanlisät",
+    "Muut palkanlisät, esim. ilta-, yö-, vuoro-, sunnuntai- tai olosuhdelisät."
+  ],
+  [
+    5120,
+    "Ennakonpidätyksen alaiset päivärahat",
+    "Päivärahat, jotka ylittävät verottajan verovapaat määrät tai eivät muuten täytä verovapauden ehtoja. Ei: verovapaat päivärahat (7880)."
+  ],
+  [
+    5130,
+    "Muut ennakonpidätyksen alaiset korvaukset",
+    "Muut korvaukset, joista toimitetaan ennakonpidätys, esim. verovapaan rajan ylittävät kilometrikorvaukset. Verovapaat matkakorvaukset ovat tileillä 7870–7910."
+  ],
+  [
+    5170,
+    "Osapalkkiot",
+    "Tulokseen tai myyntiin sidotut osuuspalkkiot, esim. tantiemi tai myyjän provisiopalkka."
+  ],
+  [
+    5180,
+    "Kannustuspalkkiot",
+    "Bonukset ja tulospalkkiot, joilla palkitaan tavoitteiden saavuttamisesta, esim. tulospalkkio tai kertaluonteinen kannustin."
+  ],
+  [
+    5190,
+    "Lisien, korvausten ja palkkioiden jaksotus",
+    "Lisien, korvausten ja palkkioiden kohdistaminen oikealle tilikaudelle, esim. vuoden tuloksesta seuraavana vuonna maksettava bonus."
+  ],
+  [
+    52,
+    "Palkkiot",
+    "Palkkiot henkilöille, jotka eivät ole työsuhteessa, esim. luento- tai esiintymispalkkiot, joista toimitetaan ennakonpidätys. Ei: yritykseltä laskulla ostettu palvelu (4450/4490)."
+  ],
+  [
+    5200,
+    "Palkkiot",
+    "Henkilölle maksettu palkkio, esim. luento-, esiintymis- tai kokouspalkkio, josta toimitetaan ennakonpidätys. Ei: Y-tunnukselliselta yritykseltä laskulla ostettu palvelu (4450)."
+  ],
+  [
+    5290,
+    "Palkkioiden jaksotus",
+    "Palkkioiden kohdistaminen oikealle tilikaudelle, kun työ tehdään eri vuonna kuin palkkio maksetaan."
+  ],
+  [
+    53,
+    "Loma-ajan ja sosiaalipalkat",
+    "Palkat ajalta, jolloin työntekijä ei ole töissä mutta saa silti palkkaa: vuosiloma, sairausloma, vanhempainvapaa. Lomaraha kuuluu myös tänne."
+  ],
+  [5300, "Vuosilomapalkat", "Palkka, jonka työntekijä saa vuosilomansa ajalta."],
+  [
+    5310,
+    "Vuosilomakorvaukset",
+    "Pitämättömistä lomista maksettava rahakorvaus, esim. työsuhteen päättyessä tai alle 14 päivän työkuukausilta kertynyt lomakorvaus."
+  ],
+  [
+    5320,
+    "Lomaltapaluurahat",
+    "Lomaraha eli lomaltapaluuraha, joka maksetaan yleensä työehtosopimuksen perusteella loman yhteydessä."
+  ],
+  [
+    5330,
+    "Lomapalkkojen jaksotus",
+    "Tilikauden lopussa kertynyt, vielä pitämätön lomapalkka (lomapalkkavelka), joka kirjataan kuluksi sille vuodelle, jona loma ansaittiin. Vastatili 2962."
+  ],
+  [
+    5340,
+    "Sairausajan ja vanhempainvapaan palkat",
+    "Palkka, jota maksat työntekijän sairausloman tai vanhempainvapaan ajalta. Kelan maksamat korvaukset kirjataan vähennyksenä tilille 5470."
+  ],
+  [
+    5350,
+    "Muut sosiaalipalkat",
+    "Muut poissaoloajan palkat, esim. palkallinen lääkärissäkäynti, kertausharjoitukset tai merkkipäivävapaa."
+  ],
+  [
+    5390,
+    "Sosiaalipalkkojen jaksotus",
+    "Sosiaalipalkkojen kohdistaminen oikealle tilikaudelle, kun poissaolo ja palkanmaksu osuvat eri vuosille."
+  ],
+  [
+    540,
+    "Luontoisedut",
+    "Rahapalkan sijaan annettujen etujen verotusarvo, esim. autoetu tai puhelinetu. Etu näkyy palkkana ennakonpidätyksessä, ja sama summa hyvitetään tilille 5990, jottei kulu kirjaudu kahdesti."
+  ],
+  [
+    5400,
+    "Asuntoedut",
+    "Asuntoetu: työnantajan tarjoaman asunnon verotusarvo. Asunnon todelliset kulut ovat esim. tilillä 7290."
+  ],
+  [
+    5410,
+    "Ravintoedut",
+    "Ravintoetu: työnantajan tarjoamien aterioiden tai lounassetelien verotusarvo. Todelliset ruokailukulut ovat tilillä 7070."
+  ],
+  [
+    5420,
+    "Autoedut",
+    "Autoetu: yrityksen auton yksityiskäytön verotusarvo. Auton todelliset kulut ovat ajoneuvokulutileillä 7500–7610."
+  ],
+  [
+    5430,
+    "Puhelinedut",
+    "Puhelinetu: yrityksen puhelimen yksityiskäytön verotusarvo. Puhelimen todelliset kulut ovat tilillä 8510."
+  ],
+  [
+    5440,
+    "Muut luontoisedut",
+    "Muiden luontoisetujen verotusarvo, esim. kotitalous- tai vapaa-ajan asunnon etu, jota ei ole omalla tilillään."
+  ],
+  [
+    547,
+    "Saadut korvaukset palkoista",
+    "Palkkakuluja pienentävät korvaukset, jotka työnantaja saa takaisin, esim. Kelan sairaus- tai vanhempainpäiväraha sairausajan palkasta."
+  ],
+  [
+    5470,
+    "Saadut sairausvakuutuskorvaukset",
+    "Kelan sinulle työnantajana maksamat päivärahat ajalta, jolta maksoit työntekijälle palkkaa, esim. sairaus- tai vanhempainvapaa. Ei: työterveyshuollon Kela-korvaukset (7060)."
+  ],
+  [
+    5480,
+    "Saadut tapaturmavakuutuskorvaukset",
+    "Tapaturmavakuutusyhtiön korvaukset työnantajalle ajalta, jolta maksoit työtapaturmassa loukkaantuneelle palkkaa."
+  ],
+  [
+    5490,
+    "Korvausten jaksotus",
+    "Palkoista saatujen korvausten kohdistaminen oikealle tilikaudelle, esim. vuodenvaihteen yli myöhemmin maksettava Kelan korvaus."
+  ],
+  [
+    56,
+    "Johdon palkat",
+    "Toimitusjohtajan ja hallituksen jäsenten palkat, palkkiot ja edut, pidettynä erillään muiden työntekijöiden palkoista (5000–)."
+  ],
+  [
+    56,
+    "Johdon palkat ja palkkiot",
+    "Toimitusjohtajan ja hallituksen jäsenten rahapalkat, kokouspalkkiot, lomapalkat ja muut palkkiot."
+  ],
+  [
+    5600,
+    "Johdon palkat",
+    "Toimitusjohtajan palkka ja hallituksen jäsenten palkat. Ei: toiminimiyrittäjän omat nostot (2365), jotka eivät ole palkkaa."
+  ],
+  [
+    5610,
+    "Johdon osapalkkiot",
+    "Johdon tulokseen sidotut palkkiot, esim. tantiemi tai tulospalkkio."
+  ],
+  [
+    5620,
+    "Johdon vuosilomapalkat",
+    "Toimitusjohtajan ja muun johdon vuosiloman ajalta maksettu palkka."
+  ],
+  [5630, "Johdon vuosilomakorvaukset", "Johdolle pitämättömistä lomista maksettava rahakorvaus."],
+  [5640, "Johdon lomaltapaluurahat", "Johdolle maksettava lomaraha."],
+  [
+    5690,
+    "Johdon palkkojen jaksotus",
+    "Johdon palkkojen kohdistaminen oikealle tilikaudelle, esim. kertynyt lomapalkka tai seuraavana vuonna maksettava palkka."
+  ],
+  [
+    570,
+    "Johdon luontoisedut",
+    "Toimitusjohtajalle ja hallituksen jäsenille annettujen luontoisetujen verotusarvo. Sama summa hyvitetään tilille 5990."
+  ],
+  [5700, "Johdon asuntoedut", "Johdolle annetun asuntoedun verotusarvo."],
+  [5710, "Johdon ravintoedut", "Johdolle annetun ravintoedun, esim. lounassetelien, verotusarvo."],
+  [
+    5720,
+    "Johdon autoedut",
+    "Johdolle annetun autoedun verotusarvo. Auton todelliset kulut ovat ajoneuvokulutileillä 7500–7610."
+  ],
+  [5730, "Johdon puhelinedut", "Johdolle annetun puhelinedun verotusarvo."],
+  [5740, "Johdon muut luontoisedut", "Johdon muiden luontoisetujen verotusarvo."],
+  [
+    577,
+    "Saadut korvaukset johdon palkoista",
+    "Johdon palkoista saadut korvaukset, esim. Kelan sairauspäiväraha tai tapaturmavakuutuskorvaus, jotka pienentävät palkkakuluja."
+  ],
+  [
+    5770,
+    "Saadut sairausvakuutuskorvaukset",
+    "Kelan sinulle maksamat päivärahat ajalta, jolta maksoit johdolle palkkaa sairauden tai vanhempainvapaan aikana."
+  ],
+  [
+    5780,
+    "Saadut tapaturmavakuutuskorvaukset",
+    "Tapaturmavakuutusyhtiön korvaukset johdon työtapaturman ajalta maksetuista palkoista."
+  ],
+  [
+    5790,
+    "Korvausten jaksotus",
+    "Johdon palkoista saatujen korvausten kohdistaminen oikealle tilikaudelle."
+  ],
+  [
+    58,
+    "Osakkaiden ja omaisten palkat",
+    "Yrityksessä työskentelevien osakkaiden ja omistajan perheenjäsenten (esim. puoliso, lapset) palkat, eriteltynä muiden työntekijöiden ja johdon palkoista."
+  ],
+  [
+    58,
+    "Osakkaiden ja omaisten palkat ja palkkiot",
+    "Osakkaille ja omistajan perheenjäsenille maksetut palkat, palkkiot ja lomapalkat. Toiminimiyrittäjä ei voi maksaa palkkaa itselleen: omat nostot tilille 2365."
+  ],
+  [
+    5800,
+    "Osakkaiden/omaisten palkat",
+    "Yrityksessä työskentelevien osakkaiden tai omistajan perheenjäsenten palkat, esim. puolison palkka. Ei: toiminimiyrittäjän omat nostot (2365)."
+  ],
+  [
+    5810,
+    "Osakkaiden/omaisten osapalkkiot",
+    "Osakkaiden tai omaisten tulokseen tai myyntiin sidotut palkkiot."
+  ],
+  [
+    5820,
+    "Osakkaiden/omaisten vuosilomapalkat",
+    "Osakkaille tai omaisille vuosiloman ajalta maksettu palkka."
+  ],
+  [
+    5830,
+    "Osakkaiden/omaisten vuosilomakorvaukset",
+    "Osakkaille tai omaisille pitämättömistä lomista maksettava rahakorvaus."
+  ],
+  [5840, "Osakkaiden/omaisten lomaltapaluurahat", "Osakkaille tai omaisille maksettava lomaraha."],
+  [
+    5890,
+    "Osakkaiden/omaisten palkkojen jaksotus",
+    "Osakkaiden ja omaisten palkkojen kohdistaminen oikealle tilikaudelle."
+  ],
+  [
+    590,
+    "Osakkaiden ja omaisten luontoisedut",
+    "Osakkaille ja omistajan perheenjäsenille annettujen luontoisetujen verotusarvo. Sama summa hyvitetään tilille 5990."
+  ],
+  [
+    5900,
+    "Osakkaiden/omaisten asuntoedut",
+    "Osakkaalle tai omaiselle annetun asuntoedun verotusarvo."
+  ],
+  [
+    5910,
+    "Osakkaiden/omaisten ravintoedut",
+    "Osakkaalle tai omaiselle annetun ravintoedun verotusarvo."
+  ],
+  [5920, "Osakkaiden/omaisten autoedut", "Osakkaalle tai omaiselle annetun autoedun verotusarvo."],
+  [
+    5930,
+    "Osakkaiden/omaisten puhelinedut",
+    "Osakkaalle tai omaiselle annetun puhelinedun verotusarvo."
+  ],
+  [
+    5940,
+    "Osakkaiden/omaisten muut luontoisedut",
+    "Osakkaiden ja omaisten muiden luontoisetujen verotusarvo."
+  ],
+  [
+    596,
+    "Saadut korvaukset osakkaiden ja omaisten palkoista",
+    "Osakkaiden ja omaisten palkoista saadut korvaukset, esim. Kelan päiväraha tai tapaturmakorvaus, jotka pienentävät palkkakuluja."
+  ],
+  [
+    5960,
+    "Saadut sairausvakuutuskorvaukset",
+    "Kelan sinulle maksamat päivärahat ajalta, jolta maksoit osakkaalle tai omaiselle palkkaa sairauden tai vanhempainvapaan aikana."
+  ],
+  [
+    5970,
+    "Saadut tapaturmavakuutuskorvaukset",
+    "Tapaturmavakuutusyhtiön korvaukset osakkaan tai omaisen työtapaturman ajalta maksetuista palkoista."
+  ],
+  [
+    5980,
+    "Korvausten jaksotus",
+    "Osakkaiden ja omaisten palkoista saatujen korvausten kohdistaminen oikealle tilikaudelle."
+  ],
+  [
+    599,
+    "Luontoisetujen vastatili",
+    "Tili, jolla luontoisetujen verotusarvo kuitataan pois kulusta: etu kirjataan palkaksi (54xx, 57xx, 59xx) ja sama summa tänne vähennykseksi."
+  ],
+  [
+    5990,
+    "Luontoisetujen vastatili",
+    "Luontoisetujen vastakirjaus: etujen verotusarvo hyvitetään tänne, koska edun todellinen kulu on jo omalla kulutilillään. Näin etu näkyy palkkana, mutta tulos ei muutu."
+  ],
+  [
+    60,
+    "Henkilösivukulut",
+    "Lakisääteiset maksut, jotka työnantaja maksaa palkkojen päälle: eläke-, sairaus-, tapaturma- ja työttömyysvakuutusmaksut. Itse palkat ovat ryhmässä 5, vapaaehtoiset edut ryhmässä 70."
+  ],
+  [
+    60,
+    "Eläkekulut",
+    "Eläkkeisiin liittyvät kulut: TyEL- ja YEL-maksut sekä mahdolliset yrityksen itse maksamat eläkkeet ja niiden jaksotukset."
+  ],
+  [
+    60,
+    "Maksetut eläkkeet",
+    "Eläkkeet, jotka yritys maksaa suoraan entisille työntekijöille ilman eläkevakuutusyhtiötä. Pienyrityksessä hyvin harvinainen."
+  ],
+  [
+    6000,
+    "Maksetut eläkkeet",
+    "Yrityksen suoraan maksamat eläkkeet entisille työntekijöille. Tavalliset eläkevakuutusmaksut kirjataan tileille 6100 (YEL) ja 6130 (TyEL)."
+  ],
+  [
+    6090,
+    "Eläkkeiden jaksotus",
+    "Jaksotus: tilinpäätöksessä tehtävä erä, jolla maksettu eläkekulu kohdistetaan sille tilikaudelle, jolle se kuuluu. Vastatilinä yleensä siirtovelka 2963 tai siirtosaaminen 1803."
+  ],
+  [
+    61,
+    "Eläkevakuutusmaksut",
+    "Eläkevakuutusyhtiölle maksettavat maksut: työntekijöiden TyEL, yrittäjän oma YEL sekä vapaaehtoiset lisäeläkevakuutukset."
+  ],
+  [
+    6100,
+    "YEL-maksut",
+    "Yrittäjän oma YEL-eläkevakuutusmaksu, kun se maksetaan yrityksen tililtä. Toiminimiyrittäjä voi vähentää YEL-maksut joko yrityksen kuluna tai omassa verotuksessaan."
+  ],
+  [
+    6110,
+    "YEL-maksujen jaksotus",
+    "Jaksotus YEL-maksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan oikealle tilikaudelle, esim. joulukuun maksu, joka laskutetaan vasta tammikuussa."
+  ],
+  [
+    6130,
+    "TyEL-maksut",
+    "Työntekijöiden palkoista maksettavat TyEL-työeläkevakuutusmaksut eläkeyhtiön laskun mukaan. Yrittäjän oma eläkemaksu kuuluu tilille 6100 (YEL)."
+  ],
+  [
+    6140,
+    "Työntekijäin TyEL-maksut",
+    "Palkasta pidätettävä työntekijän oma TyEL-osuus, jos se halutaan eritellä erikseen työnantajan maksusta (6130). Tarvitaan harvoin."
+  ],
+  [
+    6150,
+    "TyEL-maksujen jaksotus",
+    "Jaksotus TyEL-maksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan sen palkan tilikaudelle, esim. joulukuun palkkojen TyEL, joka maksetaan tammikuussa."
+  ],
+  [
+    6240,
+    "Vapaaehtoiset eläkevakuutusmaksut",
+    "Yrityksen ottamat vapaaehtoiset lisäeläkevakuutukset henkilöstölle, lakisääteisen TyEL:n lisäksi. Vähennyskelpoisuudelle on verotuksessa rajoja."
+  ],
+  [
+    6250,
+    "Vapaaehtoisten eläkevakuutusmaksujen jaksotus",
+    "Jaksotus vapaaehtoisille eläkevakuutusmaksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan oikealle tilikaudelle."
+  ],
+  [
+    6270,
+    "Muut pakolliset eläkevakuutusmaksut",
+    "Muut lakisääteiset eläkemaksut kuin TyEL ja YEL, esimerkiksi merimieseläkelain (MEL) mukaiset maksut. Tavallisessa yrityksessä tarvitaan harvoin."
+  ],
+  [
+    6280,
+    "Muiden pakollisten eläkevakuutusmaksujen jaksotus",
+    "Jaksotus muille pakollisille eläkevakuutusmaksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan oikealle tilikaudelle."
+  ],
+  [
+    629,
+    "Tilikauden aikainen jaksotus",
+    "Eläkekulujen jaksotukset, joita tehdään kesken tilikauden (esim. kuukausittain), jotta väliraporttien tulos on oikein. Erillinen muiden sivukulujen jaksotuksesta (66)."
+  ],
+  [
+    6290,
+    "Tilikauden aikainen jaksotus",
+    "Eläkekulujen kuukausi- tai neljännesvuosijaksotukset kesken tilikauden. Ne puretaan ennen tilinpäätöstä; vuoden lopun jaksotukset tehdään tileille 6090–6280."
+  ],
+  [
+    63,
+    "Muut henkilösivukulut",
+    "Muut lakisääteiset palkan sivukulut kuin eläkkeet: työnantajan sairausvakuutusmaksu sekä tapaturma-, työttömyys- ja ryhmähenkivakuutus. Vapaaehtoiset edut: ryhmä 70."
+  ],
+  [
+    63,
+    "Sairausvakuutusmaksut",
+    "Työnantajan sairausvakuutusmaksu, joka lasketaan maksetuista palkoista ja maksetaan Verohallinnolle."
+  ],
+  [
+    6300,
+    "Sairausvakuutusmaksut",
+    "Työnantajan sairausvakuutusmaksu palkoista, ilmoitetaan ja maksetaan OmaVerossa. Maksamaton maksu on velkaa tilillä 2923."
+  ],
+  [
+    6390,
+    "Sairausvakuutusmaksujen jaksotus",
+    "Jaksotus sairausvakuutusmaksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan palkkojen tilikaudelle. Vastatilinä yleensä 2964 tai 1804."
+  ],
+  [
+    64,
+    "Pakolliset vakuutusmaksut",
+    "Lakisääteiset työnantajan vakuutukset työntekijöistä: tapaturma-, työttömyys- ja ryhmähenkivakuutus."
+  ],
+  [
+    6400,
+    "Tapaturmavakuutusmaksut",
+    "Työnantajan lakisääteinen työtapaturma- ja ammattitautivakuutus työntekijöille vakuutusyhtiön laskun mukaan."
+  ],
+  [
+    6410,
+    "Työttömyysvakuutusmaksut",
+    "Työnantajan työttömyysvakuutusmaksu palkoista, jonka Työllisyysrahasto laskuttaa."
+  ],
+  [
+    6420,
+    "Työntekijöiden työttömyysvakuutusmaksut",
+    "Palkasta pidätettävä työntekijän oma työttömyysvakuutusmaksu, jos se halutaan eritellä erikseen työnantajan osuudesta (6410). Tarvitaan harvoin."
+  ],
+  [
+    6430,
+    "Ryhmähenkivakuutusmaksut",
+    "Työnantajan ryhmähenkivakuutus työntekijöille. Laskutetaan yleensä työeläkevakuutuksen yhteydessä."
+  ],
+  [
+    6480,
+    "Muut pakolliset vakuutusmaksut",
+    "Muut lakisääteiset työnantajan vakuutusmaksut, joille ei ole omaa tiliä."
+  ],
+  [
+    6490,
+    "Pakollisten vakuutusmaksujen jaksotus",
+    "Jaksotus pakollisille vakuutusmaksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan oikealle tilikaudelle. Vastatilinä yleensä 2965 tai 1805."
+  ],
+  [
+    65,
+    "Muut henkilöstön vakuutusmaksut",
+    "Henkilöstölle otetut vapaaehtoiset vakuutukset, joita laki ei vaadi, kuten sairaskulu- tai vapaa-ajan tapaturmavakuutukset."
+  ],
+  [
+    6500,
+    "Henkilövakuutusmaksut (vapaaehtoiset)",
+    "Vapaaehtoiset henkilövakuutukset henkilöstölle, esim. sairaskulu- tai vapaa-ajan tapaturmavakuutus. Lakisääteinen tapaturmavakuutus: 6400."
+  ],
+  [
+    6590,
+    "Henkilövakuutusmaksujen jaksotus",
+    "Jaksotus vapaaehtoisille henkilövakuutusmaksuille: tilinpäätöksessä tehtävä erä, jolla maksu kohdistetaan oikealle tilikaudelle."
+  ],
+  [
+    66,
+    "Tilikauden aikainen jaksotus",
+    "Muiden henkilösivukulujen (sairausvakuutus- ja vakuutusmaksut) jaksotukset kesken tilikauden. Eläkekulujen vastaavat jaksotukset ovat tilillä 6290."
+  ],
+  [
+    6690,
+    "Tilikauden aikainen jaksotus",
+    "Sairausvakuutus- ja muiden vakuutusmaksujen kuukausi- tai neljännesvuosijaksotukset kesken tilikauden. Puretaan ennen tilinpäätöstä."
+  ],
+  [
+    68,
+    "Poistot ja arvonalentumiset",
+    "Käyttöomaisuuden hankintahinta kirjataan kuluksi vähitellen poistoina usean vuoden aikana. Myös kertaluonteiset alaskirjaukset, kun omaisuuden arvo laskee."
+  ],
+  [
+    68,
+    "Suunnitelman mukaiset poistot",
+    "Vuosittaiset poistot taseen käyttöomaisuudesta, esim. koneista ja autoista. Itse hankinta kirjataan ensin taseeseen (esim. 1161) ja tänne vain vuoden poisto."
+  ],
+  [
+    6820,
+    "Poisto kehittämismenoista",
+    "Vuosittainen poisto taseeseen aktivoiduista kehittämismenoista (1021), esim. uuden tuotteen kehitystyöstä. Tavalliset T&K-kulut kirjataan suoraan ryhmään 830."
+  ],
+  [
+    6830,
+    "Poisto aineettomista oikeuksista",
+    "Vuosittainen poisto aineettomista oikeuksista, kuten patenteista, tavaramerkeistä ja ohjelmistolisensseistä (tilit 1031–1049)."
+  ],
+  [
+    6840,
+    "Poisto liikearvosta",
+    "Vuosittainen poisto liikearvosta (1051), joka syntyy, kun ostetaan liiketoiminta ja siitä maksetaan enemmän kuin sen omaisuus on arvoltaan."
+  ],
+  [
+    6850,
+    "Poisto muista pitkävaikutteisista menoista",
+    "Poisto muista pitkävaikutteisista menoista, esim. vuokratilan perusparannuksista (1075) tai isoista ohjelmistoista (1081)."
+  ],
+  [
+    6860,
+    "Poisto rakennuksista ja rakennelmista",
+    "Vuosittainen poisto yrityksen omistamista rakennuksista ja rakennelmista (tilit 112x), esim. 7 % rakennuksen menojäännöksestä."
+  ],
+  [
+    6870,
+    "Poisto koneista ja kalustosta",
+    "Vuosittainen poisto koneista, laitteista, autoista ja kalustosta (esim. 1161, 1171, 1201), yleensä enintään 25 % menojäännöksestä. Ei itse hankintaa."
+  ],
+  [
+    6890,
+    "Poisto muista aineellisista hyödykkeistä",
+    "Poisto muista aineellisista hyödykkeistä, esim. piha-asfaltoinnista tai maa-ainesten ottopaikasta (tilit 1301–1329)."
+  ],
+  [
+    693,
+    "Konserniliikearvon poisto ja konsernireservin vähennys",
+    "Vain konsernitilinpäätöksessä tarvittavat erät. Yksittäinen pienyritys tai toiminimi ei käytä näitä."
+  ],
+  [
+    6930,
+    "Poisto konserniaktiivasta",
+    "Konsernitilinpäätöksessä tehtävä poisto konserniliikearvosta (1061). Ei käytetä yksittäisen yrityksen kirjanpidossa."
+  ],
+  [
+    6940,
+    "Konsernireservin vähennys",
+    "Konsernitilinpäätöksessä konsernireservin purkaminen. Ei käytetä yksittäisen yrityksen kirjanpidossa."
+  ],
+  [
+    695,
+    "Arvonalentumiset pysyvien vastaavien hyödykkeistä",
+    "Kertaluonteiset alaskirjaukset, kun käyttöomaisuuden arvo on pysyvästi pudonnut alle kirjanpitoarvon. Tavalliset vuosipoistot: ryhmä 68."
+  ],
+  [
+    6950,
+    "Arvonalentumiset maa- ja vesialueista",
+    "Alaskirjaus maa- ja vesialueista (1101), joista ei tehdä vuosipoistoja, kun niiden arvo on pysyvästi laskenut."
+  ],
+  [
+    6960,
+    "Arvonalentumiset sumu-poistettavista pysyvistä vastaavista",
+    "Ylimääräinen alaskirjaus poistettavasta omaisuudesta normaalin poiston lisäksi, esim. kun kone on rikkoutunut tai käynyt tarpeettomaksi."
+  ],
+  [
+    6970,
+    "Arvonalentumiset ennakkomaksuista",
+    "Alaskirjaus maksetuista ennakkomaksuista (esim. 1091, 1381), kun hankinta ei toteudu tai ennakko ei vastaa enää arvoaan."
+  ],
+  [
+    6980,
+    "Arvonalennusten palautukset",
+    "Aiemmin tehdyn arvonalentumisen peruminen, kun omaisuuden arvo on palautunut. Pienentää kuluja."
+  ],
+  [
+    699,
+    "Vaihtuvien vastaavien poikkeukselliset arvonalentumiset",
+    "Poikkeuksellisen suuret kertaluonteiset alaskirjaukset vaihto-omaisuudesta tai saamisista, esim. varaston tuhoutuminen."
+  ],
+  [
+    6990,
+    "Vaihtuvien vastaavien poikkeukselliset arvonalentumiset",
+    "Poikkeuksellisen suuri vaihto-omaisuuden tai saamisten alaskirjaus, esim. tulipalo tai tuote poistuu markkinoilta. Tavallinen varaston arvonalennus: 4440."
+  ],
+  [
+    70,
+    "Liiketoiminnan muut kulut",
+    "Yrityksen tavalliset juoksevat kulut, jotka eivät ole ostoja, palkkoja eikä poistoja: toimitilat, autot, atk, matkat, edustus, markkinointi ja hallinto."
+  ],
+  [
+    70,
+    "Vapaaehtoiset henkilösivukulut",
+    "Edut ja kulut, joita työnantaja tarjoaa henkilöstölle omasta halustaan: koulutus, virkistys, työterveys, lounasedut ja työvaatteet. Lakisääteiset maksut: ryhmä 60."
+  ],
+  [
+    7000,
+    "Henkilökunnan koulutus",
+    "Henkilöstön ja yrittäjän ammattitaitoa ylläpitävät kurssit, koulutukset ja seminaarit. Matkat koulutukseen kirjataan matkakuluihin (ryhmä 78)."
+  ],
+  [
+    7010,
+    "Sisäiset palaverit ja henkilökuntajuhlat",
+    "Oman väen palaverien tarjoilut ja henkilökuntajuhlat, kuten pikkujoulut. Asiakkaiden kestitys on edustusta (7950)."
+  ],
+  [
+    7020,
+    "Virkistys- ja harrastustoiminta",
+    "Henkilöstön virkistys ja hyvinvointi: liikunta- ja kulttuurisetelit, tyky-päivät, harrastuskerhot. Ei: asiakkaiden viihdyttäminen (7950)."
+  ],
+  [
+    7040,
+    "Loma-asuntojen hoitokulut",
+    "Henkilöstön virkistyskäyttöön tarkoitetun loma-asunnon tai mökin hoitokulut, kuten sähkö, vastikkeet ja siivous."
+  ],
+  [
+    7050,
+    "Työterveyshuolto",
+    "Työterveyshuollon kulut, esim. työterveyssopimuksen maksut ja käynnit. Kela korvaa osan; korvaukset kirjataan tilille 7060."
+  ],
+  [
+    7060,
+    "Saadut Kela-korvaukset",
+    "Kelalta saadut korvaukset työterveyshuollon kuluista. Pienentää työterveyshuollon kuluja (7050)."
+  ],
+  [
+    7070,
+    "Henkilökunnan ruokailu / lounassetelit",
+    "Henkilöstön lounasedut, esim. lounassetelit, ruokaedun maksukortit tai sopimusruokalan ateriat."
+  ],
+  [
+    7080,
+    "Henkilökunnan ruokalan kulut",
+    "Yrityksen oman henkilöstöravintolan kulut, kuten raaka-aineet ja tarvikkeet."
+  ],
+  [
+    7090,
+    "Ruokatarjoilun omaan käyttöön ottamisen arvonlisävero",
+    "Arvonlisävero, joka on maksettava, kun yritys tarjoaa henkilöstölle aterioita omassa ruokalassaan (oman käytön vero). Tarvitaan harvoin."
+  ],
+  [
+    7100,
+    "Saadut ruokakorvaukset",
+    "Henkilöstöltä perityt ateriamaksut tai palkasta vähennetty ruokaedun omavastuu. Pienentää ruokailukuluja."
+  ],
+  [
+    7110,
+    "Kahvitarvikkeet",
+    "Kahvi, tee, maito ja muut taukotarjoilut omalle väelle. Asiakkaiden kahvitus neuvottelussa: 8650."
+  ],
+  [
+    7120,
+    "Työvaatteet",
+    "Työvaatteet, jotka soveltuvat vain työhön, esim. haalarit tai logolliset asut. Tavalliset arkivaatteet eivät ole vähennyskelpoisia, vaikka käyttäisi niitä töissä."
+  ],
+  [
+    7130,
+    "Suojavälineet",
+    "Työturvallisuuden suojavälineet, kuten turvakengät, kypärät, suojalasit ja kuulosuojaimet."
+  ],
+  [
+    7140,
+    "Henkilöstön hankintakulut",
+    "Rekrytoinnin kulut, kuten rekrytointipalvelut, soveltuvuustestit ja haastattelukulut. Työpaikkailmoitukset: 7150."
+  ],
+  [
+    7150,
+    "Työpaikkailmoitukset",
+    "Avoimista työpaikoista maksetut ilmoitukset, esim. työnhakupalveluissa tai lehdissä. Tuotteiden mainosilmoitukset: 8070."
+  ],
+  [
+    7160,
+    "Lahjat henkilökunnalle",
+    "Kohtuulliset lahjat ja muistamiset henkilöstölle, esim. merkkipäivä- tai joululahjat. Asiakkaiden liikelahjat: 7960."
+  ],
+  [
+    7170,
+    "Muut henkilösivukulut",
+    "Muut vapaaehtoiset henkilöstökulut, joille ei ole omaa tiliä. Lakisääteiset sivukulut kirjataan ryhmiin 60–66."
+  ],
+  [
+    72,
+    "Toimitilakulut",
+    "Liike-, toimisto- ja varastotilojen kulut: vuokrat, vastikkeet, sähkö, lämmitys, siivous, vakuutukset ja korjaukset."
+  ],
+  [
+    7200,
+    "Maa-aluevuokrat",
+    "Maa-alueen tai tontin vuokra, esim. vuokratontti, jolla yrityksen rakennus sijaitsee."
+  ],
+  [
+    7210,
+    "Kiinteistöjen vuokrat",
+    "Kokonaisen kiinteistön (rakennuksen) vuokra. Yksittäisen toimitilan vuokra: 7230."
+  ],
+  [
+    7220,
+    "Toimitilavastikkeet",
+    "Yrityksen omistaman liikehuoneiston hoitovastikkeet taloyhtiölle."
+  ],
+  [
+    7230,
+    "Toimitilavuokrat",
+    "Toimisto-, liike- tai työtilan vuokra. Maksettu vuokravakuus ei ole kulu vaan saaminen (1767)."
+  ],
+  [7240, "Varastovastikkeet", "Yrityksen omistaman varastotilan hoitovastikkeet taloyhtiölle."],
+  [7250, "Varastovuokrat", "Vuokratun varastotilan vuokra, esim. varastokoppi tai varastohalli."],
+  [7260, "Autotallivastikkeet", "Yrityksen omistaman autotallin tai autopaikan vastikkeet."],
+  [
+    7270,
+    "Autotalli- ja autopaikkavuokrat",
+    "Vuokratun autotallin tai autopaikan vuokra. Tilapäiset pysäköintimaksut matkoilla: 7850."
+  ],
+  [
+    7280,
+    "Henkilöstöasuntojen vastikkeet",
+    "Työntekijöille annettujen, yrityksen omistamien asuntojen vastikkeet. Asuntoetu kirjataan palkkoihin (5400)."
+  ],
+  [
+    7290,
+    "Henkilöstöasuntojen vuokrat",
+    "Työntekijöille annettujen vuokrattujen asuntojen vuokrat. Asuntoetu kirjataan palkkoihin (5400)."
+  ],
+  [
+    7300,
+    "Asuinhuoneistojen vastikkeet",
+    "Muiden yrityksen omistamien asuinhuoneistojen vastikkeet, kun asunto ei ole työntekijän käytössä."
+  ],
+  [
+    7310,
+    "Muut vuokrat ja vastikkeet",
+    "Muut tilojen vuokrat ja vastikkeet, joille ei ole omaa tiliä."
+  ],
+  [
+    7320,
+    "Energian erityisvähennys",
+    "Toimitilojen energiakuluihin liittyvä erityinen vähennys- tai hyvityserä. Tavallinen sähkölasku kirjataan tilille 7390."
+  ],
+  [
+    7330,
+    "Hallinto",
+    "Omistetun kiinteistön hallinnon kulut, esim. isännöinti ja kiinteistön kirjanpito."
+  ],
+  [
+    7340,
+    "Käyttö ja huolto",
+    "Kiinteistön ja toimitilan käyttö ja huolto, esim. kiinteistöhuolto, ilmanvaihdon ja laitteiden huollot."
+  ],
+  [
+    7350,
+    "Ulkoalueiden hoito",
+    "Piha- ja ulkoalueiden hoito, esim. lumityöt, hiekoitus, nurmikonleikkuu."
+  ],
+  [7360, "Siivous ja puhtaanapito", "Toimitilojen siivous ja puhtaanapito sekä siivoustarvikkeet."],
+  [7370, "Lämmitys", "Toimitilojen lämmitys, esim. kaukolämpö tai lämmitysöljy."],
+  [7380, "Vesi ja jätevesi", "Toimitilojen vesi- ja jätevesimaksut."],
+  [
+    7390,
+    "Sähkö ja kaasu",
+    "Toimitilojen sähkö ja kaasu. Kotona toimiva yrittäjä ei kirjaa kodin sähköä tänne."
+  ],
+  [7400, "Jätehuolto", "Jätehuolto, kierrätys ja roskien nouto toimitiloista."],
+  [
+    7410,
+    "Vahinkovakuutukset",
+    "Toimitilan tai kiinteistön vakuutukset, esim. palo- ja vesivahinkovakuutus. Irtaimiston vakuutukset: 8590, autot: 7570."
+  ],
+  [7420, "Kiinteistövero", "Yrityksen omistamasta kiinteistöstä maksettava kunnan kiinteistövero."],
+  [
+    7430,
+    "Korjaukset",
+    "Toimitilojen tavanomaiset korjaukset ja kunnossapito. Isot perusparannukset aktivoidaan taseeseen: vuokratila 1075, oma osakehuoneisto 1073."
+  ],
+  [
+    7440,
+    "Saadut vakuutuskorvaukset",
+    "Vakuutusyhtiöltä saadut korvaukset toimitilavahingoista. Pienentää toimitilakuluja."
+  ],
+  [
+    7450,
+    "Muut toimitilojen hoitokulut",
+    "Muut toimitilojen hoitokulut, joille ei ole omaa tiliä, esim. kiinteistön pienet tarvikkeet."
+  ],
+  [
+    7460,
+    "Vartiointi- ja turvallisuuskulut",
+    "Vartiointi, hälytysjärjestelmän ylläpito, lukot ja muut turvallisuuskulut."
+  ],
+  [
+    7470,
+    "Muut toimitilakulut",
+    "Muut toimitiloihin liittyvät kulut, joille ei ole omaa tiliä, esim. muuttokulut tai sisustustarvikkeet."
+  ],
+  [
+    75,
+    "Ajoneuvokulut",
+    "Yrityksen omistamien, leasattujen tai vuokrattujen ajoneuvojen kulut. Oman auton käytöstä maksetaan kilometrikorvausta (7870). Henkilöauton kuluista ALV:n saa vähentää vain, jos auto on yksinomaan liikekäytössä."
+  ],
+  [
+    7500,
+    "Ajoneuvoleasing",
+    "Yrityksen leasingautojen kuukausimaksut. Auton ostaminen kirjataan taseeseen (esim. 1171 tai 1173)."
+  ],
+  [
+    7510,
+    "Leasinghyvitykset",
+    "Leasingsopimuksen päättyessä saatu hyvitys, joka pienentää ajoneuvokuluja."
+  ],
+  [
+    7520,
+    "Ajoneuvovuokrat",
+    "Ajoneuvon lyhytaikainen vuokraus, esim. pakettiauto muuttoa tai yksittäistä keikkaa varten."
+  ],
+  [
+    7530,
+    "Ajoneuvojen polttoaine",
+    "Yrityksen ajoneuvojen polttoaine ja sähkölataus. Oman auton työajoista ei kirjata tankkauksia, vaan kilometrikorvaus (7870)."
+  ],
+  [7540, "Ajoneuvojen huolto ja korjaus", "Yrityksen ajoneuvojen huollot ja korjaukset."],
+  [
+    7550,
+    "Renkaat ja autotarvikkeet",
+    "Renkaat, rengastyöt ja autotarvikkeet, kuten pyyhkijänsulat ja öljyt."
+  ],
+  [
+    7560,
+    "Ajoneuvojen julkiset maksut",
+    "Ajoneuvovero, katsastus, rekisteröinti ja muut viranomaismaksut yrityksen ajoneuvoista."
+  ],
+  [7570, "Ajoneuvovakuutukset", "Yrityksen ajoneuvojen liikenne- ja kaskovakuutukset."],
+  [7580, "Kolarivahingot", "Kolarin korjauskulut ja vakuutuksen omavastuu yrityksen ajoneuvosta."],
+  [
+    7590,
+    "Maksetut vahingonkorvaukset",
+    "Toiselle osapuolelle maksetut korvaukset yrityksen ajoneuvon aiheuttamista vahingoista."
+  ],
+  [
+    7600,
+    "Maksetut ajoneuvokorvaukset",
+    "Muille maksetut korvaukset ajoneuvon käytöstä. Työntekijän tai yrittäjän oman auton kilometrikorvaukset: 7870."
+  ],
+  [
+    7610,
+    "Muut ajoneuvokulut",
+    "Muut ajoneuvokulut, joille ei ole omaa tiliä, esim. autopesut. Pysäköintimaksut matkoilla: 7850, pysäköintivirhemaksut: 8780."
+  ],
+  [
+    764,
+    "Atk-laite ja -ohjelmistokulut",
+    "Tietokoneiden, oheislaitteiden ja ohjelmistojen kulut: ohjelmistotilaukset, huollot ja edulliset laitehankinnat. Kalliit pitkäikäiset laitteet taseeseen (11xx)."
+  ],
+  [
+    7640,
+    "Atk-laite- ja ohjelmistoleasing",
+    "Tietokoneiden, palvelimien tai ohjelmistojen leasingmaksut."
+  ],
+  [
+    7650,
+    "Atk-laite- ja ohjelmistovuokrat",
+    "Vuokratut tietokoneet, laitteet tai ohjelmistot, esim. laitteen kuukausivuokra."
+  ],
+  [
+    7660,
+    "Atk-ohjelmistot, päivitykset ja ylläpito",
+    "Ohjelmistotilaukset ja ylläpito, esim. pilvipalvelut, toimisto-ohjelmat ja päivitykset. Isot pitkäikäiset ohjelmistohankinnat taseeseen (1081)."
+  ],
+  [
+    7670,
+    "Atk-laitehuollot, korjaukset ja asennukset",
+    "Tietokoneiden ja laitteiden huollot, korjaukset ja asennustyöt."
+  ],
+  [
+    7680,
+    "Atk-laitehankinnat (< 3v. kalusto)",
+    "Atk-laitteet, joiden käyttöikä on enintään 3 vuotta. Ne voi vähentää kokonaan hankintavuonna hinnasta riippumatta."
+  ],
+  [
+    7690,
+    "Atk-laitteiden pienhankinnat",
+    "Edulliset atk-laitteet alle 1 200 € (alv 0), esim. näyttö tai puhelin; enintään 2 500 € vuodessa. Kalliimmat ja pitkäikäiset taseeseen (esim. 1161)."
+  ],
+  [
+    7700,
+    "Muut atk-laite- ja -ohjelmistokulut",
+    "Muut atk-kulut, joille ei ole omaa tiliä, esim. tarvikkeet, kaapelit ja muistitikut."
+  ],
+  [
+    771,
+    "Muut kone- ja kalustokulut",
+    "Muiden kuin atk-laitteiden kulut: koneet, työkalut ja kalusteet, niiden vuokrat, huollot ja pienhankinnat. Kalliit pitkäikäiset hankinnat taseeseen (11xx)."
+  ],
+  [
+    7710,
+    "Kone- ja kalustoleasing",
+    "Koneiden ja kaluston leasingmaksut, esim. työkoneet tai toimistolaitteet."
+  ],
+  [
+    7720,
+    "Kone- ja kalustovuokrat",
+    "Vuokratut koneet ja kalusto, esim. työmaakoneen tai kopiokoneen vuokra."
+  ],
+  [7730, "Kone- ja kalustohuolto ja korjaus", "Koneiden ja kaluston huollot ja korjaukset."],
+  [
+    7740,
+    "Kone- ja kalustohankinnat (< 3v. kalusto)",
+    "Koneet ja kalusto, joiden käyttöikä on enintään 3 vuotta. Ne voi vähentää kokonaan hankintavuonna hinnasta riippumatta."
+  ],
+  [
+    7750,
+    "Koneiden ja kaluston pienhankinnat",
+    "Edulliset koneet ja kalusteet alle 1 200 € (alv 0), esim. porakone tai työtuoli; enintään 2 500 € vuodessa. Kalliimmat taseeseen (1161 tai 1201)."
+  ],
+  [
+    7760,
+    "Maksetut työkalukorvaukset",
+    "Työntekijälle maksetut korvaukset hänen omien työkalujensa käytöstä työssä."
+  ],
+  [
+    7770,
+    "Muut kone- ja kalustokulut",
+    "Muut kone- ja kalustokulut, joille ei ole omaa tiliä, esim. varaosat ja tarvikkeet."
+  ],
+  [
+    78,
+    "Matkakulut",
+    "Työ- ja liikematkojen kulut: liput, majoitus, päivärahat ja oman auton kilometrikorvaukset. Yrityksen omien autojen kulut ovat ajoneuvokuluissa (ryhmä 75)."
+  ],
+  [7800, "Matkaliput", "Juna-, lento-, bussi- ja laivaliput työmatkoilla."],
+  [7810, "Taksikulut", "Taksimatkat työasioissa."],
+  [7820, "Hotelli- ym. majoitus", "Hotelli- ja muu majoitus työmatkoilla."],
+  [
+    7830,
+    "Ruokailut matkalla",
+    "Omat ateriat työmatkalla, jos niitä ei korvata päivärahalla. Asiakkaan kanssa syödyt liikelounaat ovat edustusta (7950)."
+  ],
+  [7840, "Matkavakuutukset", "Työmatkoja varten otetut matkavakuutukset."],
+  [
+    7850,
+    "Paikoituskulut",
+    "Pysäköintimaksut työmatkoilla. Pysäköintivirhemaksut eivät ole vähennyskelpoisia: 8780."
+  ],
+  [
+    7860,
+    "Muut matkakulut",
+    "Muut matkakulut, joille ei ole omaa tiliä, esim. viisumit ja matkatoimiston palvelumaksut."
+  ],
+  [
+    7870,
+    "Kilometrikorvaukset",
+    "Verovapaat kilometrikorvaukset oman auton käytöstä työajoihin Verohallinnon taksalla. Vaatii ajopäiväkirjan. Yrityksen omasta autosta ei makseta kilometrikorvausta."
+  ],
+  [
+    7880,
+    "Päivärahat",
+    "Kotimaan verovapaat päivärahat, kun työmatka kestää yli 6 tuntia ja kohde on yli 15 km sekä kotoa että työpaikalta."
+  ],
+  [
+    7890,
+    "Ulkomaan päivärahat",
+    "Ulkomaan työmatkojen verovapaat päivärahat Verohallinnon maakohtaisten määrien mukaan."
+  ],
+  [
+    7900,
+    "Yömatkarahat",
+    "Verovapaa yömatkaraha, kun matkalla yövytään eikä majoituskuluja korvata kuittia vastaan."
+  ],
+  [
+    7910,
+    "Ateriakorvaukset",
+    "Verovapaa ateriakorvaus työmatkalta silloin, kun päivärahaa ei makseta. Itse maksetut ravintola-ateriat matkalla: 7830."
+  ],
+  [
+    7950,
+    "Edustuskulut",
+    "Asiakkaiden ja yhteistyökumppaneiden kestitys ja muistaminen liikesuhteiden hoitamiseksi. Tuloverotuksessa vain puolet vähennyskelpoista, eikä ALV:a voi vähentää."
+  ],
+  [
+    7950,
+    "Edustustilaisuudet",
+    "Asiakkaiden ja kumppanien kestitys, esim. liikelounaat ja illalliset. Henkilökunnan juhlat: 7010, kaikille avoimet asiakastilaisuudet: 8150."
+  ],
+  [
+    7960,
+    "Edustuslahjat",
+    "Liikelahjat asiakkaille ja kumppaneille, esim. viinipullo tai lahjakortti. Halvat logolliset mainoslahjat: 8130, henkilökunnan lahjat: 7160."
+  ],
+  [
+    7970,
+    "Edustusmatkat",
+    "Edustukseen liittyvät matkat, esim. asiakkaan matkakulut, kun hänet kutsutaan vieraaksi. Omat työmatkat: ryhmä 78."
+  ],
+  [
+    7980,
+    "Edustustilat",
+    "Edustukseen käytettyjen tilojen kulut, esim. edustussaunan tai -huoneiston vuokra."
+  ],
+  [
+    7990,
+    "Muut edustuskulut",
+    "Muut edustuskulut, joille ei ole omaa tiliä, esim. teatteri- tai ottelulippuja asiakkaille."
+  ],
+  [
+    800,
+    "Myyntikulut",
+    "Myynnin hoitamisesta syntyvät kulut: myyntipalkkiot, korttimaksujen provisiot ja myytyjen tavaroiden toimitus asiakkaalle. Mainonta on omana ryhmänään (805)."
+  ],
+  [
+    8000,
+    "Maksetut myyntiprovisiot",
+    "Ulkopuolisille myyjille, agenteille tai välittäjille maksetut myyntipalkkiot, esim. jälleenmyyjän tai kumppanin provisio toteutuneesta kaupasta."
+  ],
+  [
+    8010,
+    "Luottokorttiprovisiot",
+    "Maksupäätteen ja verkkomaksujen palveluntarjoajien perimät provisiot korttimaksuista (esim. SumUp, Stripe). Pankkitilin kuukausimaksut ja muut pankkikulut 8560."
+  ],
+  [
+    8020,
+    "Myyntirahdit",
+    "Myytyjen tavaroiden lähettäminen asiakkaalle, esim. Postin tai Matkahuollon pakettimaksut ja kuljetusliikkeen laskut. Ostettujen tavaroiden rahdit 4290."
+  ],
+  [
+    8030,
+    "Myyntihuolinta",
+    "Huolintaliikkeen palkkiot myytyjen tavaroiden viennistä tai toimituksesta, esim. tullaus ja vientiasiakirjat. Tuonnin huolinta 4320."
+  ],
+  [
+    8040,
+    "Muut myyntikulut",
+    "Muut myynnin hoitamisen kulut, joille ei ole omaa tiliä, esim. verkkokauppa-alustan tai markkinapaikan myyntipalkkiot."
+  ],
+  [
+    805,
+    "Markkinointikulut",
+    "Mainonta ja myynnin edistäminen suurelle yleisölle tai laajalle asiakasjoukolle. Valikoitujen vieraiden kestitys ja lahjat ovat edustusta (7950–7990)."
+  ],
+  [
+    8050,
+    "Mainostoimistopalvelut",
+    "Mainostoimiston, graafikon tai markkinointikonsultin palvelut, esim. kampanjan suunnittelu, logon tai mainoksen tekeminen."
+  ],
+  [
+    8060,
+    "Suoramainonta",
+    "Suoraan vastaanottajille kohdistettu mainonta, esim. postitetut esitteet, uutiskirjeiden lähetyspalvelut ja jakelukulut."
+  ],
+  [
+    8070,
+    "Ilmoitusmainonta",
+    "Lehti-ilmoitukset ja muut maksetut ilmoitukset painetuissa julkaisuissa tai luetteloissa."
+  ],
+  [
+    8080,
+    "TV- ja radiomainonta",
+    "Mainokset televisiossa, radiossa, elokuvateattereissa tai podcasteissa."
+  ],
+  [
+    8090,
+    "Internetmainonta",
+    "Verkkomainonta, esim. Google-, Meta- tai LinkedIn-mainokset, bannerit ja hakusanamainonta. Verkkosivujen ylläpito ja ohjelmistot 7660."
+  ],
+  [8100, "Mainosteippaukset", "Mainosteippaukset esim. auton kylkeen, ikkunoihin tai liiketilaan."],
+  [8110, "Ulkomainonta", "Ulkomainonta, esim. mainostaulut, julisteet, katumainokset ja kyltit."],
+  [
+    8120,
+    "Mainosmateriaali ja tarvikkeet",
+    "Mainonnassa käytettävä materiaali ja tarvikkeet, esim. esitteet, roll-upit, käyntikortit ja tuotekuvat."
+  ],
+  [
+    8130,
+    "Mainoslahjat ja palkinnot",
+    "Yrityksen logolla varustetut edulliset mainoslahjat (esim. kynät, kassit) ja arvontojen palkinnot. Valituille asiakkaille annetut lahjat ovat edustuslahjoja (7960)."
+  ],
+  [8140, "Muut mainoskulut", "Muut mainonnan kulut, joille ei ole omaa tiliä."],
+  [
+    8150,
+    "Markkinointitilaisuudet",
+    "Kaikille avoimet markkinointitilaisuudet, esim. avoimet ovet tai tuote-esittely. Kutsuttujen vieraiden kestitys on edustusta (7950)."
+  ],
+  [
+    8160,
+    "Markkinatutkimukset",
+    "Ostetut markkina- ja asiakastutkimukset, kyselyt ja kilpailija-analyysit."
+  ],
+  [
+    8170,
+    "Messut ja näyttelyt",
+    "Messujen ja näyttelyiden osastopaikat, osastorakenteet ja osallistumismaksut. Messumatkat kirjataan matkakuluihin (7800–7910)."
+  ],
+  [
+    8180,
+    "Asiakaslehdet",
+    "Asiakkaille jaettavien lehtien, uutiskirjeiden tai asiakastiedotteiden teko- ja painatuskulut."
+  ],
+  [
+    8190,
+    "Asiakasviihde",
+    "Laajalle asiakasjoukolle järjestetty ohjelma tai viihde markkinointitarkoituksessa. Valittujen asiakkaiden kestitys ja viihdyttäminen on edustusta (7950)."
+  ],
+  [
+    8200,
+    "Somisteet, kukat",
+    "Liiketilan tai messuosaston somistus, esim. kukat, koristeet ja näyteikkunan rakenteet."
+  ],
+  [8210, "Tavaranäytteet", "Asiakkaille ilmaiseksi annetut tuotenäytteet ja maistiaiset."],
+  [
+    8220,
+    "Maksettu markkinointituki",
+    "Esim. jälleenmyyjälle tai yhteistyökumppanille maksettu tuki yhteisestä markkinoinnista."
+  ],
+  [
+    8230,
+    "Muut myynnin edistämiskulut",
+    "Muut myynnin edistämisen kulut, joille ei ole omaa tiliä, esim. kampanjoiden tai kilpailujen järjestäminen."
+  ],
+  [
+    8250,
+    "Suhdetoimintakulut",
+    "Tiedottamiseen ja sidosryhmäsuhteisiin liittyvät kulut, esim. tiedotepalvelut ja mediasuhteet. Vieraiden kestitys on edustusta (7950)."
+  ],
+  [
+    8260,
+    "Kannatusilmoitukset ja -maksut",
+    "Esim. urheiluseuran käsiohjelman ilmoitus tai tapahtuman tukimaksu. Vähennyskelpoinen, kun sillä on todellista mainosarvoa; pelkkä tuki ilman vastinetta voi olla lahjoitus (8280)."
+  ],
+  [
+    8270,
+    "Huomionosoitukset",
+    "Tavanomaiset muistamiset, esim. kukat, adressit ja seppeleet. Liikekumppaneille annetut lahjat ovat edustuslahjoja (7960), henkilökunnan lahjat 7160."
+  ],
+  [
+    8280,
+    "Lahjoitukset",
+    "Rahalla tai tavarana annetut lahjoitukset ilman vastiketta. Verotuksessa vähennyskelpoisia vain rajatuissa tilanteissa, joten tarkista ennen kirjaamista."
+  ],
+  [
+    830,
+    "Tutkimus- ja kehityskulut",
+    "Tuotteiden ja palveluiden kehittäminen ja laadun varmistaminen: ostetut kehityspalvelut, patentit, sertifioinnit ja niihin liittyvä koulutus."
+  ],
+  [
+    8300,
+    "Tuotekehityspalvelut",
+    "Ulkopuolisilta ostetut tuotekehitys- ja suunnittelupalvelut, esim. prototyypin tai ohjelmiston kehitystyö."
+  ],
+  [
+    8310,
+    "Patentit, mallisuoja ja tavaramerkit",
+    "Patenttien, mallisuojien ja tavaramerkkien haku-, rekisteröinti- ja ylläpitomaksut sekä niihin liittyvät asiamiespalkkiot."
+  ],
+  [
+    8320,
+    "Laaduntarkkailu",
+    "Tuotteiden laadun tarkastus ja testaus, esim. laboratoriotutkimukset ja mittaukset."
+  ],
+  [
+    8330,
+    "Sertifiointi ja laatutodistukset",
+    "Sertifiointien ja laatutodistusten hankinta ja ylläpito, esim. ISO-auditoinnit ja tuotehyväksynnät."
+  ],
+  [
+    8340,
+    "Koulutus",
+    "Tuotekehitykseen tai laatuun liittyvä koulutus. Henkilökunnan yleinen koulutus ja yrittäjän oma ammatillinen koulutus kirjataan yleensä 7000."
+  ],
+  [
+    8350,
+    "Muut tutkimus- ja kehityskulut",
+    "Muut tutkimus- ja kehityskulut, joille ei ole omaa tiliä."
+  ],
+  [
+    837,
+    "Hallintopalvelut",
+    "Ulkopuolisilta ostetut hallinnon palvelut, kuten kirjanpito, tilintarkastus, juristi ja perintä. Pankin palvelumaksut eivät kuulu tänne vaan 8560."
+  ],
+  [
+    8370,
+    "Vuokratyövoima",
+    "Henkilöstöpalveluyritykseltä vuokrattu työvoima hallinnon tehtäviin. Suoraan tuotantoon tai asiakastöihin vuokrattu työvoima 4480."
+  ],
+  [
+    8380,
+    "Taloushallintopalvelut",
+    "Tilitoimiston palvelut, esim. kirjanpito, palkanlaskenta ja tilinpäätös. Taloushallinto-ohjelmiston lisenssit 7660, pankkikulut 8560."
+  ],
+  [
+    8390,
+    "Tilintarkastuspalvelut",
+    "Tilintarkastajan palkkiot tilintarkastuksesta ja muista tilintarkastajan palveluista."
+  ],
+  [
+    8410,
+    "Laki ja konsultointipalvelut",
+    "Asianajajan, juristin ja liikkeenjohdon konsulttien palkkiot, esim. sopimusten laatiminen tai yritysjärjestelyt."
+  ],
+  [
+    8420,
+    "Perintä- ja luottotietopalvelut",
+    "Perintätoimistojen ja luottotietopalvelujen maksut, esim. luottotietokyselyt ja perintäpalvelun kuukausimaksu."
+  ],
+  [
+    8430,
+    "Muut hallintopalvelut",
+    "Muut ostetut hallintopalvelut, joille ei ole omaa tiliä, esim. sihteeri- tai käännöspalvelut."
+  ],
+  [
+    8440,
+    "Viranomaismaksut",
+    "Viranomaisille maksetut maksut, esim. kaupparekisteri-ilmoitukset, lupamaksut ja todistukset. Verot ja veronkorotukset eivät kuulu tänne (esim. 8770, 9900)."
+  ],
+  [
+    845,
+    "Muut hallintokulut",
+    "Toimiston ja hallinnon juoksevat kulut: tietoliikenne, posti, pankki, vakuutukset, toimistotarvikkeet, kirjallisuus ja jäsenmaksut."
+  ],
+  [
+    8450,
+    "Kirjat",
+    "Työssä tarvittavat kirjat, esim. ammattikirjallisuus ja käsikirjat, myös e-kirjat."
+  ],
+  [8460, "Lehdet", "Työhön liittyvien sanoma- ja aikakauslehtien tilaukset, myös digitilaukset."],
+  [
+    8470,
+    "Tietopalvelut",
+    "Maksulliset tietopalvelut ja tietokannat, esim. yritys- ja säädöstietokannat."
+  ],
+  [
+    8480,
+    "Jäsenmaksut",
+    "Yrityksen toimintaan liittyvät jäsenmaksut, esim. yrittäjäjärjestö tai toimialaliitto. Yrittäjän oma ammattiliitto- tai kassamaksu on henkilökohtainen, ei yrityksen kulu."
+  ],
+  [
+    8490,
+    "Muu tiedonhankinta",
+    "Muu tiedonhankinta, joille ei ole omaa tiliä, esim. seminaarimateriaalit tai raportit."
+  ],
+  [8500, "Puhelinkulut", "Lankapuhelinten ja puhelinliittymien maksut."],
+  [
+    8510,
+    "Matkapuhelinkulut",
+    "Yrityksen käytössä olevien matkapuhelinliittymien maksut. Puhelinlaitteen ostot 7690."
+  ],
+  [8520, "Telefaxkulut", "Telefaxin käyttöön liittyvät kulut; nykyään harvoin käytössä."],
+  [8530, "Datasiirtokulut", "Laajakaista-, mobiilidata- ja muut tietoliikenneyhteyksien maksut."],
+  [
+    8540,
+    "Posti- ja lähettikulut",
+    "Postimerkit, kirjeiden ja asiakirjojen lähetys sekä lähettipalvelut. Myytyjen tavaroiden lähetykset asiakkaille 8020."
+  ],
+  [
+    8550,
+    "Arvo-osuuksien hoitokulut",
+    "Arvo-osuustilin ja osakkeiden hoitoon liittyvät maksut, esim. arvo-osuusrekisterin tai säilytyspalvelun maksut."
+  ],
+  [
+    8560,
+    "Rahaliikenteen kulut",
+    "Pankin palvelumaksut, esim. tilin kuukausimaksu, maksujen välitys ja verkkopankki. Ei korkoja (9460) eikä kirjanpitoa (8380)."
+  ],
+  [
+    8570,
+    "Pyöristyserot",
+    "Pienet sentin pyöristyserot, esim. käteisen pyöristys tai laskun ja maksun pieni ero."
+  ],
+  [
+    8580,
+    "Vastuuvakuutukset",
+    "Vastuuvakuutukset, esim. toiminnan vastuuvakuutus ja ammatillinen vastuuvakuutus."
+  ],
+  [
+    8590,
+    "Esinevakuutukset",
+    "Yrityksen irtaimiston ja tavaroiden vakuutukset, esim. laite- ja varastovakuutus. Toimitilan vahinkovakuutus 7410, ajoneuvovakuutus 7570."
+  ],
+  [
+    8600,
+    "Muut vakuutukset",
+    "Muut yrityksen vakuutukset, esim. oikeusturva- tai keskeytysvakuutus. Yrittäjän YEL 6100, henkilövakuutukset 6500."
+  ],
+  [
+    8610,
+    "Maksetut vahingonkorvaukset",
+    "Yrityksen maksamat vahingonkorvaukset toisille, esim. asiakkaalle aiheutettu vahinko. Ajoneuvoihin liittyvät korvaukset 7590."
+  ],
+  [
+    8620,
+    "Toimistotarvikkeet",
+    "Toimistotarvikkeet, esim. paperi, kynät, kansiot ja tulostimen musteet."
+  ],
+  [
+    8630,
+    "Lomakkeet ja painatuskulut",
+    "Lomakkeiden, kirjekuorten ja muiden toimistopainotuotteiden painatus. Mainospainotuotteet 8120."
+  ],
+  [8640, "Valokopiot", "Valokopiointi- ja tulostuspalvelut."],
+  [
+    8650,
+    "Kokous- ja neuvottelukulut",
+    "Kokousten kulut, esim. kokoustilan vuokra tai yhtiökokouksen tarjoilu. Asiakkaiden kestitys on edustusta (7950), henkilöstön palaverit 7010."
+  ],
+  [8680, "Muut hallintokulut", "Muut hallinnon kulut, joille ei ole omaa tiliä."],
+  [
+    870,
+    "Muut liikekulut",
+    "Muut liikekulut, jotka eivät ole tavallisia toimintakuluja: luottotappiot, sakot ja veronkorotukset sekä käyttöomaisuuden myyntitappiot."
+  ],
+  [
+    870,
+    "Luottotappiot",
+    "Myyntisaatavat, jotka on todettu lopullisesti saamatta jääviksi, esim. asiakas meni konkurssiin. Lainasaamisten tappiot ovat rahoituskuluja (9660)."
+  ],
+  [
+    8700,
+    "Myynnin luottotappiot",
+    "Myyntilaskut, joita ei saada perittyä, esim. asiakkaan konkurssi tai tulos ulosotosta. Laskun sisältämän alv:n voi oikaista luottotappion yhteydessä."
+  ],
+  [
+    8710,
+    "Yhteisömyynnin luottotappiot",
+    "EU-maihin arvonlisäverottomana tehdyn yhteisömyynnin luottotappiot."
+  ],
+  [
+    8720,
+    "Marginaaliverotusmyynnin luottotappiot",
+    "Marginaaliverotusmenettelyllä myytyjen tavaroiden (esim. käytetyt tavarat) luottotappiot."
+  ],
+  [
+    8730,
+    "Palautuneet luottotappiot",
+    "Aiemmin luottotappioksi kirjatut saatavat, jotka asiakas maksoi myöhemmin. Kirjataan luottotappioiden vähennykseksi."
+  ],
+  [
+    874,
+    "Vähennyskelpoiset muut liikekulut",
+    "Muut liikekulut, jotka saa vähentää verotuksessa ja joille ei ole paikkaa muualla."
+  ],
+  [
+    8740,
+    "Yle-vero",
+    "Yhteisön Yle-vero, joka maksuunpannaan tuloveron yhteydessä. Toiminimen yrittäjän oma Yle-vero on henkilökohtainen, ei yrityksen kulu."
+  ],
+  [
+    8750,
+    "Poikkeukselliset vähennyskelpoiset kulut",
+    "Kertaluonteiset, tavallisesta toiminnasta poikkeavat kulut, jotka ovat vähennyskelpoisia, esim. suuri kertakorvaus tai järjestelykulu."
+  ],
+  [
+    8760,
+    "Muut vähennyskelpoiset liikekulut",
+    "Muut vähennyskelpoiset liikekulut, joille ei ole omaa tiliä."
+  ],
+  [
+    877,
+    "Vähennyskelvottomat muut liikekulut",
+    "Kulut, joita ei saa vähentää verotuksessa, kuten sakot ja veronkorotukset. Ne pienentävät kirjanpidon tulosta mutta eivät verotettavaa tuloa."
+  ],
+  [
+    8770,
+    "Veronkorotukset, vähennyskelvottomat",
+    "Verohallinnon määräämät veronkorotukset ja myöhästymismaksut, esim. myöhästyneestä ilmoituksesta. Verojen viivästyskorot 9540."
+  ],
+  [
+    8780,
+    "Sakot, pysäköintivirhemaksut ja muut rangaistusmaksut",
+    "Sakot, ylinopeussakot, pysäköintivirhemaksut ja muut rangaistusluonteiset maksut. Tavalliset pysäköintimaksut ovat vähennyskelpoisia (7850)."
+  ],
+  [
+    8790,
+    "Fuusiotappio",
+    "Yritysten sulautumisessa syntyvä kirjanpidollinen tappio. Harvinainen pienyrityksessä."
+  ],
+  [
+    8800,
+    "Muut vähennyskelvottomat liikekulut",
+    "Muut verotuksessa vähennyskelvottomat kulut, joille ei ole omaa tiliä."
+  ],
+  [
+    884,
+    "Käyttöomaisuuden luovutustappiot",
+    "Tappio, kun käyttöomaisuutta (esim. kone, auto tai osakkeet) myydään alle sen poistamattoman arvon."
+  ],
+  [
+    8840,
+    "Poikkeukselliset käyttöomaisuuden luovutustappiot",
+    "Kertaluonteiset, poikkeuksellisen suuret käyttöomaisuuden myyntitappiot, jotka ovat verotuksessa vähennyskelpoisia."
+  ],
+  [
+    8850,
+    "Käyttöomaisuuden luovutustappiot",
+    "Tappio, kun koneen, laitteen tai muun käyttöomaisuuden myyntihinta jää alle sen jäljellä olevan kirjanpitoarvon."
+  ],
+  [
+    8867,
+    "Poikkeukselliset käyttöomaisuuden luovutustappiot (vähennyskelvottomat)",
+    "Poikkeukselliset käyttöomaisuuden luovutustappiot, joita ei saa vähentää verotuksessa, esim. tietyt osakeyhtiön käyttöomaisuusosakkeiden myyntitappiot."
+  ],
+  [
+    8870,
+    "Käyttöomaisuuden luovutustappiot (vähennyskelvottomat)",
+    "Käyttöomaisuuden myyntitappiot, joita ei saa vähentää verotuksessa, esim. tietyt osakeyhtiön käyttöomaisuusosakkeiden myyntitappiot."
+  ],
+  [
+    889,
+    "Täsmäytyserot",
+    "Pienet selvittämättömät erot, jotka jäävät esim. pankkitilin ja kirjanpidon täsmäytyksessä."
+  ],
+  [
+    8890,
+    "Täsmäytyserot",
+    "Selvittämättä jääneet pienet erot esim. pankkitilin tai kassan täsmäytyksessä. Selvitä ero ensin; tänne vain se, mitä ei saada selville."
+  ],
+  [
+    899,
+    "Osuus osakkuusyritysten voitosta (tappiosta)",
+    "Konsernitilinpäätöksessä osakkuusyhtiön tuloksesta konsernille kuuluva osuus. Ei koske tavallista pienyritystä."
+  ],
+  [
+    8990,
+    "Osuus osakkuusyritysten tuloksesta",
+    "Osuus osakkuusyhtiön tuloksesta konsernitilinpäätöksessä (pääomaosuusmenetelmä). Ei koske tavallista pienyritystä."
+  ],
+  [
+    90,
+    "Rahoitustuotot ja -kulut",
+    "Rahoitukseen liittyvät tuotot ja kulut: korot, osingot, sijoitusten tuotot, valuuttakurssierot ja lainojen kulut. Lainan lyhennys ei ole kulu vaan velan vähennys taseessa."
+  ],
+  [
+    900,
+    "Tuotot osuuksista saman konsernin yrityksissä",
+    "Tuotot tytär- tai emoyhtiön osakkeista ja osuuksista samassa konsernissa. Ei koske tavallista pienyritystä."
+  ],
+  [
+    9000,
+    "Osinkotuotot konserniyrityksiltä",
+    "Samaan konserniin kuuluvalta yhtiöltä, esim. tytäryhtiöltä, saadut osingot."
+  ],
+  [
+    9010,
+    "Osuuskorot konserniyrityksiltä",
+    "Samaan konserniin kuuluvalta osuuskunnalta saadut osuuskorot."
+  ],
+  [
+    9020,
+    "Muut tuotot konserniyrityksiltä",
+    "Muut tuotot samaan konserniin kuuluvien yritysten osakkeista tai osuuksista."
+  ],
+  [
+    903,
+    "Osuus osakkuusyritysten voitosta (tappiosta)",
+    "Osakkuusyhtiön tuloksesta konsernille kuuluva osuus konsernitilinpäätöksessä. Ei koske tavallista pienyritystä."
+  ],
+  [
+    9030,
+    "Osuus osakkuusyritysten tuloksesta",
+    "Osuus osakkuusyhtiön tuloksesta konsernitilinpäätöksessä. Ei koske tavallista pienyritystä."
+  ],
+  [
+    904,
+    "Tuotot osuuksista omistusyhteysyrityksissä",
+    "Tuotot yrityksistä, joissa yrityksellä on merkittävä omistusosuus (tyypillisesti 20–50 %), mutta jotka eivät ole konserniyrityksiä."
+  ],
+  [
+    9040,
+    "Osinkotuotot omistusyhteysyrityksiltä",
+    "Osingot yhtiöistä, joissa yrityksellä on merkittävä omistusosuus (omistusyhteysyritys)."
+  ],
+  [
+    9050,
+    "Saatu ylijäämä omistusyhteysyrityksiltä",
+    "Omistusyhteysyrityksenä olevalta osuuskunnalta saatu ylijäämä."
+  ],
+  [
+    9060,
+    "Muut tuotot omistysyhteysyrityksiltä",
+    "Muut tuotot omistusyhteysyritysten osakkeista tai osuuksista."
+  ],
+  [
+    907,
+    "Tuotot osuuksista muissa omistusyhteysyrityksissä",
+    "Tuotot muiden omistusyhteysyritysten osuuksista. Harvinainen pienyrityksessä."
+  ],
+  [
+    9070,
+    "Tuotot osuuksista muissa omistusyhteysyrityksissä",
+    "Tuotot muiden omistusyhteysyritysten osuuksista. Harvinainen pienyrityksessä."
+  ],
+  [
+    908,
+    "Tuotot muista pysyvien vastaavien sijoituksista",
+    "Tuotot pitkäaikaisista sijoituksista, esim. osingot, osuuskorot ja osakkeiden myyntivoitot."
+  ],
+  [
+    9080,
+    "Saman konsernin yrityksiltä",
+    "Tuotot pitkäaikaisista sijoituksista, jotka kohdistuvat saman konsernin yrityksiin."
+  ],
+  [
+    9080,
+    "Sijoitustuotot muista pysyvien vastaavien sijoituksista konserniin",
+    "Pitkäaikaisten sijoitusten tuotot saman konsernin yrityksiltä. Ei koske tavallista pienyritystä."
+  ],
+  [
+    909,
+    "Muilta",
+    "Pitkäaikaisten sijoitusten tuotot muilta kuin konserniyrityksiltä, esim. osingot ja osuuskorot."
+  ],
+  [
+    9090,
+    "Osinkotuotot (verovapaat)",
+    "Pitkäaikaisina sijoituksina pidettyjen osakkeiden osingot, jotka ovat osakeyhtiölle verovapaita. Pörssiyhtiön osinko voi olla osin veronalainen, jos omistus on alle 10 %."
+  ],
+  [
+    9100,
+    "Saatu ylijäämä osuuskunnista",
+    "Osuuskunnalta saatu ylijäämä tai osuuskorko, esim. osuuspankin osuuskorko."
+  ],
+  [
+    9120,
+    "Voitto-osuus yhtymistä",
+    "Yrityksen osuus sellaisen yhtymän (esim. avoin yhtiö tai kommandiittiyhtiö) voitosta, jossa se on osakkaana."
+  ],
+  [
+    9130,
+    "Luovutusvoitot osuuksista",
+    "Voitto, kun pitkäaikaisena sijoituksena pidettyjä osakkeita tai osuuksia myydään kirjanpitoarvoa kalliimmalla."
+  ],
+  [
+    9140,
+    "Muut tuotot pysyvien vastaavien sijoituksista",
+    "Muut pitkäaikaisten sijoitusten tuotot, joille ei ole omaa tiliä."
+  ],
+  [
+    915,
+    "Muut korko- ja rahoitustuotot",
+    "Korkotuotot ja muut rahoitustuotot, esim. pankkitilin korot, asiakkailta saadut viivästyskorot ja valuuttakurssivoitot."
+  ],
+  [915, "Saman konsernin yrityksiltä", "Korko- ja rahoitustuotot saman konsernin yrityksiltä."],
+  [
+    9150,
+    "Korko- ja rahoitustuotot konsernisaamisista",
+    "Korot ja muut rahoitustuotot samaan konserniin kuuluvalle yritykselle annetuista lainoista tai saamisista."
+  ],
+  [
+    916,
+    "Muilta",
+    "Korko- ja rahoitustuotot muilta kuin konserniyrityksiltä, esim. pankeilta ja asiakkailta."
+  ],
+  [
+    9160,
+    "Korkotuotot omistusyhteysyrityssaamisista",
+    "Korot omistusyhteysyrityksille annetuista lainoista tai muista saamisista."
+  ],
+  [
+    9170,
+    "Korkotuotot myyntisaamisista",
+    "Asiakkailta laskutetut viivästyskorot myöhässä maksetuista laskuista."
+  ],
+  [9180, "Korkotuotot osamaksusaamisista", "Osamaksukaupan korot, kun yritys myy osamaksulla."],
+  [9190, "Korkotuotot lainasaamisista", "Korot yrityksen muille antamista lainoista."],
+  [9200, "Korkotuotot henkilökuntasaamisista", "Korot henkilökunnalle annetuista lainoista."],
+  [9210, "Korkotuotot osakaslainasaamisista", "Korot osakkaalle annetusta lainasta (osakaslaina)."],
+  [
+    9220,
+    "Korkotuotot pankkisaamisista",
+    "Pankkitilin korot, esim. käyttötilin tai säästötilin hyvityskorot."
+  ],
+  [9230, "Korkotuotot talletuksista", "Määräaikaistalletusten ja muiden talletusten korot."],
+  [
+    9240,
+    "Palautettava yhteisökorko/palautuskorko",
+    "Verohallinnon maksama palautuskorko liikaa maksetuista veroista. Verovapaata tuloa."
+  ],
+  [9250, "Muut korkotuotot", "Muut korkotuotot, joille ei ole omaa tiliä."],
+  [
+    9260,
+    "Valuuttakurssivoitot",
+    "Valuuttakurssivoitot rahoituseristä, esim. valuuttatileistä tai -lainoista. Myyntilaskujen kurssierot 3580, ostolaskujen 4370."
+  ],
+  [
+    9270,
+    "Osinkotuotot rahoitusarvopapereista (verovapaat)",
+    "Lyhytaikaisina sijoituksina pidettyjen osakkeiden osingot. Pörssiyhtiön osinko voi olla osakeyhtiölle osin veronalainen, jos omistus on alle 10 %."
+  ],
+  [
+    9280,
+    "Muut tuotot rahoitusarvopapereista",
+    "Muut tuotot lyhytaikaisista sijoituksista, esim. osakkeiden tai rahasto-osuuksien myyntivoitot."
+  ],
+  [9290, "Muut rahoitustuotot", "Muut rahoitustuotot, joille ei ole omaa tiliä."],
+  [
+    930,
+    "Arvonalentumiset pysyvien vastaavien sijoituksista",
+    "Pitkäaikaisten sijoitusten (esim. osakkeet tai lainasaamiset) pysyvät arvonalennukset, kun arvo on laskenut kirjanpitoarvoa alemmaksi."
+  ],
+  [
+    9300,
+    "Konserniosuuksien arvonalentumiset",
+    "Konserniyritysten osakkeiden ja osuuksien pysyvät arvonalennukset."
+  ],
+  [
+    9310,
+    "Konsernisaamisten  arvonalentumiset",
+    "Konserniyrityksiltä olevien saamisten arvonalennukset."
+  ],
+  [
+    9320,
+    "Omistusyhteysyritysosuuksien arvonalentumiset",
+    "Omistusyhteysyritysten osakkeiden ja osuuksien pysyvät arvonalennukset."
+  ],
+  [
+    9330,
+    "Omistusyhteysyrityssaamisten arvonalentumiset",
+    "Omistusyhteysyrityksiltä olevien saamisten arvonalennukset."
+  ],
+  [
+    9340,
+    "Osakkeiden ja osuuksien arvonalentumiset",
+    "Pitkäaikaisina sijoituksina pidettyjen osakkeiden ja osuuksien pysyvät arvonalennukset."
+  ],
+  [
+    9350,
+    "Saamisten arvonalentumiset",
+    "Pitkäaikaisten saamisten, esim. annettujen lainojen, arvonalennukset. Myyntisaatavien luottotappiot 8700."
+  ],
+  [
+    9360,
+    "Arvonalentumisten palautukset",
+    "Aiemmin tehtyjen arvonalennusten peruutukset, kun sijoituksen arvo on noussut takaisin."
+  ],
+  [
+    937,
+    "Arvonalentumiset vaihtuvien vastaavien rahoitusarvopapereista",
+    "Lyhytaikaisten sijoitusten (esim. kaupankäyntiä varten pidetyt osakkeet) arvonalennukset, kun käypä arvo on alle hankintamenon."
+  ],
+  [
+    9370,
+    "Konserniosuuksien arvonalentumiset",
+    "Lyhytaikaisina pidettyjen konserniyritysten osakkeiden arvonalennukset."
+  ],
+  [
+    9380,
+    "Omistusyhteysyritysosuuksien arvonalentumiset",
+    "Lyhytaikaisina pidettyjen omistusyhteysyritysten osakkeiden arvonalennukset."
+  ],
+  [
+    9390,
+    "Osakkeiden ja osuuksien arvonalentumiset",
+    "Lyhytaikaisina sijoituksina pidettyjen osakkeiden ja osuuksien arvonalennukset."
+  ],
+  [
+    9400,
+    "Muiden rahoitusarvopapereiden arvonalentumiset",
+    "Muiden lyhytaikaisten rahoitusarvopapereiden, esim. joukkovelkakirjojen, arvonalennukset."
+  ],
+  [
+    9410,
+    "Arvonalentumisten palautukset",
+    "Lyhytaikaisten sijoitusten aiempien arvonalennusten peruutukset."
+  ],
+  [
+    942,
+    "Korkokulut ja muut rahoituskulut",
+    "Lainojen korot ja muut rahoituskulut, esim. pankin lainanhoitomaksut. Lainan lyhennys ei ole kulu vaan velan vähennys taseessa (esim. 2821)."
+  ],
+  [942, "Saman konsernin yrityksille", "Korot ja muut rahoituskulut saman konsernin yrityksille."],
+  [
+    9420,
+    "Korkokulut veloista konserniyrityksille",
+    "Korot samaan konserniin kuuluvalta yritykseltä saadusta lainasta."
+  ],
+  [
+    9430,
+    "Muut rahoituskulut konserniyrityksille",
+    "Muut rahoituskulut samaan konserniin kuuluville yrityksille."
+  ],
+  [
+    944,
+    "Muille",
+    "Korot ja rahoituskulut muille kuin konserniyrityksille, esim. pankeille ja rahoitusyhtiöille."
+  ],
+  [
+    9440,
+    "Korkokulut joukkovelkakirjalainoista",
+    "Yrityksen liikkeeseen laskemien joukkovelkakirjalainojen korot. Harvinainen pienyrityksessä."
+  ],
+  [
+    9450,
+    "Korkokulut vaihtovelkakirjalainoista",
+    "Yrityksen liikkeeseen laskemien vaihtovelkakirjalainojen korot. Harvinainen pienyrityksessä."
+  ],
+  [
+    9460,
+    "Korkokulut rahoituslaitoslainoista",
+    "Pankkilainan korot. Lainan lyhennys ei ole kulu: se vähentää velkaa taseessa (esim. 2621 tai 2821)."
+  ],
+  [
+    9470,
+    "Korkokulut rahoitusyhtiölainoista",
+    "Rahoitusyhtiön lainan tai osamaksusopimuksen korot ja korkoluonteiset kulut. Lyhennykset vähentävät velkaa taseessa (esim. 2631)."
+  ],
+  [9480, "Korkokulut eläkelainoista", "Eläkelainojen, esim. TyEL-takaisinlainan, korot."],
+  [
+    9490,
+    "Korkokulut ostoveloista",
+    "Toimittajille maksetut viivästyskorot myöhässä maksetuista ostolaskuista. Verojen viivästyskorot ovat vähennyskelvottomia (9540)."
+  ],
+  [9500, "Korkokulut rahoitusvekseleistä", "Rahoitusvekseleiden korot. Harvinainen nykyisin."],
+  [
+    9510,
+    "Korkokulut omistusyhteysyrityslainoista",
+    "Korot omistusyhteysyrityksiltä saaduista lainoista."
+  ],
+  [
+    9520,
+    "Korkokulut osakaslainoista",
+    "Osakkaalle maksetut korot osakkaan yritykselle antamasta lainasta."
+  ],
+  [
+    9530,
+    "Maksettava yhteisökorko / jäännösveron korko",
+    "Jäännösveron korko ja muu yhteisöltä peritty korko tuloverosta. Ei vähennyskelpoinen verotuksessa."
+  ],
+  [
+    9540,
+    "Verojen viivästysseuraamukset",
+    "Verojen viivästyskorot ja myöhästymiskorot, esim. myöhässä maksetusta alv:sta. Ei vähennyskelpoinen. Veronkorotukset 8770."
+  ],
+  [9550, "Muut korkokulut", "Muut korkokulut, joille ei ole omaa tiliä, esim. luottokortin korot."],
+  [
+    9560,
+    "Lainojen hoitokulut",
+    "Lainan avausmaksut, tilinhoitopalkkiot ja muut lainan hoitoon liittyvät pankin maksut."
+  ],
+  [9570, "Limiittipalkkiot", "Luottolimiitin, esim. shekkitililimiitin, palkkiot."],
+  [
+    9580,
+    "Takausprovisiot",
+    "Takauksesta maksetut palkkiot, esim. Finnveran tai pankin takausmaksu."
+  ],
+  [9590, "Luottovakuutukset", "Luottovakuutusten maksut, esim. myyntisaatavien luottovakuutus."],
+  [
+    9600,
+    "Kiinnityskulut",
+    "Lainan vakuudeksi haettujen kiinnitysten maksut, esim. yrityskiinnitys tai kiinteistökiinnitys."
+  ],
+  [
+    9610,
+    "Perimiskulut",
+    "Saatavien perintään liittyvät rahoituskulut. Perintätoimiston ja luottotietopalvelun yleiset palvelumaksut 8420."
+  ],
+  [
+    9620,
+    "Kurssitappiot",
+    "Valuuttakurssi- ja muut kurssitappiot rahoituseristä, esim. valuuttatileistä tai -lainoista. Ostolaskujen kurssierot 4370."
+  ],
+  [
+    9640,
+    "Factoring-kulut",
+    "Factoring-yhtiön palkkiot ja korot, kun myyntilaskut myydään tai rahoitetaan rahoitusyhtiön kautta."
+  ],
+  [9650, "Terminointikulut", "Valuuttatermiinien eli tulevan valuuttakaupan suojausten kulut."],
+  [
+    9660,
+    "Saamisten luottotappiot",
+    "Lainasaamisten ja muiden rahoitussaamisten lopulliset tappiot. Myyntilaskujen luottotappiot 8700."
+  ],
+  [
+    9670,
+    "Muut kulut rahoitusarvopapereista",
+    "Arvopapereihin liittyvät kulut, esim. välitys- ja säilytyspalkkiot sekä myyntitappiot lyhytaikaisista sijoituksista."
+  ],
+  [9690, "Muut rahoituskulut", "Muut rahoituskulut, joille ei ole omaa tiliä."],
+  [
+    97,
+    "Tilinpäätössiirrot",
+    "Tilinpäätöksessä tehtävät verotukseen vaikuttavat siirrot, kuten poistoeron muutos ja verotusperusteiset varaukset. Pienessä yrityksessä usein ei tarvita."
+  ],
+  [
+    975,
+    "Poistoerojen lisäys tai vähennys",
+    "Poistoero syntyy, kun verotuksessa vähennetään suurempi poisto kuin kirjanpidon suunnitelman mukainen poisto. Ero kirjataan tänne ja taseen poistoeroon (240)."
+  ],
+  [
+    9750,
+    "Aineettomien hyödykkeiden poistoeron muutos",
+    "Aineettomien hyödykkeiden (esim. ohjelmistot, lisenssit) poistoeron lisäys tai vähennys. Vastatili taseessa 2407."
+  ],
+  [
+    9760,
+    "Rakennusten poistoeron muutos",
+    "Rakennusten poistoeron lisäys tai vähennys. Vastatili taseessa 2431."
+  ],
+  [
+    9770,
+    "Koneiden ja kaluston poistoeron muutos",
+    "Koneiden ja kaluston poistoeron lisäys tai vähennys. Vastatili taseessa 2441."
+  ],
+  [
+    9780,
+    "Muiden aineellisten hyödykkeiden poistoeron muutos",
+    "Muiden aineellisten hyödykkeiden poistoeron lisäys tai vähennys. Vastatili taseessa 2449."
+  ],
+  [
+    98,
+    "Verotusperusteisten varausten lisäys tai vähennys",
+    "Verolakien sallimat varaukset, joilla verotettavaa tuloa voi siirtää myöhemmille vuosille. Tämä ryhmä näyttää varausten lisäyksen tai vähennyksen tilikaudella."
+  ],
+  [
+    9800,
+    "Käyttöomaisuuden jälleenhankintavarauksen muutos",
+    "Jälleenhankintavarauksen muutos: varaus, jonka voi tehdä, kun käyttöomaisuutta myydään tai menetetään ja tilalle hankitaan uusi."
+  ],
+  [
+    9810,
+    "Toimitilan jälleenhankintavarauksen muutos",
+    "Toimitilan jälleenhankintavarauksen muutos, kun myydyn toimitilan tilalle hankitaan uusi."
+  ],
+  [
+    9820,
+    "Takuuvarauksen muutos",
+    "Verotusperusteisen takuuvarauksen muutos. Harvinainen; käytä vain, jos varauksen tekeminen on verotuksessa sallittua."
+  ],
+  [
+    9830,
+    "Toimintavarauksen muutos",
+    "Toimintavarauksen muutos. Vanhan lainsäädännön mukainen varaus, nykyisin harvinainen."
+  ],
+  [
+    9840,
+    "Hankintamenon muutosvarauksen muutos",
+    "Hankintamenon muutosvarauksen muutos. Vanhan lainsäädännön mukainen varaus, nykyisin harvinainen."
+  ],
+  [
+    9850,
+    "Muiden veroitusperusteisten varausten muutos",
+    "Muiden verotusperusteisten varausten muutos, esim. luottotappiovaraus. Vastatili taseessa 2461 tai 2499."
+  ],
+  [
+    988,
+    "Konserniavustukset",
+    "Konserniavustus: suomalaisten konserniyhtiöiden välillä siirretty voitto, jolla tulos tasataan verotuksessa. Ei koske itsenäistä pienyritystä."
+  ],
+  [
+    9880,
+    "Saadut konserniavustukset",
+    "Samaan konserniin kuuluvalta yhtiöltä saatu konserniavustus."
+  ],
+  [
+    9890,
+    "Annetut konserniavustukset",
+    "Samaan konserniin kuuluvalle yhtiölle annettu konserniavustus."
+  ],
+  [
+    990,
+    "Tuloverot",
+    "Yrityksen tuloverot: tilikauden ennakkoverot, verojaksotus ja aiempien vuosien verojen oikaisut. Koskee osakeyhtiötä; toiminimen tuloverot ovat yrittäjän omia."
+  ],
+  [
+    990,
+    "Tilikauden verot",
+    "Tilikauden tuloksesta maksettavat tuloverot, esim. ennakkoverot ja tilinpäätöksessä tehtävä verojaksotus."
+  ],
+  [
+    9900,
+    "Ennakkoverot",
+    "Osakeyhtiön maksamat tuloveron ennakot. Toiminimen yrittäjän omat ennakkoverot ovat yksityisnostoja (2365). Veronkorotukset ja viivästyskorot 8770 ja 9540."
+  ],
+  [
+    9910,
+    "Ennakonpidätys työkorvauksista",
+    "Asiakkaan yrityksen saamista työkorvauksista pidättämä ennakonpidätys; se hyvitetään yrityksen tuloverosta."
+  ],
+  [
+    9920,
+    "Veronhyvitys osingoista",
+    "Osinkojen veronhyvitys vanhan, jo poistuneen yhtiöverojärjestelmän mukaan. Nykyisin ei käytössä."
+  ],
+  [
+    9930,
+    "Lähdeverot",
+    "Ulkomailla pidätetyt lähdeverot, esim. ulkomaisista osingoista tai koroista."
+  ],
+  [
+    9940,
+    "Tilikauden verojaksotus",
+    "Tilinpäätöksessä kirjattava erotus, jolla tuloverokulu oikaistaan vastaamaan tilikauden todellista veroa (vastatili 2968 tai 1813)."
+  ],
+  [
+    9950,
+    "Veronpalautukset / jäännösverot",
+    "Aiempien vuosien lopullisen verotuksen mukaiset veronpalautukset ja jäännösverot, jos niitä ei ole jaksotettu."
+  ],
+  [9960, "Muut tuloverot", "Muut tuloverot, joille ei ole omaa tiliä."],
+  [
+    997,
+    "Laskennalliset verot",
+    "Laskennallinen vero: tulevien vuosien verovaikutus, joka johtuu kirjanpidon ja verotuksen ajoituseroista. Pienyritykset eivät yleensä kirjaa niitä."
+  ],
+  [
+    9970,
+    "Laskennalliset verot",
+    "Laskennallisten verovelkojen ja -saamisten muutos (vastatilit 2981 ja 1691). Pienyritykset eivät yleensä kirjaa niitä."
+  ],
+  [
+    998,
+    "Muut välittömät verot",
+    "Muut välittömät verot kuin tuloverot. Nykyisin pienyrityksessä harvoin tarpeen."
+  ],
+  [
+    9980,
+    "Varallisuusverot / Muut välittömät verot",
+    "Muut välittömät verot kuin tuloverot. Varallisuusvero on lakkautettu, joten tili on harvoin käytössä."
+  ],
+  [
+    999,
+    "Vähemmistöosuudet",
+    "Konsernitilinpäätöksessä tytäryhtiön tuloksesta ulkopuolisille omistajille kuuluva osuus. Ei koske tavallista pienyritystä."
+  ],
+  [
+    9990,
+    "Vähemmistöosuudet",
+    "Vähemmistöosakkaiden osuus tytäryhtiön tuloksesta konsernitilinpäätöksessä. Ei koske tavallista pienyritystä."
+  ]
+]

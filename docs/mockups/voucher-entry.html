@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penni — tositteen kirjaus</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#18181b; --mut:#6b7280; --ter:#9ca3af; --bd:#ececf0; --bd2:#e4e4e7; --accent:#4f46e5; --accent-soft:#eef2ff; --green:#16a34a; --paper:#fafafa; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #e9e7e1; color: var(--ink); padding: 26px 30px 70px; line-height: 1.45; }
+  .top h1 { font-size: 21px; font-weight: 700; letter-spacing: -.4px; margin-bottom: 4px; }
+  .top p { color: #6b675e; font-size: 13.5px; margin-bottom: 22px; max-width: 820px; }
+  .pick { border-radius: 16px; padding: 8px; cursor: pointer; border: 2px solid transparent; transition: .15s; margin-bottom: 22px; max-width: 1180px; }
+  .pick:hover { border-color: #c7c7cf; }
+  .pick.selected { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(79,70,229,.16); }
+  .cap { display: flex; align-items: baseline; gap: 12px; padding: 6px 8px 11px; }
+  .cap h3 { font-size: 15px; font-weight: 650; }
+  .cap .meta { font-size: 12px; color: #8a8578; }
+
+  .app { background:#fff; border:1px solid var(--bd); border-radius:13px; overflow:hidden; display:flex; height:454px; box-shadow:0 2px 10px rgba(40,33,28,.08); }
+  .app * { box-sizing:border-box; }
+  .side { width:158px; flex-shrink:0; background:var(--paper); border-right:1px solid var(--bd); padding:16px 11px; display:flex; flex-direction:column; gap:3px; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:2px 5px 16px; letter-spacing:-.3px; }
+  .bdot { width:13px; height:13px; border-radius:4px; background:var(--accent); }
+  .nav { display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:8px; font-size:12.5px; color:var(--mut); }
+  .nav.on { background:#fff; color:var(--ink); font-weight:600; box-shadow:0 0 0 1px var(--bd); }
+  .nico { width:13px; height:13px; border-radius:4px; background:#d4d4d8; }
+  .nav.on .nico { background:var(--accent); }
+  .main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .bar { padding:15px 22px; border-bottom:1px solid var(--bd); display:flex; align-items:center; justify-content:space-between; }
+  .bar .t { font-size:16px; font-weight:650; letter-spacing:-.3px; }
+  .bar .s { font-size:11.5px; color:var(--ter); margin-top:2px; }
+  .body { padding:20px 22px; overflow:hidden; flex:1; }
+  .btn { font-size:12.5px; font-weight:600; padding:8px 15px; border-radius:8px; border:1px solid transparent; cursor:pointer; }
+  .btn.pri { background:var(--accent); color:#fff; }
+  .btn.sec { background:#fff; color:var(--ink); border-color:var(--bd2); }
+  .lab { font-size:9.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--ter); font-weight:600; margin-bottom:5px; display:block; }
+  .inp { border:1px solid var(--bd2); border-radius:7px; padding:8px 10px; font-size:13px; background:#fff; color:var(--ink); font-family:inherit; display:flex; align-items:center; justify-content:space-between; }
+  .inp.foc { border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,70,229,.15); }
+  .num { font-variant-numeric:tabular-nums; }
+  .seg { display:inline-flex; background:#f4f4f5; border-radius:9px; padding:3px; gap:2px; }
+  .seg span { font-size:12.5px; padding:6px 13px; border-radius:6px; color:var(--mut); font-weight:500; }
+  .seg span.on { background:#fff; color:var(--accent); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .grid3 { display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:13px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+  .prev { background:var(--paper); border:1px solid var(--bd); border-radius:10px; padding:13px 15px; margin-top:18px; }
+  .prevh { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--ter); font-weight:600; margin-bottom:9px; }
+  .prow { display:flex; justify-content:space-between; font-size:12.5px; padding:5px 0; font-variant-numeric:tabular-nums; }
+  .tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .tbl th { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:var(--ter); font-weight:600; text-align:left; padding:0 10px 7px; }
+  .tbl th.r, .tbl td.r { text-align:right; }
+  .tbl td { padding:9px 10px; border-top:1px solid var(--bd); font-variant-numeric:tabular-nums; }
+  .trow.foc td { background:var(--accent-soft); }
+  .ac { position:relative; }
+  .acdrop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid var(--bd2); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:4px; z-index:5; }
+  .acopt { font-size:12px; padding:6px 9px; border-radius:6px; display:flex; gap:8px; }
+  .acopt.on { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  .acopt .anum { color:var(--ter); width:42px; }
+  .acopt.on .anum { color:var(--accent); }
+  .balbar { display:flex; align-items:center; gap:18px; margin-top:14px; padding:11px 15px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:9px; font-size:12.5px; }
+  .balbar .ok { color:var(--green); font-weight:600; display:flex; align-items:center; gap:6px; }
+  .kbd { font-size:10.5px; color:var(--ter); }
+  .kbd b { font-family:ui-monospace,Menlo,monospace; background:#f4f4f5; color:var(--mut); padding:1px 5px; border-radius:4px; font-weight:500; }
+  .row-actions { display:flex; gap:9px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Tositteen kirjaus — kaksi tapaa</h1>
+  <p>Sama meno (toimistotarvike 86,40 € sis. ALV 25,5 %) kirjattuna kahdella tavalla, tyylissä A. Kysymys: kumpi on <em>oletus</em>? (Voidaan tehdä molemmat: yksinkertainen oletuksena, joka laajenee gridiksi.)</p>
+</div>
+
+<!-- VARIANT 1: simple guided -->
+<div class="pick selected" data-choice="simple" onclick="toggleSelect(this)">
+  <div class="cap"><h3>1 — Yksinkertainen tapahtuma</h3><span class="meta">omistajalle: valitse tyyppi, summa, tili — kaksoiskirjaus syntyy automaattisesti</span></div>
+  <div class="app">
+    <div class="side">
+      <div class="brand"><span class="bdot"></span>Penni</div>
+      <div class="nav"><span class="nico"></span>Kojelauta</div>
+      <div class="nav on"><span class="nico"></span>Tositteet</div>
+      <div class="nav"><span class="nico"></span>Laskut</div>
+      <div class="nav"><span class="nico"></span>Raportit</div>
+      <div class="nav"><span class="nico"></span>Tilikartta</div>
+    </div>
+    <div class="main">
+      <div class="bar">
+        <div><div class="t">Uusi tosite</div><div class="s">Luonnos · sarja yleinen · ei numeroa ennen tallennusta</div></div>
+        <div class="row-actions"><button class="btn sec">Peruuta</button><button class="btn pri">Tallenna</button></div>
+      </div>
+      <div class="body">
+        <div class="seg" style="margin-bottom:18px;"><span class="on">Meno</span><span>Tulo</span><span>Siirto</span><span>Muistio</span></div>
+        <div class="grid3" style="margin-bottom:13px;">
+          <div><span class="lab">Päivä</span><div class="inp num">26.06.2026</div></div>
+          <div><span class="lab">Summa (sis. ALV)</span><div class="inp num">86,40 €</div></div>
+          <div><span class="lab">ALV-kanta</span><div class="inp">25,5 %</div></div>
+        </div>
+        <div class="grid2" style="margin-bottom:13px;">
+          <div><span class="lab">Menotili</span><div class="inp">4000 · Toimistokulut</div></div>
+          <div><span class="lab">Maksettu tililtä</span><div class="inp">1900 · Pankkitili</div></div>
+        </div>
+        <div><span class="lab">Selite</span><div class="inp" style="justify-content:flex-start; color:var(--mut);">Toimistotarvikkeet, Toimisto Oy</div></div>
+        <div class="prev">
+          <div class="prevh">Näin tämä kirjautuu — debet = kredit ✓</div>
+          <div class="prow"><span>4000 · Toimistokulut</span><span>Debet&nbsp;&nbsp;68,84</span></div>
+          <div class="prow"><span>29391 · ALV-saatava 25,5 %</span><span>Debet&nbsp;&nbsp;17,56</span></div>
+          <div class="prow" style="border-top:1px solid var(--bd);"><span>1900 · Pankkitili</span><span>Kredit&nbsp;&nbsp;86,40</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT 2: ledger grid -->
+<div class="pick" data-choice="grid" onclick="toggleSelect(this)">
+  <div class="cap"><h3>2 — Kaksoiskirjausgrid</h3><span class="meta">kirjanpitäjälle: näppäimistövetoinen rivigrid, elävä täsmäytys</span></div>
+  <div class="app">
+    <div class="side">
+      <div class="brand"><span class="bdot"></span>Penni</div>
+      <div class="nav"><span class="nico"></span>Kojelauta</div>
+      <div class="nav on"><span class="nico"></span>Tositteet</div>
+      <div class="nav"><span class="nico"></span>Laskut</div>
+      <div class="nav"><span class="nico"></span>Raportit</div>
+      <div class="nav"><span class="nico"></span>Tilikartta</div>
+    </div>
+    <div class="main">
+      <div class="bar">
+        <div><div class="t">Uusi tosite</div><div class="s">Luonnos · sarja yleinen</div></div>
+        <div class="row-actions"><button class="btn sec">Tallenna ja uusi</button><button class="btn pri">Tallenna</button></div>
+      </div>
+      <div class="body">
+        <div class="grid3" style="margin-bottom:16px;">
+          <div><span class="lab">Päivä</span><div class="inp num">26.06.2026</div></div>
+          <div><span class="lab">Tyyppi</span><div class="inp">Meno</div></div>
+          <div><span class="lab">Selite</span><div class="inp" style="justify-content:flex-start; color:var(--mut);">Toimistotarvikkeet</div></div>
+        </div>
+        <table class="tbl">
+          <thead><tr><th style="width:36%;">Tili</th><th>Selite</th><th class="r">Debet</th><th class="r">Kredit</th><th class="r" style="width:64px;">ALV</th></tr></thead>
+          <tbody>
+            <tr class="trow"><td>4000 · Toimistokulut</td><td style="color:var(--ter);">—</td><td class="r">68,84</td><td class="r" style="color:var(--ter);">—</td><td class="r">25,5 %</td></tr>
+            <tr class="trow"><td>29391 · ALV-saatava</td><td style="color:var(--ter);">—</td><td class="r">17,56</td><td class="r" style="color:var(--ter);">—</td><td class="r" style="color:var(--ter);">—</td></tr>
+            <tr class="trow foc">
+              <td>
+                <div class="ac">
+                  <div class="inp foc" style="padding:6px 9px;">19<span style="color:var(--ter);">|</span></div>
+                  <div class="acdrop">
+                    <div class="acopt on"><span class="anum">1900</span>Pankkitili</div>
+                    <div class="acopt"><span class="anum">1910</span>Käteiskassa</div>
+                    <div class="acopt"><span class="anum">1701</span>Myyntisaamiset</div>
+                  </div>
+                </div>
+              </td>
+              <td style="color:var(--ter);">—</td><td class="r" style="color:var(--ter);">—</td><td class="r">86,40</td><td class="r" style="color:var(--ter);">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="balbar">
+          <span class="num">Debet <b style="font-weight:600;">86,40</b></span>
+          <span class="num">Kredit <b style="font-weight:600;">86,40</b></span>
+          <span class="ok">✓ Täsmää</span>
+          <span class="kbd" style="margin-left:auto;"><b>Tab</b> seuraava · <b>Enter</b> uusi rivi · <b>⌘S</b> tallenna</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

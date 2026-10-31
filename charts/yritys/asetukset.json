@@ -1,0 +1,267 @@
+{
+  "kielet" : {
+      "fi" : { "fi": "suomi", "sv" : "finska", "en": "Finnish"},
+      "sv" : { "fi": "ruotsi", "sv": "svenska", "en": "Swedish"},
+      "en" : { "fi": "englanti", "sv": "engelska", "en": "English"}
+  },
+  "kieli": "fi",
+  "tpkieli": "fi",
+  "muodot": {
+    "oy": {
+      "fi": "Osakeyhtiö",
+      "sv": "Aktiebolag"
+    },
+    "osk" : {
+      "fi": "Osuuskunta",
+      "sv": "Andelslag"
+    },
+    "ay" : {
+      "fi": "Avoin yhtiö",
+      "sv": "Handelsbolag"
+    },
+    "tmi" : {
+      "fi": "Elinkeinonharjoittaja",
+      "sv": "Näringsidkare"
+    },
+    "ky" : {
+      "fi": "Kommandiittiyhtiö",
+      "sv": "Kommanditbolag"
+    }
+  },
+  "laajuudet": {
+    "1": {
+      "fi": "Suppea, ei varastoa",
+      "sv": "Kort, utan lager"
+    },
+    "2": {
+      "fi": "Suppea, varastolla",
+      "sv": "Kort, med lager"
+    },
+    "3": {
+      "fi": "Tavallinen",
+      "sv": "Normal"
+    },
+    "4": {
+      "fi": "Laaja, ei konsernitilejä",
+      "sv": "Omfattande, utan koncernkonton"
+    },
+    "5": {
+      "fi": "Laaja, myös konsernitilit",
+      "sv": "Omfattande, med koncernkonton"
+    },
+    "6": {
+      "fi": "Kaikki tilit",
+      "sv": "Alla konton"
+    }
+  },
+  "laajuus": "3",
+  "alvlaajuus": "1",
+  "tositesarjat": {
+    "0": "X",
+    "100": "OL",
+    "110": "OL",
+    "120": "KL",
+    "200": "ML",
+    "210": "ML",
+    "214": "ML",
+    "216": "ML",
+    "300": "X",
+    "400": "T",
+    "500": "P",
+    "700": "MT",
+    "800": "LT",
+    "*": "JT",
+    "K": "K"
+  },
+  "palkkatilit": {
+    "EP" : 2920,
+    "SB" : 2920,
+    "AY" : 2925,
+    "KM" : 7870,
+    "PR" : 7880,
+    "AT" : 7910,
+    "PA" : 5000,
+    "LK" : 5110,
+    "PI" : 5200,
+    "LS" : 5350,
+    "LU" : 5440,
+    "LV" : 5990,
+    "EL" : 6130,
+    "SV" : 6300,
+    "TV" : 6410,
+    "UO" : 2933
+  },
+  "maksutavat+": [
+    {
+      "fi" : "Lasku",
+      "sv" : "Faktura",
+      "TILI" : 1701,
+      "KUVA" : "lasku",
+      "ERA" : -1
+    },
+    {
+      "fi" : "Käteinen",
+      "sv" : "Kontant",
+      "TILI" : 1900,
+      "KUVA" : "kateinen"
+    },
+    {
+      "fi" : "Pankkitili",
+      "sv" : "Bankkonto",
+      "TILI" : 1910,
+      "KUVA" : "pankki"
+    },
+    {
+      "fi" : "Luottokortti",
+      "sv" : "Kreditkort",
+      "TILI" : 1711,
+      "KUVA" : "luottokortti"
+    },
+    {
+      "fi" : "Hyvityslasku",
+      "sv" : "Kreditnota",
+      "TILI" : 1701,
+      "KUVA" : "poista"
+    },
+    {
+      "fi" : "Siirtosaaminen",
+      "sv" : "Resultatreglering",
+      "TILI" : 1849,
+      "KUVA" : "siirra",
+      "ERA" : -1
+    },
+    {
+      "fi" : "Yksityistili",
+      "sv" : "Privatkonto",
+      "TILI": 2365,
+      "KUVA": "yksityis",
+      "MUOTO": "tmi"
+    }
+
+  ],
+  "maksutavat-": [
+    {
+      "fi" : "Lasku",
+      "sv" : "Faktura",
+      "TILI" : 2871,
+      "KUVA" : "lasku",
+      "ERA": -1
+    },
+    {
+      "fi" : "Käteinen",
+      "sv" : "Kontant",
+      "TILI" : 1900,
+      "KUVA" : "kateinen"
+    },
+    {
+      "fi" : "Pankkitili",
+      "sv" : "Bankkonto",
+      "TILI" : 1910,
+      "KUVA" : "pankki"
+    },
+    {
+      "fi" : "Pankkikortti",
+      "sv" : "Bankkort",
+      "TILI" : 2883,
+      "KUVA" : "pankkikortti"
+    },
+    {
+      "fi" : "Luottokortti",
+      "sv" : "Kreditkort",
+      "TILI" : 2882,
+      "KUVA" : "luottokortti"
+    },
+    {
+      "fi" : "Hyvityslasku",
+      "sv" : "Kreditnota",
+      "TILI" : 2871,
+      "KUVA" : "poista"
+    },
+    {
+      "fi" : "Siirtovelka",
+      "sv" : "Resultatreglering",
+      "TILI" : 2979,
+      "KUVA" : "siirra",
+      "ERA" : -1
+    },
+    {
+      "fi" : "Yksityistili",
+      "sv" : "Privatkonto",
+      "TILI": 2361,
+      "KUVA": "yksityis",
+      "MUOTO": "tmi"
+    }
+  ],
+  "LaskuTilit" : "1910",
+  "tilinpaatosvalinnat" : "",
+  "arkistoraportit" : "tase/yleinen,tulos/yleinen",
+  "LaskuSaatavatili" : "1701",
+  "LaskuKateistili" : "1900",
+  "LaskuKorttitili" : "1711",
+  "LaskuMaksuaika" : "14",
+  "LaskuHuomautusaika" : "8",
+  "LaskuPeruskorko" : "0",
+  "LaskuNumerointialkaa" : "1",
+  "LaskuRiviTyyppi" : "2",
+  "LaskuSeuraavaId" : "1",
+  "LaskuMaksumuistutustili" : "9170",
+  "LaskuViivastyskorkotili" : "9170",
+  "LaskuViivakoodi" : true,
+  "LaskuIkkunaX" : "18",
+  "LaskuIkkunaY" : "40",
+  "LaskuIkkunaLeveys" : "95",
+  "LaskuIkkunaKorkeus" : "35",
+  "LaskuQR" : true,
+  "LaskuLogoKorkeus": "20",
+  "LogonSijainti" : "VIERESSA",
+  "VariKehys": "128,128,128",
+  "VariVarjo": "230,230,230",
+  "AlvKausi" : "1",
+  "AlvHuojennusTili":"3840",
+  "LaskuEnnakkotili":"2861",
+  "LaskuEnnakkosaatavat":"1715",
+  "LaskuEnnakkoALV":"29392",
+  "OletusMyyntitili":"3000",
+  "OletusMenotili":"4000",
+  "Yleverotili":"8740",
+  "Tuloveroennakkotili":"9900",
+  "Tuloverojaksotustili":"9940",
+  "Tuloverosiirtovelat":"2968",
+  "Tuloverosiirtosaamiset":"1813",
+  "PankkiPalvelumaksutili":"8560",
+  "PankkiSaapuvakorko":"9220",
+  "PankkiMaksettavakorko":"9460",
+  "TiliotePankkikorttitili":"2883",
+  "TiliotePankkikorttitiliKaytossa": "ON",
+  "VeroOmaverotili":"2920",
+  "Ostovelkatili": "2871",
+  "AlvVelkatili": "2939",
+  "AlvPalautusSaatavatilille": true,
+  "AlvMaksettava": "2922",
+  "AlvPalautettava": "1762",
+  "Yksityistilit/Peruspaaoma":"2201",
+  "Laskuteksti/Saate": {
+    "en":"The attachment contains an invoice for your order.\nPlease pay the invoice no later than the due date.\n\nYou can use the virtual barcode {{virtuaali}} to pay\nInvoice sum {{summa}}\nReference number {{viite}}\nOur account number {{iban}}",
+    "fi":"Liitteessä on lasku tilauksestasi.\nMaksathan laskun viimeistään eräpäivänä.\n\nVoit käyttää maksamiseen virtuaaliviivakoodia {{virtuaali}}\nLaskun summa {{summa}}\nViitenumero {{viite}}\nTilinumeromme {{iban}}",
+    "sv":"Bilagan innehåller en faktura för din beställning.\nBetala fakturan senast på förfallodagen.\n\nDu kan använda den virtuella streckkoden {{virtuaali}} för att betala\nFakturasum {{summa}}\nReferensnummer {{viite}}\nVårt kontonummer {{iban}}"
+  },
+  "Laskuteksti/Saate_otsikko": {
+    "en":"Your invoice",
+    "fi":"Lasku {{numero}}, {{yritys}}",
+    "sv":"Din faktur"
+  },
+  "Laskuteksti/Maksumuistutuslisatiedot": {
+    "fi": "Kirjanpitomme mukaan emme ole saaneet maksusuoritustanne. Pyydämme maksuanne alla olevan erittelyn mukaisesti. Mikäli olette jo maksaneet laskun tai lasku on virheellinen, ottakaa yhteyttä asian selvittämiseksi.",
+    "sv": "Enligt våra noteringar är ovanstående fakturor obetalda. Vi ber er betala dem omgående. Om ni har betalt eller om faktura är felig, var vänlig och kontakta oss.",
+    "en": "According to our records, we have not yet received a remittance for above invoice. If you have already sent your payment or there is a mistake in this invoice, please contact us."
+  },
+  "Laskuteksti/Maksumuistutussaate" : {
+    "en":"According to our records, we have not received your payment. We request your payment in accordance with the attached payment reminder. If you have already paid the invoice or the invoice is incorrect, please contact us to clarify the matter.",
+    "fi":"Kirjanpitomme mukaan emme ole saaneet maksusuoritustanne. Pyydämme maksuanne liitteenä olevan maksumuistutuksen mukaisesti. Mikäli olette jo maksaneet laskun tai lasku on virheellinen, ottakaa yhteyttä asian selvittämiseksi."
+    ,"sv":"Enligt våra uppgifter, vi har inte fått din betalning. Vi begär din betalning i enlighet med bifogad betalningspåminnelse. Om du redan har betalat fakturan eller fakturan är felaktig, vänligen kontakta oss för att klargöra ärendet."
+  },
+  "Laskuteksti/Maksumuistutussaate_otsikko": {
+    "en":"Payment reminder",
+    "fi":"Maksumuistutus",
+    "sv":"Betalningpåminnelse"}
+}

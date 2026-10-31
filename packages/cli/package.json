@@ -1,0 +1,29 @@
+{
+  "name": "@penni/cli",
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": { "penni": "./dist/index.js" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@penni/asiakas": "workspace:*",
+    "@penni/engine": "workspace:*",
+    "@penni/luku": "workspace:*",
+    "@penni/storage-sqlite": "workspace:*",
+    "@penni/tyokalut": "workspace:*"
+  },
+  "devDependencies": {
+    "@penni/charts": "workspace:*",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

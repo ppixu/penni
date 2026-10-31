@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@penni/web", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "web-5174",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@penni/web", "dev", "--port", "5174", "--strictPort"],
+      "port": 5174
+    }
+  ]
+}

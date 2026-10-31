@@ -1,0 +1,30 @@
+{
+  "name": "@penni/kuitti-validointi",
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validoi": "tsx src/index.ts",
+    "generoi-fikstuurit": "tsx src/synteettinen/generoi.ts",
+    "synteettinen": "tsx src/synteettinen/aja.ts",
+    "worker": "wrangler dev --config workers-ai/wrangler.jsonc --port 8799"
+  },
+  "dependencies": {
+    "@penni/engine": "workspace:*",
+    "@penni/euro": "workspace:*",
+    "@penni/luku": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "pdfjs-dist": "^6.1.200"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wrangler": "4.72.0"
+  }
+}

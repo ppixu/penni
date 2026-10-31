@@ -1,0 +1,27 @@
+// Pilvi-spike: vain paikallinen `wrangler dev --local` (ei deployta, ei tiliresursseja).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "penni-pilvi",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      { "name": "KIRJA", "class_name": "KirjaDO" },
+      { "name": "CONTROL", "class_name": "ControlDO" }
+    ]
+  },
+  // Liitteiden tavut R2:ssa EU-lainkäyttöalueella (kirjan SQLiteen jää vain metatieto). Avain:
+  // kirja/<kirjaId>/liite/<sha256>. Bucketia ei luoda tästä: spike ajetaan vain paikallisesti.
+  "r2_buckets": [
+    { "binding": "LIITTEET", "bucket_name": "penni-pilvi-liitteet", "jurisdiction": "eu" }
+  ],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["KirjaDO", "ControlDO"] }],
+  // Web-SPA (apps/web `pnpm build`) staattisina assetteina; /api/* ja AGPL §13 -lähdekoodin
+  // tarjous /lahdekoodi menevät aina Workerille (muuten SPA-paluu vastaisi index.html:llä).
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/lahdekoodi"]
+  }
+}

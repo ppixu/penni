@@ -1,0 +1,20 @@
+// Mittausskriptien (mittaa.ts) paikallinen wrangler-konfiguraatio: sama Worker ja samat sidonnat
+// kuin ../wrangler.jsonc, mutta ilman web-SPA-assetteja (ei vaadi apps/web-buildia) ja ilman
+// R2-lainkäyttöaluetta (paikallinen workerd ei sitä tunne). Kehitysmuuttujat (PAIKALLINEN_WORKERD,
+// PILVI_KEHITYS_*) annetaan käynnistyksessä --var-valitsimilla, ei tässä tiedostossa; tämä ei ole
+// koskaan julkaisukonfiguraatio. Ei ajeta `wrangler deploy`lla.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "penni-pilvi-mittaus",
+  "main": "../src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      { "name": "KIRJA", "class_name": "KirjaDO" },
+      { "name": "CONTROL", "class_name": "ControlDO" }
+    ]
+  },
+  "r2_buckets": [{ "binding": "LIITTEET", "bucket_name": "penni-pilvi-liitteet" }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["KirjaDO", "ControlDO"] }]
+}
