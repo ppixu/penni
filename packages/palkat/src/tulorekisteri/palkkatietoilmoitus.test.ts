@@ -339,6 +339,31 @@ describe('palkkatietoilmoitusXml', () => {
     expect(await xsdVirheet(xml, '2025', 'WageReportsToIR.xsd')).toEqual([]);
   }, 60_000);
 
+  it('tilapäinen työnantaja: nimi, osoite ja maksajatyyppi 3; validoituu 2025 ja 2027', async () => {
+    const asetukset = { ...ASETUKSET, tilapainenTyonantaja: true };
+    const maksaja: Maksaja = {
+      ...MAKSAJA,
+      osoite: { katu: 'Keksitie 1 A 2', postinumero: '02100', kaupunki: 'Espoo' },
+    };
+    const xml = palkkatietoilmoitusXml(syote({ asetukset, maksaja }));
+    const payer = lohkot(xml, 'Payer')[0] as string;
+    expect(arvo(payer, 'CompanyName')).toBe('Keksitty Oy');
+    const osoite = lohkot(payer, 'Address')[0] as string;
+    expect([
+      arvo(osoite, 'Street'),
+      arvo(osoite, 'PostalCode'),
+      arvo(osoite, 'PostOffice'),
+      arvo(osoite, 'CountryCode'),
+    ]).toEqual(['Keksitie 1 A 2', '02100', 'Espoo', 'FI']);
+    expect(arvo(lohkot(payer, 'PayerTypes')[0] as string, 'Code')).toBe('3');
+    expect(await xsdVirheet(xml, '2025', 'WageReportsToIR.xsd')).toEqual([]);
+    expect(await xsdVirheet(xml, '2027', 'WageReportsToIR.xsd')).toEqual([]);
+    // Tavallinen työnantaja: vain Y-tunnus, osoite jätetään pois vaikka se on annettu.
+    const tavallinen = lohkot(palkkatietoilmoitusXml(syote({ maksaja })), 'Payer')[0] as string;
+    expect(tavallinen).not.toContain('Address');
+    expect(tavallinen).not.toContain('PayerOther');
+  }, 60_000);
+
   it('erikoismerkit escapataan', () => {
     const xml = palkkatietoilmoitusXml(
       syote({ maksaja: { ...MAKSAJA, yhteyshenkilo: { nimi: 'Matti & <Maija>', puhelin: '1' } } }),
@@ -394,11 +419,16 @@ describe('palkkatietoilmoitusXml', () => {
       expect(virhe(() => palkkatietoilmoitusXml(syote({ asetukset }))).message).toContain('TyEL');
     });
 
-    it('tilapäinen työnantaja: ei vielä tuettu', () => {
+    it('tilapäinen työnantaja ilman osoitetta', () => {
       const asetukset = { ...ASETUKSET, tilapainenTyonantaja: true };
-      expect(virhe(() => palkkatietoilmoitusXml(syote({ asetukset }))).message).toContain(
-        'Tilapäi',
-      );
+      const e = virhe(() => palkkatietoilmoitusXml(syote({ asetukset })));
+      expect(e.message).toContain('Tilapäisen työnantajan');
+      expect(e.message).toContain('osoite');
+      const vajaa = {
+        ...MAKSAJA,
+        osoite: { katu: 'Keksitie 1', postinumero: ' ', kaupunki: 'Espoo' },
+      };
+      virhe(() => palkkatietoilmoitusXml(syote({ asetukset, maksaja: vajaa })));
     });
 
     it('virheellinen Y-tunnus, aikaleima tai kielletty merkkijono', () => {

@@ -17,6 +17,8 @@ export interface Maksaja {
   ytunnus: string;
   nimi: string;
   yhteyshenkilo: { nimi: string; puhelin: string };
+  /** Kirjan osoite; pakollinen vain tilapäisen työnantajan palkkatietoilmoituksessa. */
+  osoite?: { katu: string; postinumero: string; kaupunki: string };
 }
 
 /** Lähdeohjelmisto (`Source`, irct:String30). */

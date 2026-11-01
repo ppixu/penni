@@ -309,20 +309,47 @@ function raportti(
 
 // --- Tietue ---------------------------------------------------------------------------------
 
+/** Codes: PayerType 3 = "Temporary employer (no TyEL insurance policy)". */
+const TILAPAINEN_TYONANTAJA = 3;
+
+/**
+ * Payer-ryhmä. Tavallisesti Y-tunnus riittää: nimi ja osoite annetaan vain ilman suomalaista
+ * tunnistetta tai tilapäiselle työnantajalle (instr. 2026 s. 11; schema 2026 §2.6-2.7).
+ * Tilapäinen työnantaja (instr. 2026 s. 13-14, "Other payer details"): maksajatyyppi 3
+ * (schema 2026 §2.9), PayerBasic/CompanyName (§2.6, pakollinen kun suku- ja etunimeä ei anneta)
+ * ja Address (§2.7: katuosoite tai postilokero, postinumero, postitoimipaikka ja maakoodi
+ * pakollisia). Kirjan osoite on katuosoite, joten postilokeroa ei käytetä.
+ */
+function maksajanTiedot(s: PalkkatietoilmoitusSyote, tunnus: string): Elementti {
+  const tunnisteet = e('PayerIds', [ytunnusId('Id', tunnus)]);
+  if (!s.asetukset.tilapainenTyonantaja) return e('Payer', [tunnisteet]);
+  const o = s.maksaja.osoite;
+  if (!o || !o.katu?.trim() || !o.postinumero?.trim() || !o.kaupunki?.trim()) {
+    throw new PalkatVirhe(
+      'SYOTE',
+      'Tilapäisen työnantajan palkkatietoilmoitukseen tarvitaan maksajan osoite (katuosoite, postinumero ja postitoimipaikka). Lisää ne kirjan perustietoihin.',
+    );
+  }
+  return e('Payer', [
+    tunnisteet,
+    e('PayerBasic', [t('CompanyName', teksti(s.maksaja.nimi, 'Maksajan nimi', 200))]),
+    e('Address', [
+      t('Street', teksti(o.katu, 'Maksajan katuosoite', 100)),
+      t('PostalCode', teksti(o.postinumero, 'Maksajan postinumero', 20)),
+      t('PostOffice', teksti(o.kaupunki, 'Maksajan postitoimipaikka', 200)),
+      t('CountryCode', 'FI'),
+    ]),
+    e('PayerOther', [e('PayerTypes', [t('Code', TILAPAINEN_TYONANTAJA)])]),
+  ]);
+}
+
 /**
  * Palkkatietoilmoitus XML-merkkijonona. Deterministinen: sama syöte (ja sama `ajo.laskettu`)
  * tuottaa saman merkkijonon, joten tositteelle tallennettu tiiviste vastaa ladattua tiedostoa.
  */
 export function palkkatietoilmoitusXml(s: PalkkatietoilmoitusSyote): string {
-  if (s.asetukset.tilapainenTyonantaja) {
-    // Tilapäiselle työnantajalle Tulorekisteri vaatii maksajan nimen, osoitteen ja maksajatyypin 3
-    // (schema 2026 §2.6, §2.7, §2.9); osoitetta ei ole palkka-asetuksissa.
-    throw new PalkatVirhe(
-      'SYOTE',
-      'Tilapäisen työnantajan palkkatietoilmoitusta ei vielä tueta: Tulorekisteri vaatii maksajan osoitteen. Tee ilmoitus Tulorekisterin verkkolomakkeella.',
-    );
-  }
   const tunnus = ytunnus(s.maksaja.ytunnus, 'Maksajan Y-tunnus');
+  const maksaja = maksajanTiedot(s, tunnus);
   const aika = aikaleima(s.ajo.laskettu, 'Palkka-ajon tallennusaika');
   jasennaPvm(s.maksupaiva);
   jasennaPvm(s.ajo.kausiAlkaa);
@@ -374,9 +401,7 @@ export function palkkatietoilmoitusXml(s: PalkkatietoilmoitusSyote): string {
           t('EndDate', s.ajo.kausiLoppuu),
         ]),
         yhteyshenkilot(s.maksaja),
-        // Maksajan tunniste riittää: nimi ja osoite annetaan vain ilman suomalaista tunnistetta tai
-        // tilapäiselle työnantajalle (instr. 2026 s. 11; schema 2026 §2.6-2.7).
-        e('Payer', [e('PayerIds', [ytunnusId('Id', tunnus)])]),
+        maksaja,
         e('Reports', raportit),
       ]),
     ]),
