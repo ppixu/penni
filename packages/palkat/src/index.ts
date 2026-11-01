@@ -5,3 +5,6 @@ export * from './tyontekija.js';
 export * from './laske.js';
 export * from './verokortti.js';
 export * from './viennit.js';
+export * from './tulorekisteri/xml.js';
+export * from './tulorekisteri/palkkatietoilmoitus.js';
+export * from './tulorekisteri/erillisilmoitus.js';

@@ -647,6 +647,9 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@26.0.1)(jsdom@25.0.1)(lightningcss@1.32.0)
+      xmllint-wasm:
+        specifier: ^5.3.0
+        version: 5.3.0(@types/node@26.0.1)
 
   packages/storage-do:
     dependencies:
@@ -4958,6 +4961,12 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
+  xmllint-wasm@5.3.0:
+    resolution: {integrity: sha512-sEgRXdf2t13eYCFCURmCE6h2hwleEOIS9VL/jOh9JJJnez2YXIooi2Ghm05/JZEPXyPawN8sMASPVZlmh8Sd6A==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+
   y18n@4.0.3:
     resolution: {integrity: sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==}
 
@@ -6526,7 +6535,6 @@ snapshots:
   '@types/node@26.0.1':
     dependencies:
       undici-types: 8.3.0
-    optional: true
 
   '@types/qrcode@1.5.6':
     dependencies:
@@ -8609,8 +8617,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@8.3.0:
-    optional: true
+  undici-types@8.3.0: {}
 
   undici@7.18.2: {}
 
@@ -8967,6 +8974,10 @@ snapshots:
   xmlbuilder@15.1.1: {}
 
   xmlchars@2.2.0: {}
+
+  xmllint-wasm@5.3.0(@types/node@26.0.1):
+    dependencies:
+      '@types/node': 26.0.1
 
   y18n@4.0.3: {}
 
