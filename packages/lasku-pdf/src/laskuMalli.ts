@@ -3,6 +3,7 @@ import {
   type Asetukset,
   type Kumppani,
   Maksutapa,
+  type Muistutus,
   type StoredTosite,
   type TositeRivi,
   TositeTyyppi,
@@ -13,7 +14,7 @@ import {
 import { type Cents, muotoileEuro, muotoilePvm, roundHalfAway } from '@penni/euro';
 import { bic, muotoileIban, muotoileViite, sepaQr, virtuaaliviivakoodi } from '@penni/validator';
 
-export type LaskuLaji = 'lasku' | 'kuitti' | 'hyvityslasku';
+export type LaskuLaji = 'lasku' | 'kuitti' | 'hyvityslasku' | 'maksumuistutus';
 export interface InfoRivi {
   nimike: string;
   arvo: string;
@@ -52,9 +53,13 @@ export interface LaskuMalli {
   info: InfoRivi[];
   /** tosite.otsikko */
   aihe: string | null;
+  /** Vapaa teksti aiheen ja rivien välissä (maksumuistutuksen lisätiedot); muuten null. */
+  lisatiedot?: string | null;
   rivit: MalliRivi[];
   summat: { nimike: string; arvo: string; vahva?: boolean }[];
   maksu: Maksuosa | null;
+  /** Maksumuistutuksen aiemmat asiakirjat (alkuperäinen lasku, aiemmat muistutukset), vanhin ensin. */
+  aiemmat?: { otsikko: string; rivit: MalliRivi[] }[];
   /** Alatunnisteen sarakkeet, kukin rivilista. */
   alatunniste: string[][];
   /** Syy, miksi PDF-nappi on pois käytöstä; muuten null. */
@@ -103,7 +108,82 @@ const OTSIKOT: Record<LaskuLaji, string> = {
   lasku: 'Lasku',
   kuitti: 'Kuitti',
   hyvityslasku: 'Hyvityslasku',
+  maksumuistutus: 'Maksumuistutus',
 };
+
+const MUISTUTUSTEKSTI_ASETUS = 'Laskuteksti/Maksumuistutuslisatiedot';
+
+/**
+ * Monikielisen asetuksen suomenkielinen arvo. Arvo on joko JSON-olio kielittäin
+ * ({"fi": "...", "sv": "..."}, Kitsaksen tilikartan muoto) tai pelkkä merkkijono.
+ * Tyhjä tai puuttuva fi-arvo → null.
+ */
+function suomenkielinenAsetus(arvo: string | undefined): string | null {
+  const v = (arvo ?? '').trim();
+  if (v === '') return null;
+  if (v.startsWith('{')) {
+    try {
+      const fi = (JSON.parse(v) as Record<string, unknown> | null)?.fi;
+      return typeof fi === 'string' && fi.trim() !== '' ? fi.trim() : null;
+    } catch {
+      // Ei JSONia → käytetään sellaisenaan.
+    }
+  }
+  return v;
+}
+
+/** Rivi ilman määrää, à-hintaa ja alv:ta (maksumuistutuksen johdetut rivit). */
+const naytaRivi = (selite: string, summa: Cents): MalliRivi => ({
+  selite,
+  maara: '',
+  aHinta: '',
+  alv: '',
+  yhteensa: muotoileEuro(summa),
+});
+
+/**
+ * Maksumuistutuksen PDF-rivit johdetaan `muistutus`-objektista (ei tallennettuja rivejä), jotta
+ * "avoin saldo" -näyttörivi ei koskaan joudu tuloksi. Nollarivit jätetään pois, saldorivi ei.
+ */
+function muistutusRivit(m: Muistutus): MalliRivi[] {
+  const rivit = [naytaRivi('Laskun avoin saldo', m.aiempiSaldo)];
+  if (m.maksu > 0) rivit.push(naytaRivi('Huomautuskulut', m.maksu));
+  if (m.korko > 0) {
+    const jakso = `${muotoilePvm(m.korkoalkaa)}\u2013${muotoilePvm(m.korkoloppuu)}`;
+    rivit.push(
+      naytaRivi(`Viivästyskorko ${jakso}, ${m.viivkorko.toFixed(2).replace('.', ',')} %`, m.korko),
+    );
+  }
+  return rivit;
+}
+
+const muistutusSumma = (m: Muistutus): Cents => (m.aiempiSaldo + m.maksu + m.korko) as Cents;
+
+/** Laskurivi näyttömuotoon. */
+function malliRivi(r: TositeRivi): MalliRivi {
+  return {
+    selite: r.selite ?? '',
+    maara: maaraTeksti(r.myyntiKpl),
+    // À-hinta euroina (moottorin sopimus) → sentit; pyöristys vain näyttörajalla.
+    aHinta: muotoileEuro(roundHalfAway(r.aNetto * 100) as Cents),
+    alv: r.alvKoodi === AlvKoodi.MYYNNIT_NETTO ? `${prosenttiTeksti(r.alvProsentti)} %` : '—',
+    yhteensa: muotoileEuro(bruttoYhteensa(r)),
+  };
+}
+
+/** Yksi aiemman asiakirjan osio: otsikko + sen oma rivistö. */
+function aiempiOsio(t: StoredTosite): { otsikko: string; rivit: MalliRivi[] } {
+  const muistutus = t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS;
+  const otsikko = [
+    muistutus ? 'Aiempi maksumuistutus' : 'Alkuperäinen lasku',
+    `nro ${t.numero !== undefined && t.numero !== '' ? t.numero : '—'}`,
+    muotoilePvm(t.laskupvm ?? t.pvm),
+    ...(t.erapvm ? [muotoilePvm(t.erapvm)] : []),
+  ].join(' \u00b7 ');
+  const rivit =
+    muistutus && t.muistutus ? muistutusRivit(t.muistutus) : (t.rivit ?? []).map(malliRivi);
+  return { otsikko, rivit };
+}
 
 /**
  * Yksi näkymämalli, jonka sekä web-HTML että PDF-piirtäjä tulostavat. Kaikki raha tulee
@@ -115,21 +195,30 @@ export function laskuMalli(p: {
   kumppanit: readonly Kumppani[];
   asetukset: Asetukset;
   alkuperainen?: StoredTosite;
+  /** Maksumuistutuksen aiemmat asiakirjat (`muistutus.aiemmat`-järjestyksessä, vanhin ensin). */
+  aiemmat?: readonly StoredTosite[];
 }): LaskuMalli {
-  const { tosite, kumppanit, asetukset, alkuperainen } = p;
+  const { tosite, kumppanit, asetukset, alkuperainen, aiemmat } = p;
+  const muistutus = tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS ? tosite.muistutus : undefined;
   const laji: LaskuLaji =
     tosite.tyyppi === TositeTyyppi.HYVITYSLASKU
       ? 'hyvityslasku'
-      : (tosite.maksutapa ?? Maksutapa.LASKU) !== Maksutapa.LASKU
-        ? 'kuitti'
-        : 'lasku';
+      : tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS
+        ? 'maksumuistutus'
+        : (tosite.maksutapa ?? Maksutapa.LASKU) !== Maksutapa.LASKU
+          ? 'kuitti'
+          : 'lasku';
 
   // Hyvityslaskun rivit ovat alkuperäisen rivit määrä käännettynä → summat tulostuvat negatiivisina.
+  // Maksumuistutuksella ei ole tallennettuja rivejä: rivit johdetaan `muistutus`-objektista.
   const rivit: TositeRivi[] =
     laji === 'hyvityslasku'
       ? (alkuperainen?.rivit ?? []).map((r) => ({ ...r, myyntiKpl: -r.myyntiKpl }))
-      : (tosite.rivit ?? []);
+      : laji === 'maksumuistutus'
+        ? []
+        : (tosite.rivit ?? []);
   const summat = laskuSummat(rivit);
+  const maksettava: Cents = muistutus !== undefined ? muistutusSumma(muistutus) : summat.brutto;
 
   const asiakas =
     tosite.kumppani !== undefined ? kumppanit.find((k) => k.id === tosite.kumppani) : undefined;
@@ -140,11 +229,18 @@ export function laskuMalli(p: {
   const iban = asetukset.LaskuIban ?? '';
   const alvVelvollinen = asetusPaalla(asetukset.AlvVelvollinen);
 
-  const info: InfoRivi[] = [
-    { nimike: 'Laskun numero', arvo: numero ?? '—' },
-    { nimike: 'Laskupäivä', arvo: muotoilePvm(laskupvm) },
-  ];
-  if (tosite.jakso) {
+  const info: InfoRivi[] =
+    laji === 'maksumuistutus'
+      ? [
+          { nimike: 'Maksumuistutuksen pvm', arvo: muotoilePvm(laskupvm) },
+          { nimike: 'Maksumuistutuksen numero', arvo: numero ?? '—' },
+          ...(erapvm ? [{ nimike: 'Eräpäivä', arvo: muotoilePvm(erapvm) }] : []),
+        ]
+      : [
+          { nimike: 'Laskun numero', arvo: numero ?? '—' },
+          { nimike: 'Laskupäivä', arvo: muotoilePvm(laskupvm) },
+        ];
+  if (tosite.jakso && laji !== 'maksumuistutus') {
     info.splice(1, 0, {
       nimike: 'Laskutusjakso',
       arvo: `${muotoilePvm(tosite.jakso.alkaa)}\u2013${muotoilePvm(tosite.jakso.loppuu)}`,
@@ -178,45 +274,41 @@ export function laskuMalli(p: {
     });
   }
 
-  const malliRivit: MalliRivi[] = rivit.map((r) => ({
-    selite: r.selite ?? '',
-    maara: maaraTeksti(r.myyntiKpl),
-    // À-hinta euroina (moottorin sopimus) → sentit; pyöristys vain näyttörajalla.
-    aHinta: muotoileEuro(roundHalfAway(r.aNetto * 100) as Cents),
-    alv: r.alvKoodi === AlvKoodi.MYYNNIT_NETTO ? `${prosenttiTeksti(r.alvProsentti)} %` : '—',
-    yhteensa: muotoileEuro(bruttoYhteensa(r)),
-  }));
+  const malliRivit: MalliRivi[] =
+    muistutus !== undefined ? muistutusRivit(muistutus) : rivit.map(malliRivi);
 
   const summaRivit: LaskuMalli['summat'] =
-    !alvVelvollinen && summat.vero === 0
-      ? [{ nimike: 'Yhteensä', arvo: muotoileEuro(summat.brutto), vahva: true }]
-      : [
-          { nimike: 'Yhteensä veroton', arvo: muotoileEuro(summat.netto) },
-          ...summat.erittely.map((e) => ({
-            nimike: `Alv ${prosenttiTeksti(e.prosentti)} %`,
-            arvo: muotoileEuro(e.vero),
-          })),
-          { nimike: 'Verollinen yhteensä', arvo: muotoileEuro(summat.brutto), vahva: true },
-        ];
+    muistutus !== undefined
+      ? [{ nimike: 'Maksettava yhteensä', arvo: muotoileEuro(maksettava), vahva: true }]
+      : !alvVelvollinen && summat.vero === 0
+        ? [{ nimike: 'Yhteensä', arvo: muotoileEuro(summat.brutto), vahva: true }]
+        : [
+            { nimike: 'Yhteensä veroton', arvo: muotoileEuro(summat.netto) },
+            ...summat.erittely.map((e) => ({
+              nimike: `Alv ${prosenttiTeksti(e.prosentti)} %`,
+              arvo: muotoileEuro(e.vero),
+            })),
+            { nimike: 'Verollinen yhteensä', arvo: muotoileEuro(summat.brutto), vahva: true },
+          ];
 
   // Maksuosa samoilla ehdoilla kuin LaskuDokumentti.tsx: tyhjä eräpäivä/IBAN ei tuota koodeja.
   const maksu: Maksuosa | null =
-    laji === 'lasku' && summat.brutto > 0 && erapvm && iban !== ''
+    (laji === 'lasku' || laji === 'maksumuistutus') && maksettava > 0 && erapvm && iban !== ''
       ? {
           saaja: asetukset.Nimi ?? '',
           iban: muotoileIban(iban),
           bic: bic(iban),
           viite: muotoileViite(viite),
           erapvm: muotoilePvm(erapvm),
-          summa: muotoileEuro(summat.brutto),
+          summa: muotoileEuro(maksettava),
           virtuaaliviivakoodi: virtuaaliviivakoodi({
             iban,
-            maara: summat.brutto,
+            maara: maksettava,
             viite,
             erapvm,
             rf: viite.toUpperCase().startsWith('RF'),
           }),
-          qr: sepaQr({ iban, saaja: asetukset.Nimi ?? '', maara: summat.brutto, viite, erapvm }),
+          qr: sepaQr({ iban, saaja: asetukset.Nimi ?? '', maara: maksettava, viite, erapvm }),
         }
       : null;
 
@@ -245,11 +337,17 @@ export function laskuMalli(p: {
     .filter((sarake) => sarake.length > 0);
 
   let pdfEste: string | null = null;
-  if (rivit.length === 0) pdfEste = 'Laskulla ei ole rivejä — alkuperäinen lasku on liitteenä';
+  if (laji !== 'maksumuistutus' && rivit.length === 0)
+    pdfEste = 'Laskulla ei ole rivejä — alkuperäinen lasku on liitteenä';
   else if (numero === null)
     pdfEste =
-      laji === 'hyvityslasku' ? 'Hyvityslaskulla ei ole numeroa' : 'Laskulla ei ole numeroa';
-  else if (laji === 'lasku' && iban === '') pdfEste = 'Lisää IBAN asetuksissa';
+      laji === 'hyvityslasku'
+        ? 'Hyvityslaskulla ei ole numeroa'
+        : laji === 'maksumuistutus'
+          ? 'Maksumuistutuksella ei ole numeroa'
+          : 'Laskulla ei ole numeroa';
+  else if ((laji === 'lasku' || laji === 'maksumuistutus') && iban === '')
+    pdfEste = 'Lisää IBAN asetuksissa';
 
   const otsikko = OTSIKOT[laji];
   return {
@@ -263,9 +361,14 @@ export function laskuMalli(p: {
       : [],
     info,
     aihe: tosite.otsikko ? tosite.otsikko : null,
+    lisatiedot:
+      laji === 'maksumuistutus' ? suomenkielinenAsetus(asetukset[MUISTUTUSTEKSTI_ASETUS]) : null,
     rivit: malliRivit,
     summat: summaRivit,
     maksu,
+    ...(laji === 'maksumuistutus' && aiemmat !== undefined && aiemmat.length > 0
+      ? { aiemmat: aiemmat.map(aiempiOsio) }
+      : {}),
     alatunniste,
     pdfEste,
     tiedostonimi: numero !== null ? `${otsikko}-${numero}.pdf` : `${otsikko}.pdf`,

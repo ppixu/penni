@@ -372,4 +372,183 @@ describe('laskuMalli', () => {
       expect(m.alatunniste[1]).toContain('ALV-tunnus FI12345678');
     });
   });
+
+  describe('maksumuistutus', () => {
+    const alkuperainen = lasku({
+      id: 1,
+      numero: '1',
+      laskupvm: '2026-04-01',
+      erapvm: '2026-04-30',
+      rivit: [{ myyntiKpl: 1, aNetto: 1000, alvKoodi: 0, alvProsentti: 0, selite: 'Työ' }],
+    });
+    const muistutusTosite = (osa: Partial<StoredTosite> = {}): StoredTosite =>
+      lasku({
+        id: 2,
+        tyyppi: TositeTyyppi.MAKSUMUISTUTUS,
+        pvm: '2026-05-30',
+        laskupvm: '2026-05-30',
+        erapvm: '2026-06-13',
+        numero: '2',
+        viite: '1000207',
+        otsikko: 'Maksumuistutus laskusta 1',
+        alkuperainenTosite: 1,
+        rivit: undefined,
+        muistutus: {
+          maksu: 500 as Cents,
+          korko: 945 as Cents,
+          viivkorko: 11.5,
+          korkoalkaa: '2026-05-01',
+          korkoloppuu: '2026-05-30',
+          aiempiSaldo: 100000 as Cents,
+          aiemmat: [1],
+        },
+        ...osa,
+      });
+    const muistutus = (
+      osa: Partial<StoredTosite> = {},
+      asetukset: Asetukset = ASETUKSET,
+      aiemmat: StoredTosite[] = [alkuperainen],
+    ) => laskuMalli({ tosite: muistutusTosite(osa), kumppanit: KUMPPANIT, asetukset, aiemmat });
+    const eur = (c: number) => muotoileEuro(c as Cents);
+
+    it('laji, otsikko ja inforivit', () => {
+      const m = muistutus();
+      expect(m.laji).toBe('maksumuistutus');
+      expect(m.otsikko).toBe('Maksumuistutus');
+      expect(m.tiedostonimi).toBe('Maksumuistutus-2.pdf');
+      expect(m.info).toEqual([
+        { nimike: 'Maksumuistutuksen pvm', arvo: '30.5.2026' },
+        { nimike: 'Maksumuistutuksen numero', arvo: '2' },
+        { nimike: 'Eräpäivä', arvo: '13.6.2026' },
+        { nimike: 'Viitenumero', arvo: '10 00207' },
+        { nimike: 'Asiakkaan Y-tunnus', arvo: '8765432-1' },
+      ]);
+      expect(m.pdfEste).toBeNull();
+    });
+
+    it('rivit johdetaan muistutuksesta ja summa on saldo + kulut + korko', () => {
+      const m = muistutus();
+      expect(m.rivit.map((r) => [r.selite, r.yhteensa])).toEqual([
+        ['Laskun avoin saldo', eur(100000)],
+        ['Huomautuskulut', eur(500)],
+        ['Viivästyskorko 1.5.2026\u201330.5.2026, 11,50 %', eur(945)],
+      ]);
+      expect(m.rivit.every((r) => r.maara === '' && r.aHinta === '' && r.alv === '')).toBe(true);
+      expect(m.summat).toEqual([{ nimike: 'Maksettava yhteensä', arvo: eur(101445), vahva: true }]);
+    });
+
+    it('maksuosa käyttää muistutuksen omaa viitettä ja kokonaissummaa', () => {
+      const m = muistutus();
+      expect(m.maksu?.viite).toBe('10 00207');
+      expect(m.maksu?.summa).toBe(eur(101445));
+      expect(m.maksu?.erapvm).toBe('13.6.2026');
+      expect(m.maksu?.virtuaaliviivakoodi).toMatch(/^4\d{53}$/);
+      expect(m.maksu?.qr.startsWith('BCD\n')).toBe(true);
+    });
+
+    it('nollarivit jätetään pois', () => {
+      const m = muistutus({
+        muistutus: {
+          maksu: 0 as Cents,
+          korko: 945 as Cents,
+          viivkorko: 11.5,
+          korkoalkaa: '2026-05-01',
+          korkoloppuu: '2026-05-30',
+          aiempiSaldo: 100000 as Cents,
+          aiemmat: [1],
+        },
+      });
+      expect(m.rivit.map((r) => r.selite)).toEqual([
+        'Laskun avoin saldo',
+        'Viivästyskorko 1.5.2026\u201330.5.2026, 11,50 %',
+      ]);
+      const ilmanKorkoa = muistutus({
+        muistutus: {
+          maksu: 500 as Cents,
+          korko: 0 as Cents,
+          viivkorko: 0,
+          korkoalkaa: '2026-05-01',
+          korkoloppuu: '2026-05-30',
+          aiempiSaldo: 100000 as Cents,
+          aiemmat: [1],
+        },
+      });
+      expect(ilmanKorkoa.rivit.map((r) => r.selite)).toEqual([
+        'Laskun avoin saldo',
+        'Huomautuskulut',
+      ]);
+      expect(ilmanKorkoa.summat[0]?.arvo).toBe(eur(100500));
+    });
+
+    it('ei Laskutusjakso-riviä vaikka jakso olisi asetettu', () => {
+      const m = muistutus({ jakso: { alkaa: '2026-11-01', loppuu: '2026-11-30' } });
+      expect(m.info.some((r) => r.nimike === 'Laskutusjakso')).toBe(false);
+    });
+
+    it('rivien yläpuolinen teksti on Maksumuistutuslisatiedot-asetuksen fi-arvo', () => {
+      const json = JSON.stringify({ fi: 'Maksakaa pian.', sv: 'Betala.' });
+      expect(
+        muistutus({}, { ...ASETUKSET, 'Laskuteksti/Maksumuistutuslisatiedot': json }).lisatiedot,
+      ).toBe('Maksakaa pian.');
+      expect(
+        muistutus({}, { ...ASETUKSET, 'Laskuteksti/Maksumuistutuslisatiedot': 'Pelkkä teksti' })
+          .lisatiedot,
+      ).toBe('Pelkkä teksti');
+      expect(muistutus().lisatiedot).toBeNull();
+      expect(
+        muistutus({}, { ...ASETUKSET, 'Laskuteksti/Maksumuistutuslisatiedot': '{"sv":"Betala."}' })
+          .lisatiedot,
+      ).toBeNull();
+      // Tavallinen lasku ei käytä asetusta.
+      const tavallinen = laskuMalli({
+        tosite: lasku(),
+        kumppanit: KUMPPANIT,
+        asetukset: { ...ASETUKSET, 'Laskuteksti/Maksumuistutuslisatiedot': 'x' },
+      });
+      expect(tavallinen.lisatiedot).toBeNull();
+    });
+
+    it('aiemmat-osiot: alkuperäinen lasku rivineen ja aiempi muistutus johdettuina riveinä', () => {
+      const aiempiMuistutus = muistutusTosite({
+        id: 3,
+        numero: '3',
+        laskupvm: '2026-05-15',
+        erapvm: '2026-05-29',
+        muistutus: {
+          maksu: 500 as Cents,
+          korko: 0 as Cents,
+          viivkorko: 0,
+          korkoalkaa: '2026-05-01',
+          korkoloppuu: '2026-05-15',
+          aiempiSaldo: 100000 as Cents,
+          aiemmat: [1],
+        },
+      });
+      const m = muistutus({}, ASETUKSET, [alkuperainen, aiempiMuistutus]);
+      expect(m.aiemmat).toHaveLength(2);
+      expect(m.aiemmat?.[0]?.otsikko).toBe('Alkuperäinen lasku · nro 1 · 1.4.2026 · 30.4.2026');
+      expect(m.aiemmat?.[0]?.rivit).toEqual([
+        { selite: 'Työ', maara: '1', aHinta: eur(100000), alv: '—', yhteensa: eur(100000) },
+      ]);
+      expect(m.aiemmat?.[1]?.otsikko).toBe('Aiempi maksumuistutus · nro 3 · 15.5.2026 · 29.5.2026');
+      expect(m.aiemmat?.[1]?.rivit.map((r) => [r.selite, r.yhteensa])).toEqual([
+        ['Laskun avoin saldo', eur(100000)],
+        ['Huomautuskulut', eur(500)],
+      ]);
+    });
+
+    it('aiemmat puuttuu muilta lajeilta ja kun niitä ei anneta', () => {
+      expect(malli().aiemmat).toBeUndefined();
+      expect(
+        laskuMalli({ tosite: muistutusTosite(), kumppanit: KUMPPANIT, asetukset: ASETUKSET })
+          .aiemmat,
+      ).toBeUndefined();
+    });
+
+    it('pdfEste: numeroton muistutus ja puuttuva IBAN', () => {
+      expect(muistutus({ numero: undefined }).pdfEste).toBe('Maksumuistutuksella ei ole numeroa');
+      const { LaskuIban: _pois, ...ilmanIbania } = ASETUKSET;
+      expect(muistutus({}, ilmanIbania).pdfEste).toBe('Lisää IBAN asetuksissa');
+    });
+  });
 });

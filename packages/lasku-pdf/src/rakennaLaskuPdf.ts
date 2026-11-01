@@ -67,21 +67,44 @@ interface RiviSuunnitelma {
   selite: string[];
   korkeus: number;
 }
+/** Maksumuistutuksen aiemman asiakirjan osio (tai sen jatko seuraavalla sivulla) yhdellä sivulla. */
+interface AiempiLohko {
+  /** Osion otsikko, tai null jos lohko jatkaa edellisen sivun osiota. */
+  otsikko: string | null;
+  /** Otsikon yläreuna (mm); käytössä vain kun otsikko ei ole null. */
+  otsikkoY: number;
+  /** Taulukon otsikkorivin yläreuna (mm). */
+  taulukkoY: number;
+  rivit: RiviSuunnitelma[];
+}
 interface SivuSuunnitelma {
   /** Taulukon otsikkorivin yläreuna (mm), tai null jos sivulla ei ole rivejä. */
   otsikkoY: number | null;
   rivit: RiviSuunnitelma[];
   /** Rivien jälkeinen y (mm). */
   loppuY: number;
+  /** Summien jälkeen tulevat aiemmat-osiot (tai niiden jatkot) tällä sivulla. */
+  lohkot: AiempiLohko[];
 }
 interface Suunnitelma {
   sivut: SivuSuunnitelma[];
   aiheRivit: string[];
   /** Ensimmäisen sivun aiherivin ensimmäisen perusviivan y (mm). */
   aiheY: number;
+  /** Lisätietotekstin rivit ja ensimmäisen rivin perusviivan y (mm). */
+  lisatiedotRivit: string[];
+  lisatiedotY: number;
+  /** Sivu, jolle summat piirretään (pääosan viimeinen sivu). */
+  summaSivu: number;
 }
 
 const summatKorkeus = (malli: LaskuMalli) => 5 + malli.summat.length * SUMMA_RIVI_MM + 2;
+/** Aiemman asiakirjan osion otsikkorivi ja sitä seuraava väli. */
+const OSIO_OTSIKKO_MM = 7;
+/** Väli osioiden välillä. */
+const OSIO_VALI_MM = 5;
+const LISATIEDOT_KOKO = 9;
+const LISATIEDOT_RIVI_MM = 4.4;
 /** Maksuosan varaus viimeisen sivun alalaidassa; 0 jos maksuosaa ei ole. */
 const maksuosaVaraus = (malli: LaskuMalli) =>
   malli.maksu !== null ? MAKSUOSA_KORKEUS_MM + MAKSUOSA_ILMA_MM : 0;
@@ -92,9 +115,18 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
   const aiheRivit =
     malli.aihe !== null ? rivita(malli.aihe, fontit.lihava, 10, SISALTO_LEVEYS_MM) : [];
   const aiheY = ylaosaLoppu + 9;
-  const otsikkoY1 = aiheRivit.length > 0 ? aiheY + (aiheRivit.length - 1) * 5 + 4 : ylaosaLoppu + 8;
+  const aiheLoppu = aiheRivit.length > 0 ? aiheY + (aiheRivit.length - 1) * 5 + 4 : ylaosaLoppu + 8;
+  const lisatiedotRivit =
+    malli.lisatiedot != null
+      ? rivita(malli.lisatiedot, fontit.normaali, LISATIEDOT_KOKO, SISALTO_LEVEYS_MM)
+      : [];
+  const lisatiedotY = aiheLoppu + 2.5;
+  const otsikkoY1 =
+    lisatiedotRivit.length > 0
+      ? lisatiedotY + lisatiedotRivit.length * LISATIEDOT_RIVI_MM + 1
+      : aiheLoppu;
 
-  const suunnitellut: RiviSuunnitelma[] = malli.rivit.map((rivi) => {
+  const suunnittele = (rivi: MalliRivi): RiviSuunnitelma => {
     const selite = rivita(
       rivi.selite,
       fontit.normaali,
@@ -102,10 +134,17 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
       SARAKE.seliteOikea - SARAKE.seliteVasen,
     );
     return { rivi, selite, korkeus: 2 * RIVI_PAD_MM + selite.length * RIVI_VALI_MM };
-  });
+  };
+  const suunnitellut = malli.rivit.map(suunnittele);
+  const aiemmat = malli.aiemmat ?? [];
 
   const sivut: SivuSuunnitelma[] = [];
-  let nyt: SivuSuunnitelma = { otsikkoY: otsikkoY1, rivit: [], loppuY: otsikkoY1 + OTSIKKORIVI_MM };
+  let nyt: SivuSuunnitelma = {
+    otsikkoY: otsikkoY1,
+    rivit: [],
+    loppuY: otsikkoY1 + OTSIKKORIVI_MM,
+    lohkot: [],
+  };
   for (const r of suunnitellut) {
     if (nyt.rivit.length > 0 && nyt.loppuY + r.korkeus > SISALTO_ALA_MM) {
       sivut.push(nyt);
@@ -113,6 +152,7 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
         otsikkoY: JATKO_TAULUKKO_YLA_MM,
         rivit: [],
         loppuY: JATKO_TAULUKKO_YLA_MM + OTSIKKORIVI_MM,
+        lohkot: [],
       };
     }
     nyt.rivit.push(r);
@@ -120,9 +160,11 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
   }
   sivut.push(nyt);
 
-  // Summat ja maksuosa viimeiselle sivulle; jos eivät mahdu, viimeinen rivi siirtyy mukaan
-  // uudelle sivulle (summia ei jätetä yksin); jos sekään ei auta, summat saavat rivittömän sivun.
-  const tarvitaan = summatKorkeus(malli) + maksuosaVaraus(malli);
+  // Summat (ja ilman aiemmat-osioita myös maksuosa) pääosan viimeiselle sivulle; jos eivät mahdu,
+  // viimeinen rivi siirtyy mukaan uudelle sivulle (summia ei jätetä yksin); jos sekään ei auta,
+  // summat saavat rivittömän sivun. Aiemmat-osiot tulevat summien jälkeen ja maksuosa vasta
+  // niiden perään (alla).
+  const tarvitaan = summatKorkeus(malli) + (aiemmat.length === 0 ? maksuosaVaraus(malli) : 0);
   const mahtuu = (s: SivuSuunnitelma) => s.loppuY + tarvitaan <= SISALTO_ALA_MM;
   const viimeinen = sivut[sivut.length - 1];
   if (viimeinen !== undefined && !mahtuu(viimeinen)) {
@@ -134,6 +176,7 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
         siirrettava !== undefined
           ? JATKO_TAULUKKO_YLA_MM + OTSIKKORIVI_MM + siirrettava.korkeus
           : JATKO_TAULUKKO_YLA_MM,
+      lohkot: [],
     };
     if (siirrettava === undefined || mahtuu(uusi)) {
       if (siirrettava !== undefined) {
@@ -142,10 +185,62 @@ function suunnitteleSivut(malli: LaskuMalli, fontit: Fontit): Suunnitelma {
       }
       sivut.push(uusi);
     } else {
-      sivut.push({ otsikkoY: null, rivit: [], loppuY: JATKO_TAULUKKO_YLA_MM });
+      sivut.push({ otsikkoY: null, rivit: [], loppuY: JATKO_TAULUKKO_YLA_MM, lohkot: [] });
     }
   }
-  return { sivut, aiheRivit, aiheY };
+  const summaSivu = sivut.length - 1;
+
+  // Aiemmat asiakirjat summien perään omina osioinaan, jotka jatkuvat tarvittaessa uudelle
+  // sivulle (otsikkorivi toistuu). Osion otsikko ei jää yksin: sen mukana vähintään yksi rivi.
+  const uusiSivu = (): SivuSuunnitelma => {
+    const sivu: SivuSuunnitelma = {
+      otsikkoY: null,
+      rivit: [],
+      loppuY: JATKO_TAULUKKO_YLA_MM,
+      lohkot: [],
+    };
+    sivut.push(sivu);
+    return sivu;
+  };
+  let sivu = sivut[summaSivu] as SivuSuunnitelma;
+  let y = sivu.loppuY + summatKorkeus(malli) + OSIO_VALI_MM;
+  for (const osio of aiemmat) {
+    const rivit = osio.rivit.map(suunnittele);
+    const ensimmainen = rivit[0]?.korkeus ?? 0;
+    if (y + OSIO_OTSIKKO_MM + OTSIKKORIVI_MM + ensimmainen > SISALTO_ALA_MM) {
+      sivu = uusiSivu();
+      y = JATKO_TAULUKKO_YLA_MM;
+    }
+    let lohko: AiempiLohko = {
+      otsikko: osio.otsikko,
+      otsikkoY: y,
+      taulukkoY: y + OSIO_OTSIKKO_MM,
+      rivit: [],
+    };
+    sivu.lohkot.push(lohko);
+    y = lohko.taulukkoY + OTSIKKORIVI_MM;
+    for (const r of rivit) {
+      if (lohko.rivit.length > 0 && y + r.korkeus > SISALTO_ALA_MM) {
+        sivu = uusiSivu();
+        lohko = {
+          otsikko: null,
+          otsikkoY: JATKO_TAULUKKO_YLA_MM,
+          taulukkoY: JATKO_TAULUKKO_YLA_MM,
+          rivit: [],
+        };
+        sivu.lohkot.push(lohko);
+        y = JATKO_TAULUKKO_YLA_MM + OTSIKKORIVI_MM;
+      }
+      lohko.rivit.push(r);
+      y += r.korkeus;
+    }
+    y += OSIO_VALI_MM;
+  }
+  // Maksuosa viimeisen sisällön alle; jos ei mahdu, se saa oman jatkosivunsa.
+  if (aiemmat.length > 0) {
+    if (y - OSIO_VALI_MM + maksuosaVaraus(malli) > SISALTO_ALA_MM) uusiSivu();
+  }
+  return { sivut, aiheRivit, aiheY, lisatiedotRivit, lisatiedotY, summaSivu };
 }
 
 // ---------- sivun osat ----------
@@ -213,10 +308,15 @@ function piirraEnsimmainenYlaosa(
       height: mm(korkeus),
       color: TAUSTA,
     });
+    // Arvosarake siirtyy oikealle, jos jokin nimike (esim. "Maksumuistutuksen numero") on leveämpi.
+    const nimikeLeveys = Math.max(
+      ...malli.info.map((r) => fontit.normaali.widthOfTextAtSize(r.nimike, 8) / mm(1)),
+    );
+    const arvoVasen = Math.max(INFO.arvoVasen, INFO.vasen + 2.5 + nimikeLeveys + 2);
     malli.info.forEach((r, i) => {
       const y = INFO.yla + 4.7 + i * INFO_RIVI_MM;
       teksti(sivu, r.nimike, INFO.vasen + 2.5, y, fontit.normaali, 8, HIMMEA);
-      teksti(sivu, r.arvo, INFO.arvoVasen, y, fontit.normaali, 8.5);
+      teksti(sivu, r.arvo, arvoVasen, y, fontit.normaali, 8.5);
     });
   }
 }
@@ -252,10 +352,15 @@ function piirraOtsikkorivi(sivu: PDFPage, fontit: Fontit, yla: number): void {
   viiva(sivu, SISALTO_VASEN_MM, SISALTO_OIKEA_MM, yla + 5, HIMMEA);
 }
 
-function piirraRivit(sivu: PDFPage, fontit: Fontit, s: SivuSuunnitelma): void {
-  if (s.otsikkoY === null) return;
-  let y = s.otsikkoY + OTSIKKORIVI_MM;
-  for (const { rivi, selite, korkeus } of s.rivit) {
+/** Piirtää rivit alkaen y:stä (mm, ensimmäisen rivin yläreuna). */
+function piirraRivit(
+  sivu: PDFPage,
+  fontit: Fontit,
+  alkuY: number,
+  rivit: readonly RiviSuunnitelma[],
+): void {
+  let y = alkuY;
+  for (const { rivi, selite, korkeus } of rivit) {
     const perusviiva = y + RIVI_PAD_MM + 3.1;
     selite.forEach((r, i) =>
       teksti(
@@ -275,6 +380,14 @@ function piirraRivit(sivu: PDFPage, fontit: Fontit, s: SivuSuunnitelma): void {
     y += korkeus;
     viiva(sivu, SISALTO_VASEN_MM, SISALTO_OIKEA_MM, y, VIIVA);
   }
+}
+
+function piirraAiempiLohko(sivu: PDFPage, fontit: Fontit, l: AiempiLohko): void {
+  if (l.otsikko !== null) {
+    teksti(sivu, l.otsikko, SISALTO_VASEN_MM, l.otsikkoY + 4, fontit.lihava, 9.5);
+  }
+  piirraOtsikkorivi(sivu, fontit, l.taulukkoY);
+  piirraRivit(sivu, fontit, l.taulukkoY + OTSIKKORIVI_MM, l.rivit);
 }
 
 function piirraSummat(sivu: PDFPage, malli: LaskuMalli, fontit: Fontit, alkuY: number): void {
@@ -313,7 +426,10 @@ export async function rakennaLaskuPdf(malli: LaskuMalli): Promise<Uint8Array> {
   const fontit = await lataaFontit(doc);
   asetaMetatiedot(doc, malli);
 
-  const { sivut, aiheRivit, aiheY } = suunnitteleSivut(malli, fontit);
+  const { sivut, aiheRivit, aiheY, lisatiedotRivit, lisatiedotY, summaSivu } = suunnitteleSivut(
+    malli,
+    fontit,
+  );
   sivut.forEach((s, i) => {
     const sivu = doc.addPage([A4_LEVEYS, A4_KORKEUS]);
     const nro = i + 1;
@@ -322,19 +438,30 @@ export async function rakennaLaskuPdf(malli: LaskuMalli): Promise<Uint8Array> {
       aiheRivit.forEach((r, k) =>
         teksti(sivu, r, SISALTO_VASEN_MM, aiheY + k * 5, fontit.lihava, 10),
       );
+      lisatiedotRivit.forEach((r, k) =>
+        teksti(
+          sivu,
+          r,
+          SISALTO_VASEN_MM,
+          lisatiedotY + 3.2 + k * LISATIEDOT_RIVI_MM,
+          fontit.normaali,
+          LISATIEDOT_KOKO,
+        ),
+      );
     } else {
       piirraJatkoYlaosa(sivu, malli, fontit, nro, sivut.length);
     }
-    if (s.otsikkoY !== null) piirraOtsikkorivi(sivu, fontit, s.otsikkoY);
-    piirraRivit(sivu, fontit, s);
+    if (s.otsikkoY !== null) {
+      piirraOtsikkorivi(sivu, fontit, s.otsikkoY);
+      piirraRivit(sivu, fontit, s.otsikkoY + OTSIKKORIVI_MM, s.rivit);
+    }
+    if (i === summaSivu) piirraSummat(sivu, malli, fontit, s.loppuY);
+    for (const l of s.lohkot) piirraAiempiLohko(sivu, fontit, l);
     piirraAlatunniste(sivu, malli, fontit);
 
-    if (i === sivut.length - 1) {
-      piirraSummat(sivu, malli, fontit, s.loppuY);
-      // Maksuosa piirretään suunnitteluvaiheessa varatulle alueelle (maksuosaVaraus).
-      if (malli.maksu !== null) {
-        piirraMaksuosa(sivu, malli.maksu, SISALTO_ALA_MM - MAKSUOSA_KORKEUS_MM, fontit);
-      }
+    // Maksuosa piirretään suunnitteluvaiheessa varatulle alueelle (maksuosaVaraus).
+    if (i === sivut.length - 1 && malli.maksu !== null) {
+      piirraMaksuosa(sivu, malli.maksu, SISALTO_ALA_MM - MAKSUOSA_KORKEUS_MM, fontit);
     }
   });
   // Ilman objektivirtoja PDF:n sanakirjat ovat pakkaamatonta tekstiä: tavut pysyvät

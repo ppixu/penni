@@ -1,5 +1,6 @@
 import { laskeSha } from '@/liitteet/laskeSha';
 import type { KpClient } from '@penni/asiakas';
+import { type StoredTosite, TositeTyyppi } from '@penni/engine';
 import type { LaskuMalli } from '@penni/lasku-pdf';
 
 export type TallennusTulos = 'tallennettu' | 'oli-jo' | 'ei-tallennettu' | 'kausi-lukittu';
@@ -69,18 +70,46 @@ export function lataaSelaimeen(
 }
 
 /**
- * Lataa laskun PDF:n: muodostaa tavut, lataa ne selaimeen ja yrittää tallentaa ne tositteen
- * liitteeksi vain-lisäävästi. Tallennusongelmat eivät koskaan estä latausta. Palauttaa käyttäjälle
- * näytettävän huomautuksen (liitteen tallennus jäi tekemättä tai PDF:n muodostus epäonnistui)
- * tai null. Jos malli on estetty (`pdfEste`), ei lataa mitään ja palauttaa syyn huomautuksena.
+ * Maksumuistutuksen aiemmat asiakirjat (`muistutus.aiemmat`, vanhin ensin) PDF:n osioita varten.
+ * Muilla tositteilla tyhjä lista. Puuttuva asiakirja heittää: muistutus ilman sen erittelyä
+ * olisi epätäydellinen, joten PDF jätetään tekemättä.
+ */
+export async function haeAiemmat(
+  client: Pick<KpClient, 'haeTosite'>,
+  tosite: StoredTosite,
+): Promise<StoredTosite[]> {
+  if (tosite.tyyppi !== TositeTyyppi.MAKSUMUISTUTUS || !tosite.muistutus) return [];
+  return Promise.all(
+    tosite.muistutus.aiemmat.map(async (id) => {
+      const aiempi = await client.haeTosite(id);
+      if (aiempi === null) throw new Error(`aiempaa asiakirjaa ${id} ei löydy`);
+      return aiempi;
+    }),
+  );
+}
+
+/**
+ * Lataa laskun PDF:n: hakee maksumuistutuksen aiemmat asiakirjat, muodostaa niistä (`muodosta`)
+ * näkymämallin ja PDF-tavut, lataa ne selaimeen ja yrittää tallentaa ne tositteen liitteeksi
+ * vain-lisäävästi. Tallennusongelmat eivät koskaan estä latausta. Palauttaa käyttäjälle
+ * näytettävän huomautuksen (liitteen tallennus jäi tekemättä, aiempia asiakirjoja ei saatu tai
+ * PDF:n muodostus epäonnistui) tai null. Jos malli on estetty (`pdfEste`), ei lataa mitään ja
+ * palauttaa syyn huomautuksena.
  */
 export async function lataaLaskuPdf(p: {
-  malli: LaskuMalli;
-  tositeId: number;
-  client: Pick<KpClient, 'haeLiitteet' | 'lisaaLiite'>;
+  tosite: StoredTosite;
+  /** Rakentaa näkymämallin; `aiemmat` on tyhjä muilla kuin maksumuistutuksilla. */
+  muodosta: (aiemmat: readonly StoredTosite[]) => LaskuMalli;
+  client: Pick<KpClient, 'haeLiitteet' | 'lisaaLiite' | 'haeTosite'>;
   nyt: string;
 }): Promise<string | null> {
-  const { malli } = p;
+  let aiemmat: StoredTosite[];
+  try {
+    aiemmat = await haeAiemmat(p.client, p.tosite);
+  } catch (e) {
+    return `PDF:ää ei ladattu: aiempia asiakirjoja ei voitu hakea${e instanceof Error && e.message ? ` (${e.message})` : ''}`;
+  }
+  const malli = p.muodosta(aiemmat);
   if (malli.pdfEste !== null) return `PDF:ää ei ladattu: ${malli.pdfEste}`;
   if (malli.numero === null) return null;
   try {
@@ -90,7 +119,7 @@ export async function lataaLaskuPdf(p: {
     lataaSelaimeen(tavut, malli.tiedostonimi);
     const tulos = await tallennaLaskuPdf({
       client: p.client,
-      tositeId: p.tositeId,
+      tositeId: p.tosite.id,
       numero: malli.numero,
       tavut,
       nyt: p.nyt,

@@ -75,9 +75,14 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
     setPdfHuomio(null);
     setPdfHuomio(
       await lataaLaskuPdf({
-        malli,
-        tositeId: tosite.id,
-        client: { haeLiitteet: (id) => client.haeLiitteet(id), lisaaLiite: lisaa },
+        tosite,
+        // Tämä reitti käsittelee vain laskuja ja hyvityslaskuja: aiempia asiakirjoja ei ole.
+        muodosta: () => malli,
+        client: {
+          haeLiitteet: (id) => client.haeLiitteet(id),
+          lisaaLiite: lisaa,
+          haeTosite: (id) => client.haeTosite(id),
+        },
         nyt: new Date().toISOString(),
       }),
     );

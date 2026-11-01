@@ -34,15 +34,21 @@ export function LaskuLuonnos({
     if (!init) return;
     // PDF tehdään kirjatusta tositteesta (numero ja viite ovat nyt olemassa). Ongelma ei kumoa
     // kirjausta; huomautus näytetään kirjatun laskun näkymässä.
-    const malli = laskuMalli({
-      tosite: kirjattuTosite,
-      kumppanit: kumppanit ?? (await client.haeKumppanit()),
-      asetukset: init.asetukset,
-    });
+    const kumppanilista = kumppanit ?? (await client.haeKumppanit());
     const huomio = await lataaLaskuPdf({
-      malli,
-      tositeId: kirjattuTosite.id,
-      client: { haeLiitteet: (id) => client.haeLiitteet(id), lisaaLiite: lisaa },
+      tosite: kirjattuTosite,
+      muodosta: (aiemmat) =>
+        laskuMalli({
+          tosite: kirjattuTosite,
+          kumppanit: kumppanilista,
+          asetukset: init.asetukset,
+          aiemmat,
+        }),
+      client: {
+        haeLiitteet: (id) => client.haeLiitteet(id),
+        lisaaLiite: lisaa,
+        haeTosite: (id) => client.haeTosite(id),
+      },
       nyt: new Date().toISOString(),
     });
     onHuomio(huomio);

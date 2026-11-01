@@ -49,6 +49,7 @@ function malli(osa: Partial<LaskuMalli> = {}): LaskuMalli {
       { nimike: 'Huomautusaika', arvo: '8 pv' },
     ],
     aihe: 'Kesäkuun työt',
+    lisatiedot: null,
     rivit: rivit(3),
     summat: [
       { nimike: 'Yhteensä veroton', arvo: EUR('200,00') },
@@ -207,5 +208,61 @@ describe('rakennaLaskuPdf', () => {
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getTitle()).toBe('Lasku');
     expect(pdf.getPageCount()).toBe(1);
+  });
+
+  it('maksumuistutus: lisätiedot, aiemmat-osiot ja maksuosa viimeisellä sivulla', async () => {
+    const osio = (otsikko: string, n: number) => ({ otsikko, rivit: rivit(n) });
+    const bytes = await rakennaLaskuPdf(
+      malli({
+        laji: 'maksumuistutus',
+        otsikko: 'Maksumuistutus',
+        aihe: 'Maksumuistutus laskusta 1',
+        lisatiedot: 'Kirjanpitomme mukaan emme ole saaneet maksusuoritustanne.',
+        rivit: [{ ...RIVI, selite: 'Laskun avoin saldo', maara: '', aHinta: '', alv: '' }],
+        summat: [{ nimike: 'Maksettava yhteensä', arvo: EUR('1 014,45'), vahva: true }],
+        maksu: MAKSU,
+        aiemmat: [
+          osio('Alkuperäinen lasku · nro 1 · 1.4.2026 · 30.4.2026', 2),
+          osio('Aiempi maksumuistutus · nro 3 · 15.5.2026 · 29.5.2026', 2),
+        ],
+      }),
+    );
+    const sivut = await lueTekstit(bytes);
+    const kaikki = sivut.map(sivunTeksti).join('\n');
+    expect(kaikki).toContain('Kirjanpitomme mukaan emme ole saaneet maksusuoritustanne.');
+    expect(kaikki).toContain('Maksettava yhteensä');
+    expect(kaikki).toContain('Alkuperäinen lasku · nro 1 · 1.4.2026 · 30.4.2026');
+    expect(kaikki).toContain('Aiempi maksumuistutus · nro 3 · 15.5.2026 · 29.5.2026');
+    // Maksuosa (IBAN) tulostuu viimeisellä sivulla, ei muilla.
+    sivut.forEach((s, i) => {
+      expect(sivunTeksti(s).includes('FI21 1234 5600 0007 85')).toBe(i === sivut.length - 1);
+    });
+  });
+
+  it('maksumuistutus: pitkät aiemmat-osiot sivuttuvat eikä rivejä katoa tai mene maksuosan alle', async () => {
+    const bytes = await rakennaLaskuPdf(
+      malli({
+        maksu: MAKSU,
+        aiemmat: [
+          { otsikko: 'Alkuperäinen lasku · nro 1 · 1.4.2026 · 30.4.2026', rivit: rivit(45) },
+          { otsikko: 'Aiempi maksumuistutus · nro 3 · 15.5.2026 · 29.5.2026', rivit: rivit(3) },
+        ],
+      }),
+    );
+    const pdf = await PDFDocument.load(bytes);
+    expect(pdf.getPageCount()).toBeGreaterThanOrEqual(2);
+    const sivut = await lueTekstit(bytes);
+    const kaikki = sivut.map(sivunTeksti).join('\n');
+    // Pääosan 3 riviä + osion 45 riviä + toisen osion 3 riviä: "Työrivi 1" esiintyy kolmesti.
+    expect(kaikki.match(/^Työrivi 1$/gm)?.length).toBe(3);
+    expect(kaikki.match(/^Työrivi 45$/gm)?.length).toBe(1);
+    sivut.forEach((s, i) => {
+      expect(sivunTeksti(s)).toContain('Selite');
+      expect(sivunTeksti(s)).toContain(`Sivu ${i + 1}/${sivut.length}`);
+    });
+    const varausYla = mm(297 - (SISALTO_ALA_MM - MAKSUOSA_KORKEUS_MM));
+    for (const t of (sivut.at(-1) ?? []).filter((x) => /^Työrivi \d+$/.test(x.str))) {
+      expect(t.y).toBeGreaterThan(varausYla);
+    }
   });
 });
