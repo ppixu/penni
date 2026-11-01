@@ -8,6 +8,7 @@ import {
   decodeLiite,
   decodeLiitetiedotSyote,
   decodeMarginaaliveroSyote,
+  decodeMyyntilaskuMuutokset,
   decodeMyyntilaskuSyote,
   decodeOstolaskuSyote,
   decodePoistotSyote,
@@ -30,6 +31,7 @@ import {
   encodeKohdennus,
   encodeKohdennusOsio,
   encodeKumppani,
+  encodeLaskuluonnosRivi,
   encodeLiite,
   encodeLiiteMeta,
   encodeListattuTosite,
@@ -49,6 +51,7 @@ import type {
   WireAlvTilitysSyote,
   WireHyvityslaskuSyote,
   WireMarginaaliveroSyote,
+  WireMyyntilaskuMuutokset,
   WireMyyntilaskuSyote,
   WireOstolaskuSyote,
   WireSuoritusSyote,
@@ -80,12 +83,14 @@ import {
   haeTilikaudet,
   haeTosite,
   haeVerolaskelma,
+  kirjaaLaskuluonnos,
   kirjaaMarginaalivero,
   laadiBudjettivertailu,
   laadiKohdennusRaportti,
   laadiRaportti,
   laadiTilinpaatos,
   lisaaLiite,
+  listaaLaskuluonnokset,
   listaaMenot,
   listaaMyyntilaskut,
   listaaOstolaskut,
@@ -216,6 +221,26 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
       status: 200 as const,
       body: (await listaaMyyntilaskut(storage, myyntilaskuSuodatin(query))).map(
         encodeMyyntilaskuRivi,
+      ),
+    }),
+
+    listaaLaskuluonnokset: async () => ({
+      status: 200 as const,
+      body: (await listaaLaskuluonnokset(storage)).map(encodeLaskuluonnosRivi),
+    }),
+
+    kirjaaLaskuluonnos: async ({
+      params,
+      body,
+    }: { params: { id: string }; body: WireMyyntilaskuMuutokset }) => ({
+      status: 200 as const,
+      body: encodeTosite(
+        await kirjaaLaskuluonnos(
+          storage,
+          Number(params.id),
+          env(),
+          decodeMyyntilaskuMuutokset(body),
+        ),
       ),
     }),
 

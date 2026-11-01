@@ -90,6 +90,35 @@ export const WireMyyntilaskuSyoteSchema = z
     maksutapa: z.number().optional(),
     sarja: z.string().optional(),
     rivit: z.array(WireRiviSchema),
+    jakso: z.object({ alkaa: z.string(), loppuu: z.string() }).optional(),
+    info: z.string().optional(),
+    luonnos: z.boolean().optional(),
+    id: z.number().optional(),
+    toisto: z.number().optional(),
+    toistoPvm: z.string().optional(),
+    ryhma: z.string().optional(),
+    viivkorko: z.number().optional(),
+  })
+  .passthrough();
+
+/** POST /myyntilaskut/:id/kirjaa body: like the invoice body, every field optional. */
+export const WireMyyntilaskuMuutoksetSchema = WireMyyntilaskuSyoteSchema.partial();
+
+/** One invoice-draft list row. summa is Raha ("N.NN" | number). */
+export const WireLaskuluonnosRiviSchema = z
+  .object({
+    tosite: z.number(),
+    tyyppi: z.number(),
+    tila: z.number(),
+    pvm: z.string(),
+    erapvm: z.string().optional(),
+    kumppani: z.number().optional(),
+    asiakas: z.string().optional(),
+    otsikko: z.string().optional(),
+    summa: Raha,
+    toisto: z.number().optional(),
+    alkuperainenTosite: z.number().optional(),
+    ryhma: z.string().optional(),
   })
   .passthrough();
 

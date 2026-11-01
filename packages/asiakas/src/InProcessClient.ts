@@ -21,6 +21,7 @@ import {
   type KohdennusOsio,
   type KohdennusRaporttiParams,
   type Kumppani,
+  type LaskuluonnosRivi,
   type Liite,
   type LiiteMeta,
   type LiitetiedotSyote,
@@ -79,12 +80,14 @@ import {
   haeTilikaudet,
   haeTosite,
   haeVerolaskelma,
+  kirjaaLaskuluonnos,
   kirjaaMarginaalivero,
   laadiBudjettivertailu,
   laadiKohdennusRaportti,
   laadiRaportti,
   laadiTilinpaatos,
   lisaaLiite,
+  listaaLaskuluonnokset,
   listaaMenot,
   listaaMyyntilaskut,
   listaaOstolaskut,
@@ -166,6 +169,12 @@ export class InProcessClient implements KpClient {
   }
   listaaMyyntilaskut(suodatin: MyyntilaskuSuodatin): Promise<MyyntilaskuRivi[]> {
     return listaaMyyntilaskut(this.storage, suodatin);
+  }
+  listaaLaskuluonnokset(): Promise<LaskuluonnosRivi[]> {
+    return listaaLaskuluonnokset(this.storage);
+  }
+  kirjaaLaskuluonnos(id: number, muutokset?: Partial<MyyntilaskuSyote>): Promise<StoredTosite> {
+    return kirjaaLaskuluonnos(this.storage, id, this.env(), muutokset);
   }
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {
     return tallennaOstolasku(this.storage, syote, this.env());

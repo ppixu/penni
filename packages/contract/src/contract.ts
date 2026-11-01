@@ -18,10 +18,12 @@ import {
   WireKohdennusOsioSchema,
   WireKohdennusSchema,
   WireKumppaniSchema,
+  WireLaskuluonnosRiviSchema,
   WireLiiteMetaSchema,
   WireLiiteSchema,
   WireLiitetiedotSyoteSchema,
   WireMarginaaliveroSyoteSchema,
+  WireMyyntilaskuMuutoksetSchema,
   WireMyyntilaskuRiviSchema,
   WireMyyntilaskuSyoteSchema,
   WireOstolaskuRiviSchema,
@@ -203,6 +205,17 @@ export const contract = c.router({
     path: '/myyntilaskut',
     query: MyyntilaskuListQuery,
     responses: { 200: z.array(WireMyyntilaskuRiviSchema) },
+  },
+  listaaLaskuluonnokset: {
+    method: 'GET',
+    path: '/laskuluonnokset',
+    responses: { 200: z.array(WireLaskuluonnosRiviSchema) },
+  },
+  kirjaaLaskuluonnos: {
+    method: 'POST',
+    path: '/myyntilaskut/:id/kirjaa',
+    body: WireMyyntilaskuMuutoksetSchema,
+    responses: { 200: WireTositeSchema },
   },
 
   // Penni-laajennus (ei Kitsas-vastinetta): kaikki tulot/menot tilin luonteen perusteella.

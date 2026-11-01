@@ -1,6 +1,7 @@
 import type { KpClient } from '@penni/asiakas';
 import { Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
+import { runLaskutusClientConformance } from './laskutusConformance.js';
 
 /** Seed shape shared by both client factories (mirrors the engine ConformanceSeed). */
 export interface ClientConformanceSeed {
@@ -1012,4 +1013,6 @@ export function runClientConformance(name: string, makeClient: MakeClient): void
       expect(doc.vahvistettu).toBeNull();
     });
   });
+
+  runLaskutusClientConformance(name, makeClient);
 }

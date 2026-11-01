@@ -14,6 +14,7 @@ import {
   decodeKohdennusKaytolla,
   decodeKohdennusOsio,
   decodeKumppani,
+  decodeLaskuluonnosRivi,
   decodeLiite,
   decodeLiiteMeta,
   decodeListattuTosite,
@@ -38,6 +39,7 @@ import {
   encodeLiite,
   encodeLiitetiedotSyote,
   encodeMarginaaliveroSyote,
+  encodeMyyntilaskuMuutokset,
   encodeMyyntilaskuSyote,
   encodeOstolaskuSyote,
   encodePoistotSyote,
@@ -72,6 +74,7 @@ import {
   type KohdennusOsio,
   type KohdennusRaporttiParams,
   type Kumppani,
+  type LaskuluonnosRivi,
   type Liite,
   type LiiteMeta,
   type LiitetiedotSyote,
@@ -259,6 +262,26 @@ export class HttpClient implements KpClient {
     const r = await this.tsr.listaaMyyntilaskut({ query });
     if (r.status === 200)
       return (r.body as Parameters<typeof decodeMyyntilaskuRivi>[0][]).map(decodeMyyntilaskuRivi);
+    throw virhe(r.status, r.body);
+  }
+  async listaaLaskuluonnokset(): Promise<LaskuluonnosRivi[]> {
+    const r = await this.tsr.listaaLaskuluonnokset();
+    if (r.status === 200)
+      return (r.body as Parameters<typeof decodeLaskuluonnosRivi>[0][]).map(decodeLaskuluonnosRivi);
+    throw virhe(r.status, r.body);
+  }
+  async kirjaaLaskuluonnos(
+    id: number,
+    muutokset: Partial<MyyntilaskuSyote> = {},
+  ): Promise<StoredTosite> {
+    const r = await this.tsr.kirjaaLaskuluonnos({
+      params: { id: String(id) },
+      body: encodeMyyntilaskuMuutokset(muutokset) as Parameters<
+        Tsr['kirjaaLaskuluonnos']
+      >[0]['body'],
+    });
+    if (r.status === 200)
+      return decodeTosite(r.body as Parameters<typeof decodeTosite>[0]) as StoredTosite;
     throw virhe(r.status, r.body);
   }
   async tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {

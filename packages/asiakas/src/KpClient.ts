@@ -22,6 +22,7 @@ import type {
   KohdennusOsio,
   KohdennusRaporttiParams,
   Kumppani,
+  LaskuluonnosRivi,
   Liite,
   LiiteMeta,
   LiitetiedotSyote,
@@ -90,6 +91,9 @@ export interface KpClient {
   luoTosite(syote: TositeSyote): Promise<StoredTosite>;
   tallennaMyyntilasku(syote: MyyntilaskuSyote): Promise<StoredTosite>;
   listaaMyyntilaskut(suodatin: MyyntilaskuSuodatin): Promise<MyyntilaskuRivi[]>;
+  // laskuluonnokset (tila 50-99)
+  listaaLaskuluonnokset(): Promise<LaskuluonnosRivi[]>;
+  kirjaaLaskuluonnos(id: number, muutokset?: Partial<MyyntilaskuSyote>): Promise<StoredTosite>;
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite>;
   listaaOstolaskut(suodatin: OstolaskuListQuery): Promise<OstolaskuRivi[]>;
   listaaTulot(suodatin: RahavirtaSuodatin): Promise<RahavirtaRivi[]>;
