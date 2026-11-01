@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": ".", "outDir": "dist", "resolveJsonModule": true },
+  "include": ["src/**/*", "taulukot/*.json"],
+  "exclude": ["src/**/*.test.ts"]
+}

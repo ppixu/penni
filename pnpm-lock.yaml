@@ -626,6 +626,28 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  packages/palkat:
+    dependencies:
+      '@penni/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@penni/euro':
+        specifier: workspace:*
+        version: link:../euro
+      '@penni/validator':
+        specifier: workspace:*
+        version: link:../validator
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@26.0.1)(jsdom@25.0.1)(lightningcss@1.32.0)
+
   packages/storage-do:
     dependencies:
       '@penni/engine':

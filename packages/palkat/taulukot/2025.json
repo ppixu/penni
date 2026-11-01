@@ -1,0 +1,77 @@
+{
+  "vuosi": 2025,
+  "kentat": {
+    "tyelTyontekijaBp": {
+      "arvo": 715,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelTyontekija53_62Bp": {
+      "arvo": 865,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelOletusKokonaisBp": {
+      "arvo": 2528,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelTilapainenKokonaisBp": {
+      "arvo": 2628,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelAlarajaKk": {
+      "arvo": 7008,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tvrTyontekijaBp": {
+      "arvo": 59,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrTyonantajaBp": {
+      "arvo": 20,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrOsaomistajaTyontekijaBp": {
+      "arvo": 30,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrOsaomistajaTyonantajaBp": {
+      "arvo": 20,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "savaBp": {
+      "arvo": 187,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "kmKorvaus": {
+      "arvo": 59,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2024/tax-exempt-allowances-in-2025-for-business-travel/"
+    },
+    "kokopaivaraha": {
+      "arvo": 5300,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2024/tax-exempt-allowances-in-2025-for-business-travel/"
+    },
+    "osapaivaraha": {
+      "arvo": 2400,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2024/tax-exempt-allowances-in-2025-for-business-travel/"
+    },
+    "ateriakorvaus": {
+      "arvo": 1325,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2024/tax-exempt-allowances-in-2025-for-business-travel/"
+    },
+    "puhelinetuKk": {
+      "arvo": 2000,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2025/"
+    },
+    "ravintoetu": {
+      "arvo": 860,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2025/"
+    },
+    "ravintoetuYlaraja": {
+      "arvo": 1370,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2025/"
+    },
+    "eiVerokorttiaBp": {
+      "arvo": 6000,
+      "lahde": "https://www.vero.fi/syventavat-vero-ohjeet/ohje-hakusivu/48735/ennakonpidatyksen-toimittaminen11/"
+    }
+  }
+}

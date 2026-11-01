@@ -1,0 +1,21 @@
+{
+  "vuosi": 2027,
+  "kentat": {
+    "kmKorvaus": {
+      "arvo": 58,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2026/tax-exempt-allowances-in-2027-for-business-travel/"
+    },
+    "kokopaivaraha": {
+      "arvo": 5500,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2026/tax-exempt-allowances-in-2027-for-business-travel/"
+    },
+    "osapaivaraha": {
+      "arvo": 2500,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2026/tax-exempt-allowances-in-2027-for-business-travel/"
+    },
+    "ateriakorvaus": {
+      "arvo": 1375,
+      "lahde": "https://www.vero.fi/en/About-us/newsroom/news/uutiset/2026/tax-exempt-allowances-in-2027-for-business-travel/"
+    }
+  }
+}
