@@ -1,8 +1,9 @@
 import { type Cents, Euro } from '@penni/euro';
 import { Luonne, type LuonneArvo, onko } from '../accounts/luonne.js';
 import { type Alkupera, tositteenAlkupera } from '../alv/alkupera.js';
-import { onKirjanpidossa } from '../vouchers/enums.js';
+import { TositeTyyppi, onKirjanpidossa } from '../vouchers/enums.js';
 import type { IsoDate } from '../vouchers/types.js';
+import { eranVienti, muistutuksenSumma, muistutustenMaarat } from './myyntilaskuResource.js';
 import { normalisoiSaldo } from './saldot.js';
 import type { Storage, StoredTosite, TositeBucket } from './storage.js';
 
@@ -54,6 +55,11 @@ export interface RahavirtaRivi {
    *  (esim. Kitsas-tuonnin hyvityslasku). UI reitittää hyvityslaskun dokumenttinäkymään vain,
    *  kun tämä on olemassa — dokumentti tulostaa alkuperäisen rivit. */
   alkuperainenTosite?: number;
+  /** Kirjattu maksumuistutus (216): summa = maksu + korko, avoin aina 0 — yhteisen erän avoin
+   *  saldo kuuluu alkuperäisen laskun riville, jottei sitä lasketa kahdesti. */
+  muistutus?: true;
+  /** Laskulle kirjattujen maksumuistutusten määrä; puuttuu, jos muistutuksia ei ole. */
+  muistutettu?: number;
 }
 
 /**
@@ -96,8 +102,9 @@ async function listaa(
   // suodattimiin; raportit ja alv lukevat omat, kirjattuihin rajatut kyselynsä.
   const bucketit: TositeBucket[] =
     suodatin.bucket !== undefined ? [suodatin.bucket] : ['kirjanpidossa', 'luonnos'];
-  const [liitteita, ...listat] = await Promise.all([
+  const [liitteita, muistutukset, ...listat] = await Promise.all([
     storage.laskeLiitteet(),
+    storage.listTositteet({ bucket: 'kirjanpidossa', tyyppi: TositeTyyppi.MAKSUMUISTUTUS }),
     ...bucketit.map((bucket) => storage.listTositteet({ bucket, ...rajaus })),
   ]);
   const tositteet = listat.flat();
@@ -107,12 +114,21 @@ async function listaa(
     suodatin.saldopvm !== undefined ? { saldopvm: suodatin.saldopvm } : {},
   );
   const kumppanit = new Map((await storage.getKumppanit()).map((k) => [k.id, k]));
+  // Kaikki kirjatut muistutukset, ei vain rajauksen sisältä: lasku on muistutettu, vaikka
+  // muistutus osuisi päivärajauksen ulkopuolelle.
+  const muistutettu = muistutustenMaarat(muistutukset);
 
   const rivit: RahavirtaRivi[] = [];
   for (const t of tositteet) {
+    // Kirjattu maksumuistutus kuuluu Tuloihin tyypin perusteella: nollamuistutuksella ei ole
+    // vientejä lainkaan (spec §4.5). Muistutusluonnokset näkyvät Lähtevissä, eivät täällä.
+    const onMuistutus = t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS;
+    if (onMuistutus && !onKirjanpidossa(t.tila)) continue;
+    const muistutusTuloissa = onMuistutus && nettoMask === Luonne.TULO;
     // A voucher that never touches the nature we are listing is not ours, even if some
     // other leg (bank, equity, VAT) would look like money moving.
     if (
+      !muistutusTuloissa &&
       !t.viennit.some((v) => {
         const l = luonteet.get(v.tili);
         return l !== undefined && onko(l, nettoMask);
@@ -135,7 +151,7 @@ async function listaa(
       summaaLuonteella(t, luonteet, Luonne.ALVSAATAVA, kreditPositiivinen),
       summaaLuonteella(t, luonteet, Luonne.ALVVELKA, kreditPositiivinen),
     );
-    const eraLeg = t.viennit.find((v) => v.era !== undefined);
+    const eraLeg = eranVienti(t.viennit);
     const era = eraLeg?.era;
     // queryErat returns raw Σ(debet − kredit), which is only debit-positive-correct for
     // asset-side eras (see storage.ts:118-119). Normalize by the era leg's own account so a
@@ -144,7 +160,7 @@ async function listaa(
     // Luonnos ei ole kirjanpidossa, joten sillä ei ole avointa saldoa, vaikka sen era-tunnus
     // osuisi kirjatun erän kanssa yhteen.
     const avoin = (
-      era !== undefined && eraLeg && onKirjanpidossa(t.tila)
+      era != null && eraLeg && onKirjanpidossa(t.tila) && !onMuistutus
         ? normalisoiSaldo(eraLeg.tili, eraMap.get(era) ?? Euro.fromCents(0))
         : Euro.fromCents(0)
     ) as Cents;
@@ -165,14 +181,17 @@ async function listaa(
       tila: t.tila,
       netto,
       alv,
-      summa: Euro.add(netto, alv),
+      summa: onMuistutus ? muistutuksenSumma(t) : Euro.add(netto, alv),
       avoin,
       liitteita: liitteita.get(t.id) ?? 0,
     };
     if (t.otsikko !== undefined) rivi.otsikko = t.otsikko;
     if (t.erapvm !== undefined) rivi.erapvm = t.erapvm;
-    if (era !== undefined) rivi.era = era;
-    if (era !== undefined && eraLeg) rivi.eraKredit = eraLeg.kredit > 0;
+    if (era != null) rivi.era = era;
+    if (era != null && eraLeg) rivi.eraKredit = eraLeg.kredit > 0;
+    if (onMuistutus) rivi.muistutus = true;
+    const maara = muistutettu.get(t.id);
+    if (maara !== undefined && !onMuistutus) rivi.muistutettu = maara;
     if (t.alkuperainenTosite !== undefined) rivi.alkuperainenTosite = t.alkuperainenTosite;
     if (t.numero !== undefined) rivi.numero = t.numero;
     if (t.viite !== undefined) rivi.viite = t.viite;

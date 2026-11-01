@@ -1,10 +1,25 @@
 import type { Cents } from '@penni/euro';
-import { laskeMaksumuistutus } from '../laskutus/maksumuistutus.js';
+import { ViiteTyyppi, viiteEralle } from '@penni/validator';
+import { type MuistutusLaskentaSyote, laskeMaksumuistutus } from '../laskutus/maksumuistutus.js';
 import { lisaaPaivia, oikaiseErapaiva } from '../laskutus/paivat.js';
-import { Maksutapa, TositeTila, TositeTyyppi, onKirjanpidossa } from '../vouchers/enums.js';
-import type { IsoDate } from '../vouchers/types.js';
+import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
+import {
+  Maksutapa,
+  TositeTila,
+  TositeTyyppi,
+  VientiTyyppi,
+  onKirjanpidossa,
+} from '../vouchers/enums.js';
+import type { IsoDate, Muistutus, TositeVienti } from '../vouchers/types.js';
 import { onkoMaksuperusteinenAlv } from './context.js';
-import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
+import { eranVienti, tiliAsetuksesta } from './myyntilaskuResource.js';
+import {
+  type Asetukset,
+  type ResourceEnv,
+  ResourceError,
+  type Storage,
+  type StoredTosite,
+} from './storage.js';
 import { tallennaTosite } from './tositeResource.js';
 
 export interface MaksumuistutusSyote {
@@ -67,6 +82,57 @@ export function onMuistutettava(t: StoredTosite, saldo: Cents, tanaan: IsoDate):
   );
 }
 
+type MuistutettavanTiedot = Awaited<ReturnType<typeof muistutettavanTiedot>>;
+
+/**
+ * Kelpoisuus koko ketjulle (spec §4.1, ruling 5): valitun tositteen on oltava kirjattu,
+ * alkuperäisen laskun täytettävä §4.1 ja uusimman kirjatun muistutuksen eräpäivän oltava ohi.
+ */
+function tarkistaMuistutettavuus(t: MuistutettavanTiedot, pvm: IsoDate, id: number): void {
+  const uusinEra = t.aiemmat[t.aiemmat.length - 1]?.erapvm;
+  if (
+    !onKirjanpidossa(t.valittu.tila) ||
+    !onMuistutettava(t.lasku, t.saldo, pvm) ||
+    (uusinEra !== undefined && uusinEra >= pvm)
+  )
+    throw new ResourceError('EIMUISTUTETTAVA', `Tositteesta ${id} ei voi tehdä muistutusta`);
+}
+
+/** Muistutusta ei tehdä eikä kirjata, kun maksuperusteinen alv on voimassa (laskulistawidget.cpp:309-314). */
+function tarkistaEiMaksuperusteinen(asetukset: Asetukset, pvm: IsoDate): void {
+  if (onkoMaksuperusteinenAlv(asetukset, pvm))
+    throw new ResourceError(
+      'MAKSUPERUSTEINEN',
+      'Maksumuistutusta ei voi tehdä, kun maksuperusteinen alv on käytössä',
+    );
+}
+
+/** Laskee muistutuksen ketjun tiedoista; `aiemmat` = laskun id + aiemmat muistutukset, vanhin ensin. */
+function laskeKetjulle(
+  t: MuistutettavanTiedot,
+  pvm: IsoDate,
+  valinnat: Pick<
+    MuistutusLaskentaSyote,
+    'korko' | 'maksu' | 'viivkorko' | 'peruskorko' | 'yritysasiakas'
+  >,
+): Muistutus {
+  const laskettu = laskeMaksumuistutus({
+    alkuperainen: {
+      erapvm: t.lasku.erapvm as IsoDate,
+      ...(t.lasku.viivkorko !== undefined ? { viivkorko: t.lasku.viivkorko } : {}),
+    },
+    aiemmatMuistutukset: t.aiemmat.map((m) => ({
+      pvm: m.pvm,
+      maksu: m.muistutus?.maksu ?? (0 as Cents),
+      korko: m.muistutus?.korko ?? (0 as Cents),
+    })),
+    aiempiSaldo: t.saldo,
+    pvm,
+    ...valinnat,
+  });
+  return { ...laskettu, aiemmat: [t.lasku.id, ...t.aiemmat.map((m) => m.id)] };
+}
+
 /**
  * Luo maksumuistutusluonnokset (tyyppi 216, tila VALMISLASKU) erääntyneistä laskuista. Kaikki
  * laskut tarkistetaan ennen kuin yhtään luonnosta tallennetaan, joten huono id erässä ei jätä
@@ -79,11 +145,7 @@ export async function luoMaksumuistutukset(
   env: ResourceEnv,
 ): Promise<StoredTosite[]> {
   const asetukset = await storage.getAsetukset();
-  if (onkoMaksuperusteinenAlv(asetukset, syote.pvm))
-    throw new ResourceError(
-      'MAKSUPERUSTEINEN',
-      'Maksumuistutusta ei voi tehdä, kun maksuperusteinen alv on käytössä',
-    );
+  tarkistaEiMaksuperusteinen(asetukset, syote.pvm);
 
   const erapvm =
     syote.erapvm ??
@@ -93,35 +155,13 @@ export async function luoMaksumuistutukset(
 
   const luonnokset = [];
   for (const laskuId of syote.tositteet) {
-    const { lasku, aiemmat, saldo, valittu } = await muistutettavanTiedot(
-      storage,
-      laskuId,
-      syote.pvm,
-    );
-    // Kelpoisuus koko ketjulle: valitun tositteen on oltava kirjattu, alkuperäisen laskun
-    // täytettävä §4.1 ja uusimman kirjatun muistutuksen eräpäivän oltava ohi.
-    const uusinEra = aiemmat[aiemmat.length - 1]?.erapvm;
-    if (
-      !onKirjanpidossa(valittu.tila) ||
-      !onMuistutettava(lasku, saldo, syote.pvm) ||
-      (uusinEra !== undefined && uusinEra >= syote.pvm)
-    )
-      throw new ResourceError('EIMUISTUTETTAVA', `Tositteesta ${laskuId} ei voi tehdä muistutusta`);
+    const tiedot = await muistutettavanTiedot(storage, laskuId, syote.pvm);
+    tarkistaMuistutettavuus(tiedot, syote.pvm, laskuId);
+    const { lasku } = tiedot;
 
     const kumppani =
       lasku.kumppani !== undefined ? kumppanit.find((k) => k.id === lasku.kumppani) : undefined;
-    const laskettu = laskeMaksumuistutus({
-      alkuperainen: {
-        erapvm: lasku.erapvm as IsoDate,
-        ...(lasku.viivkorko !== undefined ? { viivkorko: lasku.viivkorko } : {}),
-      },
-      aiemmatMuistutukset: aiemmat.map((m) => ({
-        pvm: m.pvm,
-        maksu: m.muistutus?.maksu ?? (0 as Cents),
-        korko: m.muistutus?.korko ?? (0 as Cents),
-      })),
-      aiempiSaldo: saldo,
-      pvm: syote.pvm,
+    const muistutus = laskeKetjulle(tiedot, syote.pvm, {
       korko: syote.korko,
       peruskorko,
       yritysasiakas: !!kumppani?.alvtunnus,
@@ -137,7 +177,7 @@ export async function luoMaksumuistutukset(
       erapvm,
       otsikko: `Maksumuistutus laskusta ${lasku.numero ?? lasku.id}`,
       alkuperainenTosite: lasku.id,
-      muistutus: { ...laskettu, aiemmat: [lasku.id, ...aiemmat.map((m) => m.id)] },
+      muistutus,
       viennit: [],
       ...(lasku.kumppani !== undefined ? { kumppani: lasku.kumppani } : {}),
     });
@@ -146,4 +186,130 @@ export async function luoMaksumuistutukset(
   const tallennetut: StoredTosite[] = [];
   for (const luonnos of luonnokset) tallennetut.push(await tallennaTosite(storage, luonnos, env));
   return tallennetut;
+}
+
+/** Kirjauksessa muutettavat kentät (ruling 6); korkojakso ja saldot johdetaan aina uudelleen. */
+export interface MaksumuistutusMuutokset {
+  pvm?: IsoDate;
+  erapvm?: IsoDate;
+  otsikko?: string;
+  muistutus?: { maksu?: Cents; viivkorko?: number };
+}
+
+/** IsoDate → d.m.yyyy. */
+function suomeksi(pvm: IsoDate): string {
+  const [v, kk, pv] = pvm.split('-');
+  return `${Number(pv)}.${Number(kk)}.${v}`;
+}
+
+/**
+ * Kirjaa maksumuistutusluonnoksen (spec §4.4; maksumuistutusmuodostaja.cpp:79-165). Muistutus
+ * lasketaan uudelleen ketjusta luonnoksen (tai muutosten) päivän erän saldolla: maksu ja
+ * korkoprosentti luonnokselta, korko mukana vain jos luonnoksella on korkoa. Saa numeron
+ * `LaskuSeuraavaId`:stä ja viitteen kuten lasku. Viennit (kaikki alv-koodilla 0): debet
+ * alkuperäisen erävientin tilille `maksu + korko` samalle erälle (202), kredit
+ * `LaskuMaksumuistutustili` (201, "Huomautuskulut") ja `LaskuViivastyskorkotili` (201,
+ * "Viivästyskorko d.m.yyyy–d.m.yyyy"). Nollamuistutus kirjataan ilman vientejä. Alkuperäistä
+ * laskua ei muuteta.
+ */
+export async function kirjaaMaksumuistutus(
+  storage: Storage,
+  luonnos: StoredTosite,
+  env: ResourceEnv,
+  muutokset: MaksumuistutusMuutokset = {},
+): Promise<StoredTosite> {
+  const alkuperainenId = luonnos.alkuperainenTosite;
+  if (!luonnos.muistutus || alkuperainenId === undefined)
+    throw new ResourceError(
+      'EIMUISTUTUSTIETOJA',
+      'Maksumuistutukselta puuttuvat muistutustiedot tai alkuperäinen lasku',
+    );
+
+  const pvm = muutokset.pvm ?? luonnos.pvm;
+  const asetukset = await storage.getAsetukset();
+  tarkistaEiMaksuperusteinen(asetukset, pvm);
+  const tiedot = await muistutettavanTiedot(storage, alkuperainenId, pvm);
+  tarkistaMuistutettavuus(tiedot, pvm, alkuperainenId);
+
+  const muistutus = laskeKetjulle(tiedot, pvm, {
+    maksu: muutokset.muistutus?.maksu ?? luonnos.muistutus.maksu,
+    korko: luonnos.muistutus.korko > 0,
+    viivkorko: muutokset.muistutus?.viivkorko ?? luonnos.muistutus.viivkorko,
+    // Korkoprosentti annetaan aina, joten oletuskorkoa (peruskorko + 7/8) ei käytetä.
+    peruskorko: 0,
+    yritysasiakas: false,
+  });
+
+  const maksutili = tiliAsetuksesta(asetukset, 'LaskuMaksumuistutustili');
+  const korkotili = tiliAsetuksesta(asetukset, 'LaskuViivastyskorkotili');
+  if (muistutus.maksu > 0 && maksutili === undefined)
+    throw new ResourceError('EILASKUTILIA', 'LaskuMaksumuistutustili puuttuu');
+  if (muistutus.korko > 0 && korkotili === undefined)
+    throw new ResourceError('EILASKUTILIA', 'LaskuViivastyskorkotili puuttuu');
+  const eraLeg = eranVienti(tiedot.lasku.viennit);
+  if (!eraLeg || eraLeg.era == null)
+    throw new ResourceError('EIMUISTUTETTAVA', `Tositteella ${alkuperainenId} ei ole erää`);
+
+  const otsikko = muutokset.otsikko ?? luonnos.otsikko;
+  const erapvm = muutokset.erapvm ?? luonnos.erapvm;
+  const nolla = 0 as Cents;
+  const vienti = (tili: number, debet: Cents, kredit: Cents, tyyppi: number): TositeVienti => ({
+    tili,
+    debet,
+    kredit,
+    pvm,
+    alvKoodi: 0,
+    alvProsentti: 0,
+    tyyppi,
+  });
+  const viennit: TositeVienti[] = [];
+  const yhteensa = (muistutus.maksu + muistutus.korko) as Cents;
+  if (yhteensa > 0) {
+    viennit.push({
+      ...vienti(eraLeg.tili, yhteensa, nolla, VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS),
+      era: eraLeg.era,
+      ...(otsikko ? { selite: otsikko } : {}),
+    });
+  }
+  if (muistutus.maksu > 0)
+    viennit.push({
+      ...vienti(
+        maksutili as number,
+        nolla,
+        muistutus.maksu,
+        VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS,
+      ),
+      selite: 'Huomautuskulut',
+    });
+  if (muistutus.korko > 0)
+    viennit.push({
+      ...vienti(
+        korkotili as number,
+        nolla,
+        muistutus.korko,
+        VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS,
+      ),
+      selite: `Viivästyskorko ${suomeksi(muistutus.korkoalkaa)}–${suomeksi(muistutus.korkoloppuu)}`,
+    });
+
+  // Numero ja viite kuten laskulla (tositeroute.cpp:236-265 numeroi tyypit 210–216).
+  const numero = lueSeuraavaLaskunumero(asetukset);
+  const kirjattu = await tallennaTosite(
+    storage,
+    {
+      ...luonnos,
+      pvm,
+      ...(otsikko !== undefined ? { otsikko } : {}),
+      ...(erapvm !== undefined ? { erapvm } : {}),
+      tila: TositeTila.KIRJANPIDOSSA,
+      numero,
+      viite: viiteEralle(ViiteTyyppi.LASKU, Number(numero)),
+      muistutus,
+      viennit,
+    },
+    env,
+  );
+  // Laskuri etenee heti numeron antaneen tallennuksen jälkeen (hylätty kirjaus ei polta numeroa).
+  await kasvataLaskunumeroa(storage, numero);
+  return kirjattu;
 }

@@ -6,7 +6,13 @@ import { AlvKoodi } from '../alv/koodit.js';
 import { generoiLaskunViennit } from '../laskutus/generoiLaskunViennit.js';
 import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
 import type { Kumppani } from '../partners/kumppani.js';
-import { Maksutapa, TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
+import {
+  Maksutapa,
+  TositeTila,
+  TositeTyyppi,
+  VientiTyyppi,
+  onKirjanpidossa,
+} from '../vouchers/enums.js';
 import type { IsoDate, Tosite, TositeRivi, TositeVienti } from '../vouchers/types.js';
 import { onkoMaksuperusteinenAlv } from './context.js';
 import { tunnistaVeroVienti } from './maksuperusteinenTunnistus.js';
@@ -53,6 +59,54 @@ export function tiliAsetuksesta(asetukset: Asetukset, avain: string): number | u
   if (arvo === undefined || arvo === '') return undefined;
   const n = Number(arvo);
   return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/**
+ * Erää kantava vienti (spec §4.5): myyntisaatava (tyyppi 202, debet) ensin, muuten ensimmäinen
+ * erällinen vienti. Tuoduilla Kitsaksen ennakkolaskuilla on kaksi erällistä vientiä.
+ */
+export function eranVienti(viennit: readonly TositeVienti[]): TositeVienti | undefined {
+  return (
+    viennit.find(
+      (v) =>
+        v.era != null &&
+        v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS &&
+        v.debet > 0,
+    ) ?? viennit.find((v) => v.era != null && (v.debet > 0 || v.kredit > 0))
+  );
+}
+
+/** Kirjattu (ei luonnos eikä poistettu) maksumuistutus. */
+function onKirjattuMuistutus(t: StoredTosite): boolean {
+  return t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS && onKirjanpidossa(t.tila);
+}
+
+/** Muistutuksen veloitus: maksu + korko; tuodulla muistutuksella ilman tietoja erävientin debet. */
+export function muistutuksenSumma(t: StoredTosite): Cents {
+  if (t.muistutus) return (t.muistutus.maksu + t.muistutus.korko) as Cents;
+  return (eranVienti(t.viennit)?.debet ?? 0) as Cents;
+}
+
+/**
+ * Erälle kirjattujen maksumuistutusten kulut: Σ(maksu + korko) kirjatuista muistutuksista, joiden
+ * `alkuperainenTosite === era` (erän id = laskun id). Maksuperusteisen alv:n suoritusosuus
+ * lasketaan pääomasta näiden kulujen ohi (spec §4.4).
+ */
+export async function muistutusKulut(storage: Storage, era: number): Promise<Cents> {
+  const muistutukset = await storage.listTositteet({ tyyppi: TositeTyyppi.MAKSUMUISTUTUS });
+  let kulut = 0;
+  for (const m of muistutukset)
+    if (m.alkuperainenTosite === era && onKirjattuMuistutus(m)) kulut += muistutuksenSumma(m);
+  return kulut as Cents;
+}
+
+/** Kirjattujen muistutusten lukumäärä alkuperäisen laskun id:n mukaan. */
+export function muistutustenMaarat(tositteet: readonly StoredTosite[]): Map<number, number> {
+  const maarat = new Map<number, number>();
+  for (const t of tositteet)
+    if (onKirjattuMuistutus(t) && t.alkuperainenTosite !== undefined)
+      maarat.set(t.alkuperainenTosite, (maarat.get(t.alkuperainenTosite) ?? 0) + 1);
+  return maarat;
 }
 
 /** Luonnoksen tilat: 50 (tuotu Kitsas-luonnos) .. 99 (VALMISLASKU 80). */
@@ -268,32 +322,40 @@ export interface MyyntilaskuRivi {
   numero?: string;
   asiakas?: string; // kumppani.nimi
   asiakasId?: number;
-  summa: Cents; // invoice total = the debit leg's debet
-  avoin: Cents; // open balance for this era (0 if no era / fully paid)
+  summa: Cents; // invoice total = the era leg's debet (muistutus: maksu + korko)
+  avoin: Cents; // open balance for this era (0 if no era / fully paid; aina 0 muistutukselle)
   era?: number;
-  tili?: number; // AR account of the debit leg
+  tili?: number; // AR account of the era leg
   tyyppi: number;
   tunniste: number;
   sarja: string;
   tila: number;
   maksutapa?: number;
+  /** Maksumuistutus (216): erän avoin saldo kuuluu vain alkuperäisen laskun riville. */
+  muistutus?: true;
+  /** Laskulle kirjattujen maksumuistutusten määrä; puuttuu, jos muistutuksia ei ole. */
+  muistutettu?: number;
 }
 
 /**
  * List sales invoices with a live open balance per invoice. Each invoice's open item is its
- * single AR/era debit leg; `avoin` comes from queryErat (Σdebet − Σkredit over the era). Cash/card
- * invoices have no era leg and show avoin = 0 (paid). Payment vouchers are TILIOTE, never
- * MYYNTILASKU, so they never appear here. Relies on the invariant that a MYYNTILASKU has exactly
- * one debit leg (guaranteed by generoiLaskunViennit).
+ * era leg (`eranVienti`, else the first debit leg, for summa/erä/tili); `avoin` comes from
+ * queryErat (Σdebet − Σkredit over the era). Cash/card invoices have no era leg and show
+ * avoin = 0 (paid). Payment vouchers are TILIOTE, never MYYNTILASKU, so they never appear here.
+ * Kirjatut maksumuistutukset listataan omina riveinään (`muistutus: true`, summa = maksu + korko,
+ * avoin 0): yhteisen erän avoin saldo näkyy vain alkuperäisellä laskulla, jolle lasketaan
+ * `muistutettu` (laatijanlaskut.cpp:96-97).
  */
 export async function listaaMyyntilaskut(
   storage: Storage,
   suodatin: MyyntilaskuSuodatin,
 ): Promise<MyyntilaskuRivi[]> {
-  const tositteet = await storage.listTositteet({
-    bucket: 'kirjanpidossa',
-    tyyppi: TositeTyyppi.MYYNTILASKU,
-  });
+  const [laskut, muistutukset] = await Promise.all([
+    storage.listTositteet({ bucket: 'kirjanpidossa', tyyppi: TositeTyyppi.MYYNTILASKU }),
+    storage.listTositteet({ bucket: 'kirjanpidossa', tyyppi: TositeTyyppi.MAKSUMUISTUTUS }),
+  ]);
+  const tositteet = [...laskut, ...muistutukset];
+  const muistutettu = muistutustenMaarat(muistutukset);
   const eraMap = await storage.queryErat(
     suodatin.saldopvm !== undefined ? { saldopvm: suodatin.saldopvm } : {},
   );
@@ -312,11 +374,12 @@ export async function listaaMyyntilaskut(
     )
       continue;
 
-    const debitLeg = t.viennit.find((v) => v.debet > 0);
-    const summa = (debitLeg?.debet ?? 0) as Cents;
-    const era = debitLeg?.era;
-    const tili = debitLeg?.tili;
-    const avoin = (era != null ? (eraMap.get(era) ?? 0) : 0) as Cents;
+    const onMuistutus = t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS;
+    const eraLeg = eranVienti(t.viennit) ?? t.viennit.find((v) => v.debet > 0);
+    const summa = onMuistutus ? muistutuksenSumma(t) : ((eraLeg?.debet ?? 0) as Cents);
+    const era = eraLeg?.era;
+    const tili = eraLeg?.tili;
+    const avoin = (era != null && !onMuistutus ? (eraMap.get(era) ?? 0) : 0) as Cents;
 
     if (suodatin.avoin && avoin === 0) continue;
     if (
@@ -342,6 +405,9 @@ export async function listaaMyyntilaskut(
     if (era !== undefined) rivi.era = era;
     if (tili !== undefined) rivi.tili = tili;
     if (t.maksutapa !== undefined) rivi.maksutapa = t.maksutapa;
+    if (onMuistutus) rivi.muistutus = true;
+    const maara = muistutettu.get(t.id);
+    if (maara !== undefined && !onMuistutus) rivi.muistutettu = maara;
     if (k) {
       rivi.asiakas = k.nimi;
       rivi.asiakasId = k.id;
@@ -387,7 +453,14 @@ export async function tallennaSuoritus(
   const lasku = await storage.getTosite(syote.tosite);
   if (!lasku) throw new ResourceError('EITOSITETTA', `Tositetta ${syote.tosite} ei ole`);
 
-  const eraLeg = lasku.viennit.find((v) => v.era != null && (v.debet > 0 || v.kredit > 0));
+  // Maksumuistutus maksetaan alkuperäisen laskun erälle; erän avannut lasku on myös lykätyn
+  // alv:n lähde. Nollamuistutuksella ei ole erävientiä, joten erä tulee laskulta (spec §4.5).
+  let alkuperainen = lasku;
+  if (lasku.tyyppi === TositeTyyppi.MAKSUMUISTUTUS && lasku.alkuperainenTosite !== undefined) {
+    const a = await storage.getTosite(lasku.alkuperainenTosite);
+    if (a) alkuperainen = a;
+  }
+  const eraLeg = eranVienti(lasku.viennit) ?? eranVienti(alkuperainen.viennit);
   if (!eraLeg || eraLeg.era == null)
     throw new ResourceError('EIAVOINTAERAA', 'Laskulla ei ole avointa erää');
   const era: number = eraLeg.era;
@@ -432,20 +505,24 @@ export async function tallennaSuoritus(
   // alv-tilille. Pyöristys kumulatiivista maksettua osuutta vasten -> ei kertymävirhettä.
   // Vain jos laskulla on lykättyä alv:ta, tarkistetaan onko se jo vanhennettu (skannaus
   // vältetään suoriteperusteisilla/tavallisilla laskuilla).
-  const omatLykatyt = lasku.viennit.filter((v) => v.alvKoodi === 418 || v.alvKoodi === 428);
+  const omatLykatyt = alkuperainen.viennit.filter((v) => v.alvKoodi === 418 || v.alvKoodi === 428);
   let lykatyt = omatLykatyt;
   if (omatLykatyt.length > 0) {
     const kirjanpidossa = await storage.listTositteet({ bucket: 'kirjanpidossa' });
     const joVanhennettu = kirjanpidossa.some((tt) =>
-      tt.viennit.some((v) => v.maksuperusteinenTosite === lasku.id),
+      tt.viennit.some((v) => v.maksuperusteinenTosite === alkuperainen.id),
     );
     if (joVanhennettu) lykatyt = [];
   }
-  if (lykatyt.length > 0) {
-    const T = saatavaPuoli ? eraLeg.debet : eraLeg.kredit; // alkuperäinen bruttosumma
+  const alkuperainenEra = eranVienti(alkuperainen.viennit);
+  if (lykatyt.length > 0 && alkuperainenEra) {
+    // alkuperäinen bruttosumma (laskun erävienti, ei muistutuksen veloitus)
+    const T = saatavaPuoli ? alkuperainenEra.debet : alkuperainenEra.kredit;
     const eraMap = await storage.queryErat({});
     const saldo = eraMap.get(era) ?? 0;
-    const avoinEnnen = saatavaPuoli ? saldo : -saldo; // etumerkillinen; negatiivinen jos yli-/liikaa suoritettu
+    // Suoritus kohdistuu ensin pääomaan: erälle kirjatut muistutuskulut eivät ole maksamatonta
+    // laskun bruttoa (spec §4.4). Etumerkillinen; negatiivinen jos yli-/liikaa suoritettu.
+    const avoinEnnen = saatavaPuoli ? saldo - (await muistutusKulut(storage, era)) : -saldo;
     const maksettuEnnen = Math.min(T, Math.max(0, T - avoinEnnen));
     const maksettuJalkeen = Math.min(T, maksettuEnnen + syote.summa);
     const chart = await storage.getChart();

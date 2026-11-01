@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryStorage } from '../../../storage-memory/src/memory.js';
 import { AlvKoodi } from '../alv/koodit.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
+import { kirjaaLaskuluonnos } from './laskuluonnosResource.js';
+import { luoMaksumuistutukset } from './maksumuistutusResource.js';
+import { tallennaMyyntilasku } from './myyntilaskuResource.js';
 import { listaaOstolaskut, tallennaOstolasku } from './ostolaskuResource.js';
 import { listaaMenot, listaaTulot } from './tulotResource.js';
 
@@ -605,5 +608,112 @@ describe('listaaTulot / listaaMenot — bucket ja alkupera', () => {
       ['Ei tietoa', undefined],
     ]);
     expect('alkupera' in (rivit[3] as object)).toBe(false); // ei avainta, kun aluetta ei tiedetä
+  });
+});
+
+describe('listaaTulot — maksumuistutukset', () => {
+  const muistutusSeed = () =>
+    createMemoryStorage({
+      tilit: [
+        { numero: 1701, tyyppi: 'AS', nimi: { fi: 'Myyntisaamiset' } },
+        { numero: 1910, tyyppi: 'ARP', nimi: { fi: 'Pankkitili' } },
+        { numero: 3000, tyyppi: 'CL', nimi: { fi: 'Myynti' } },
+        { numero: 9170, tyyppi: 'C', nimi: { fi: 'Korkotuotot myyntisaamisista' } },
+      ],
+      tilikaudet: [{ alkaa: '2026-01-01', loppuu: '2026-12-31' }],
+      asetukset: {
+        LaskuSaatavaTili: '1701',
+        LaskuMaksutili: '1910',
+        OletusMyyntitili: '3000',
+        LaskuMaksumuistutustili: '9170',
+        LaskuViivastyskorkotili: '9170',
+      },
+    });
+
+  /** 1000 € lasku, erääntynyt 30.4.; muistutus 30.5. annetulla maksulla ja korolla. */
+  const muistutettu = async (maksu: number, korko: boolean) => {
+    const s = muistutusSeed();
+    const l = await tallennaMyyntilasku(
+      s,
+      {
+        pvm: '2026-04-01',
+        erapvm: '2026-04-30',
+        rivit: [{ myyntiKpl: 1, aNetto: 1000, alvKoodi: 0, alvProsentti: 0 }],
+      },
+      env,
+    );
+    const [luonnos] = await luoMaksumuistutukset(
+      s,
+      {
+        tositteet: [l.id],
+        pvm: '2026-05-30',
+        korko,
+        viivkorko: 11.5,
+        maksu: Euro.fromCents(maksu),
+      },
+      env,
+    );
+    const m = await kirjaaLaskuluonnos(s, luonnos?.id as number, env);
+    return { s, l, m };
+  };
+
+  it('muistutusrivi: muistutus, summa = maksu + korko, avoin 0; laskulla muistutettu 1', async () => {
+    const { s, l, m } = await muistutettu(500, true);
+    const lista = await listaaTulot(s, {});
+    expect(lista).toHaveLength(2);
+    expect(lista.find((r) => r.tosite === l.id)).toMatchObject({
+      summa: 100000,
+      avoin: 101445,
+      muistutettu: 1,
+    });
+    const rivi = lista.find((r) => r.tosite === m.id);
+    expect(rivi).toMatchObject({
+      tyyppi: TositeTyyppi.MAKSUMUISTUTUS,
+      muistutus: true,
+      summa: 1445,
+      avoin: 0,
+      era: l.id,
+    });
+    expect(rivi?.muistutettu).toBeUndefined();
+    expect(lista.reduce((a, r) => a + r.avoin, 0)).toBe(101445);
+    expect((await listaaTulot(s, { avoin: true })).map((r) => r.tosite)).toEqual([l.id]);
+    expect((await listaaTulot(s, { eraantynyt: '2026-07-01' })).map((r) => r.tosite)).toEqual([
+      l.id,
+    ]);
+    // Muistutus rajauksen ulkopuolella: lasku on silti muistutettu.
+    expect(await listaaTulot(s, { loppupvm: '2026-04-30' })).toMatchObject([
+      { tosite: l.id, muistutettu: 1 },
+    ]);
+    // Menoissa muistutus ei näy.
+    expect(await listaaMenot(s, {})).toEqual([]);
+  });
+
+  it('nollamuistutus (ei vientejä) listataan tyypin perusteella summalla 0', async () => {
+    const { s, l, m } = await muistutettu(0, false);
+    expect(m.viennit).toEqual([]);
+    const lista = await listaaTulot(s, {});
+    expect(lista.find((r) => r.tosite === m.id)).toMatchObject({
+      muistutus: true,
+      summa: 0,
+      avoin: 0,
+    });
+    expect(lista.find((r) => r.tosite === l.id)).toMatchObject({ avoin: 100000, muistutettu: 1 });
+  });
+
+  it('muistutusluonnosta ei listata eikä laskettu muistutukseksi', async () => {
+    const s = muistutusSeed();
+    const l = await tallennaMyyntilasku(
+      s,
+      {
+        pvm: '2026-04-01',
+        erapvm: '2026-04-30',
+        rivit: [{ myyntiKpl: 1, aNetto: 1000, alvKoodi: 0, alvProsentti: 0 }],
+      },
+      env,
+    );
+    await luoMaksumuistutukset(s, { tositteet: [l.id], pvm: '2026-05-30', korko: false }, env);
+    const lista = await listaaTulot(s, {});
+    expect(lista.map((r) => r.tosite)).toEqual([l.id]);
+    expect(lista[0]?.muistutettu).toBeUndefined();
   });
 });

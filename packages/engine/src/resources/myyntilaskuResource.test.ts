@@ -3,8 +3,11 @@ import { tarkistaViite } from '@penni/validator';
 import { describe, expect, it } from 'vitest';
 import { createMemoryStorage } from '../../../storage-memory/src/memory.js';
 import { AlvKoodi } from '../alv/koodit.js';
-import { Maksutapa } from '../vouchers/enums.js';
+import { Maksutapa, TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
 import { tallennaHyvityslasku } from './hyvityslaskuResource.js';
+import { kirjaaLaskuluonnos } from './laskuluonnosResource.js';
+import { luoMaksumuistutukset } from './maksumuistutusResource.js';
+import { putTili } from './masterData.js';
 import {
   listaaMyyntilaskut,
   tallennaMyyntilasku,
@@ -570,5 +573,125 @@ describe('laskutusjakso', () => {
     expect(() => validoiJakso({ alkaa: '2026-06-01', loppuu: '2026-06-01' })).not.toThrow();
     expect(() => validoiJakso({ alkaa: '', loppuu: '2026-06-01' })).toThrow(ResourceError);
     expect(() => validoiJakso({ alkaa: '2026-06-01', loppuu: '' })).toThrow(ResourceError);
+  });
+});
+
+describe('listaaMyyntilaskut: maksumuistutukset ja erävienti', () => {
+  /** Erääntynyt 1000 € lasku ja sen kirjattu muistutus 5,00 € + korko 9,45 €. */
+  const laskuJaMuistutus = async () => {
+    const s = seed();
+    await putTili(s, 9170, { numero: 9170, tyyppi: 'C', nimi: { fi: 'Korkotuotot' } });
+    await s.patchAsetukset({ LaskuMaksumuistutustili: '9170', LaskuViivastyskorkotili: '9170' });
+    const l = await tallennaMyyntilasku(
+      s,
+      {
+        pvm: '2026-04-01',
+        erapvm: '2026-04-30',
+        rivit: [{ myyntiKpl: 1, aNetto: 1000, alvKoodi: 0, alvProsentti: 0 }],
+      },
+      env,
+    );
+    const [luonnos] = await luoMaksumuistutukset(
+      s,
+      { tositteet: [l.id], pvm: '2026-05-30', korko: true, viivkorko: 11.5 },
+      env,
+    );
+    return { s, l, luonnos: luonnos as NonNullable<typeof luonnos> };
+  };
+
+  it('muistutusrivi: muistutus, summa = maksu + korko, avoin 0; laskulla muistutettu 1', async () => {
+    const { s, l, luonnos } = await laskuJaMuistutus();
+    // Luonnos ei näy eikä laske muistutuksiin.
+    expect(await listaaMyyntilaskut(s, {})).toMatchObject([{ tosite: l.id, avoin: 100000 }]);
+    expect((await listaaMyyntilaskut(s, {}))[0]?.muistutettu).toBeUndefined();
+
+    const m = await kirjaaLaskuluonnos(s, luonnos.id, env);
+    const lista = await listaaMyyntilaskut(s, {});
+    expect(lista).toHaveLength(2);
+    expect(lista.find((r) => r.tosite === l.id)).toMatchObject({
+      summa: 100000,
+      avoin: 101445,
+      muistutettu: 1,
+    });
+    const rivi = lista.find((r) => r.tosite === m.id);
+    expect(rivi).toMatchObject({
+      tyyppi: TositeTyyppi.MAKSUMUISTUTUS,
+      muistutus: true,
+      summa: 1445,
+      avoin: 0,
+      era: l.id,
+      tili: 1701,
+      numero: '2',
+    });
+    expect(rivi?.muistutettu).toBeUndefined();
+    expect(lista.reduce((a, r) => a + r.avoin, 0)).toBe(101445);
+    // Avoimet ja erääntyneet: vain alkuperäinen lasku.
+    expect((await listaaMyyntilaskut(s, { avoin: true })).map((r) => r.tosite)).toEqual([l.id]);
+    expect(
+      (await listaaMyyntilaskut(s, { eraantynyt: '2026-07-01' })).map((r) => r.tosite),
+    ).toEqual([l.id]);
+  });
+
+  it('nollamuistutus listataan summalla 0', async () => {
+    const s = seed();
+    const l = await tallennaMyyntilasku(
+      s,
+      {
+        pvm: '2026-04-01',
+        erapvm: '2026-04-30',
+        rivit: [{ myyntiKpl: 1, aNetto: 1000, alvKoodi: 0, alvProsentti: 0 }],
+      },
+      env,
+    );
+    const [luonnos] = await luoMaksumuistutukset(
+      s,
+      { tositteet: [l.id], pvm: '2026-05-30', korko: false, maksu: Euro.fromCents(0) },
+      env,
+    );
+    const m = await kirjaaLaskuluonnos(s, luonnos?.id as number, env);
+    const lista = await listaaMyyntilaskut(s, {});
+    expect(lista.find((r) => r.tosite === m.id)).toMatchObject({
+      muistutus: true,
+      summa: 0,
+      avoin: 0,
+    });
+    expect(lista.find((r) => r.tosite === l.id)).toMatchObject({ avoin: 100000, muistutettu: 1 });
+  });
+
+  it('kaksi debet-vientiä (vähennysrivi): summa, erä ja tili tulevat erävientiä', async () => {
+    const s = seed();
+    const pohja = await s.saveTosite(
+      {
+        pvm: '2026-06-01',
+        tyyppi: TositeTyyppi.MYYNTILASKU,
+        tila: TositeTila.KIRJANPIDOSSA,
+        tunniste: 1,
+        sarja: '',
+        viennit: [
+          { tili: 1910, debet: 20000, kredit: 0, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1701,
+            debet: 80000,
+            kredit: 0,
+            pvm: '2026-06-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+            tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS,
+          },
+          { tili: 3000, debet: 0, kredit: 100000, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+        ],
+      },
+      env,
+    );
+    await s.saveTosite(
+      {
+        ...pohja,
+        viennit: pohja.viennit.map((v) => (v.tili === 1701 ? { ...v, era: pohja.id } : v)),
+      },
+      env,
+    );
+    expect(await listaaMyyntilaskut(s, {})).toMatchObject([
+      { tosite: pohja.id, summa: 80000, tili: 1701, era: pohja.id, avoin: 80000 },
+    ]);
   });
 });

@@ -2,6 +2,7 @@ import type { Cents } from '@penni/euro';
 import { laskuSummat } from '../laskutus/laskuSummat.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { IsoDate } from '../vouchers/types.js';
+import { type MaksumuistutusMuutokset, kirjaaMaksumuistutus } from './maksumuistutusResource.js';
 import { type MyyntilaskuSyote, kirjaaMyyntilaskuYdin } from './myyntilaskuResource.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
 
@@ -43,33 +44,35 @@ function luonnosSyotteeksi(t: StoredTosite): MyyntilaskuSyote {
   };
 }
 
-/** Maksumuistutuksen kirjaus. Tehtävä 9 korvaa tämän; siihen asti muistutusta ei voi kirjata. */
-async function kirjaaMuistutusluonnos(_t: StoredTosite): Promise<StoredTosite> {
-  throw new ResourceError(
-    'EIMUISTUTUSTIETOJA',
-    'Maksumuistutuksen kirjaus ei ole vielä käytössä tai muistutukselta puuttuvat tiedot',
-  );
-}
-
 /**
  * Kirjaa luonnoksen: yhdistää `muutokset` tallennetun luonnoksen kenttien päälle ja ajaa
  * kirjauksen luonnoksen omalla id:llä, jolloin eräavain pysyy luonnoksen id:nä. Kirjatun
  * tositteen pvm tulee yhdistetyistä tiedoista. Muu kuin luonnos (kirjattu, poistettu, puuttuva)
- * → EILUONNOS.
+ * → EILUONNOS. Maksumuistutus kirjataan `kirjaaMaksumuistutus`:lla, joka käyttää muutoksista
+ * vain pvm:n, eräpäivän, otsikon ja `muistutus`-kentän (maksu, korkoprosentti); muistutus ilman
+ * muistutustietoja (tuotu Kitsas-luonnos) → EIMUISTUTUSTIETOJA.
  */
 export async function kirjaaLaskuluonnos(
   storage: Storage,
   id: number,
   env: ResourceEnv,
-  muutokset: Partial<MyyntilaskuSyote> = {},
+  muutokset: Partial<MyyntilaskuSyote> & Pick<MaksumuistutusMuutokset, 'muistutus'> = {},
 ): Promise<StoredTosite> {
   const t = await storage.getTosite(id);
   if (!t || !onLaskuluonnos(t))
     throw new ResourceError('EILUONNOS', `Tosite ${id} ei ole laskuluonnos`);
 
-  if (t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS) return kirjaaMuistutusluonnos(t);
+  if (t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS) {
+    const { pvm, erapvm, otsikko, muistutus } = muutokset;
+    return kirjaaMaksumuistutus(storage, t, env, {
+      ...(pvm !== undefined ? { pvm } : {}),
+      ...(erapvm !== undefined ? { erapvm } : {}),
+      ...(otsikko !== undefined ? { otsikko } : {}),
+      ...(muistutus !== undefined ? { muistutus } : {}),
+    });
+  }
 
-  const { luonnos: _luonnos, id: _id, ...muutos } = muutokset;
+  const { luonnos: _luonnos, id: _id, muistutus: _muistutus, ...muutos } = muutokset;
   return kirjaaMyyntilaskuYdin(storage, { ...luonnosSyotteeksi(t), ...muutos }, env, id);
 }
 
