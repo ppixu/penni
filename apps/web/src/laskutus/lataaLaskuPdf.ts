@@ -72,7 +72,7 @@ export function lataaSelaimeen(
  * Lataa laskun PDF:n: muodostaa tavut, lataa ne selaimeen ja yrittää tallentaa ne tositteen
  * liitteeksi vain-lisäävästi. Tallennusongelmat eivät koskaan estä latausta. Palauttaa käyttäjälle
  * näytettävän huomautuksen (liitteen tallennus jäi tekemättä tai PDF:n muodostus epäonnistui)
- * tai null. Mallin on oltava ladattavissa (`pdfEste === null`, numero annettu), muuten ei tee mitään.
+ * tai null. Jos malli on estetty (`pdfEste`), ei lataa mitään ja palauttaa syyn huomautuksena.
  */
 export async function lataaLaskuPdf(p: {
   malli: LaskuMalli;
@@ -81,7 +81,8 @@ export async function lataaLaskuPdf(p: {
   nyt: string;
 }): Promise<string | null> {
   const { malli } = p;
-  if (malli.pdfEste !== null || malli.numero === null) return null;
+  if (malli.pdfEste !== null) return `PDF:ää ei ladattu: ${malli.pdfEste}`;
+  if (malli.numero === null) return null;
   try {
     // Dynaaminen import: Inter-fontit (~1,1 MB base64) eivät kuulu pääpaketin latausjonoon.
     const { rakennaLaskuPdf } = await import('@penni/lasku-pdf');

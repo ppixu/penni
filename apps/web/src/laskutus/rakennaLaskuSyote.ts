@@ -6,6 +6,20 @@ import {
 } from '@penni/engine';
 import type { LaskuTila, LomakeRivi } from './laskuReducer.js';
 
+/** À-hinta euroina: luonnoksen koskematon hinta säilyy alkuperäisenä (ei pyöristystä senttiin),
+ *  muokattu hinta muunnetaan senteistä. */
+function rivinANetto(rivi: LomakeRivi): number {
+  const alku = rivi.alkuperainenANetto;
+  return alku !== undefined && rivi.aNettoSnt === Math.round(alku * 100)
+    ? alku
+    : rivi.aNettoSnt / 100;
+}
+
+/** Rivillä ei ole hintaa (tyhjä häntärivi): ei senttejä eikä alle sentin tarkkaa alkuperäishintaa. */
+export function riviHinnaton(rivi: LomakeRivi): boolean {
+  return rivi.aNettoSnt === 0 && (rivi.alkuperainenANetto ?? 0) === 0;
+}
+
 /**
  * Lomakerivi → moottorin TositeRivi. TÄMÄ on ainoa sentit→eurot-muunnos koko
  * laskutus-UI:ssa: TositeRivi.aNetto on euroja (moottorin oma sopimus, peritty
@@ -18,7 +32,7 @@ export function riviTositeRiviksi(rivi: LomakeRivi): TositeRivi {
   return {
     ...rivi.lisat,
     myyntiKpl: rivi.myyntiKpl,
-    aNetto: rivi.aNettoSnt / 100,
+    aNetto: rivinANetto(rivi),
     alvKoodi: rivi.alvKoodi,
     alvProsentti: rivi.alvProsentti,
     ...(rivi.selite.trim() !== '' ? { selite: rivi.selite.trim() } : {}),
@@ -60,7 +74,7 @@ export function rakennaLaskuSyote(
 ): MyyntilaskuSyote {
   const virhe = laskuLomakeVirhe(tila);
   if (virhe !== null) throw new Error(virhe);
-  const rivit = tila.rivit.filter((r) => r.aNettoSnt !== 0).map(riviTositeRiviksi);
+  const rivit = tila.rivit.filter((r) => !riviHinnaton(r)).map(riviTositeRiviksi);
   return {
     ...sailytettavat,
     pvm: tila.laskupvm,

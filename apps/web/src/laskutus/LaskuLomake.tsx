@@ -22,6 +22,7 @@ import {
   laskuLomakeVirhe,
   luonnoksenSailytettavat,
   rakennaLaskuSyote,
+  riviHinnaton,
   riviTositeRiviksi,
 } from './rakennaLaskuSyote.js';
 
@@ -100,7 +101,7 @@ export function LaskuLomake({
   // estää tallennuksen LASKU-maksutavalla — muuten rakennaLaskuSyote jättäisi eräpäivän
   // pois tallennettavasta laskusta huomaamatta (ks. rakennaLaskuSyote.ts). Käteis-/
   // korttikuitilla eräpäivää ei tarvita, joten se saa jäädä tyhjäksi.
-  const eiSummaa = !tila.rivit.some((r) => r.aNettoSnt !== 0);
+  const eiSummaa = tila.rivit.every(riviHinnaton);
   const asiakasPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.kumppani === undefined;
   const erapvmPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.erapvm === '';
   const lomakeVirhe = laskuLomakeVirhe(tila);

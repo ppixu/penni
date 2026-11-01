@@ -26,6 +26,9 @@ export interface LomakeRivi {
   /** Luonnoksen rivin kentät, joita lomake ei muokkaa (tili, tuote, alennus, yksikkö…):
    *  säilyvät muokkauksen ja tallennuksen läpi. Lomakkeen omat kentät ohittavat nämä. */
   lisat?: Partial<TositeRivi>;
+  /** Luonnoksen alkuperäinen à-hinta (euroa, voi olla alle sentin tarkka). Käytössä, kunnes
+   *  käyttäjä muuttaa hintaa; näin koskematon rivi ei pyöristy senttiin (spec §7). */
+  alkuperainenANetto?: number;
 }
 
 /** Koko laskulomakkeen tila. alvVelvollinen kiinnitetään alustuksessa, jotta
@@ -112,6 +115,7 @@ function luonnosriviLomakeriviksi(r: TositeRivi): LomakeRivi {
     selite: selite ?? '',
     myyntiKpl,
     aNettoSnt: hintaSenteiksi(aNetto),
+    alkuperainenANetto: aNetto,
     alvKoodi,
     alvProsentti,
     ...(kohdennus ? { kohdennus } : {}),
@@ -122,8 +126,8 @@ function luonnosriviLomakeriviksi(r: TositeRivi): LomakeRivi {
 
 /**
  * Olemassa oleva luonnos → lomaketila (muokkaustila). Laskupäivä on luonnoksen laskupvm (muuten
- * pvm); puuttuva eräpäivä jää tyhjäksi. Rivi, jonka hinta ei ole kokonaisia senttejä, pyöristyy
- * senttiin lomakkeella.
+ * pvm); puuttuva eräpäivä jää tyhjäksi. Rivin alle sentin tarkka à-hinta säilyy
+ * (`alkuperainenANetto`), kunnes käyttäjä muuttaa hintaa.
  */
 export function alustaLaskuTilaLuonnoksesta(
   luonnos: StoredTosite,

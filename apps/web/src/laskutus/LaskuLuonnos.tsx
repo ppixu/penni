@@ -12,7 +12,15 @@ import { lataaLaskuPdf } from './lataaLaskuPdf';
  * luonnos): sama lomake kuin uudella laskulla. Kirjauksen jälkeen lasku ladataan PDF:nä ja näkymä
  * vaihtuu tavalliseen laskudokumenttiin; poiston jälkeen palataan Lähtevät-listaan.
  */
-export function LaskuLuonnos({ tosite }: { tosite: StoredTosite }) {
+export function LaskuLuonnos({
+  tosite,
+  onHuomio,
+}: {
+  tosite: StoredTosite;
+  /** PDF:n latauksen huomautus (tallennus tai muodostus epäonnistui, tai PDF estetty) siirtyy
+   *  kirjatun laskun näkymään, joka korvaa tämän lomakkeen. */
+  onHuomio: (huomio: string | null) => void;
+}) {
   const { data: init } = useInit();
   const { data: kumppanit } = useKumppanit();
   const client = useKpClient();
@@ -24,19 +32,20 @@ export function LaskuLuonnos({ tosite }: { tosite: StoredTosite }) {
 
   async function kirjattu(kirjattuTosite: StoredTosite) {
     if (!init) return;
-    // PDF tehdään kirjatusta tositteesta (numero ja viite ovat nyt olemassa). Tallennus- tai
-    // muodostusongelma ei kumoa kirjausta; kirjattu lasku näyttää Lataa PDF -napin uudelleen.
+    // PDF tehdään kirjatusta tositteesta (numero ja viite ovat nyt olemassa). Ongelma ei kumoa
+    // kirjausta; huomautus näytetään kirjatun laskun näkymässä.
     const malli = laskuMalli({
       tosite: kirjattuTosite,
       kumppanit: kumppanit ?? (await client.haeKumppanit()),
       asetukset: init.asetukset,
     });
-    await lataaLaskuPdf({
+    const huomio = await lataaLaskuPdf({
       malli,
       tositeId: kirjattuTosite.id,
       client: { haeLiitteet: (id) => client.haeLiitteet(id), lisaaLiite: lisaa },
       nyt: new Date().toISOString(),
     });
+    onHuomio(huomio);
     // Vasta nyt tosite-välimuisti vanhenee: reitti vaihtaa luonnoslomakkeen laskudokumenttiin.
     await qc.invalidateQueries({ queryKey: avaimet.tosite(kirjattuTosite.id) });
   }

@@ -1,7 +1,7 @@
-import { Maksutapa, nettoYhteensaCents } from '@penni/engine';
+import { Maksutapa, type StoredTosite, nettoYhteensaCents } from '@penni/engine';
 import { Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
-import { alustaLaskuTila, laskuReducer } from './laskuReducer.js';
+import { alustaLaskuTila, alustaLaskuTilaLuonnoksesta, laskuReducer } from './laskuReducer.js';
 import { laskuLomakeVirhe, rakennaLaskuSyote } from './rakennaLaskuSyote.js';
 
 const pohja = () => alustaLaskuTila({ laskupvm: '2026-06-01', alvVelvollinen: true });
@@ -178,5 +178,41 @@ describe('rakennaLaskuSyote', () => {
   it('säilyttää luonnoksen lomakkeella muokkaamattomat kentät', () => {
     const syote = rakennaLaskuSyote(pohja(), { info: 'Lisätieto', ryhma: 'r-1', toisto: 4 });
     expect(syote).toMatchObject({ info: 'Lisätieto', ryhma: 'r-1', toisto: 4 });
+  });
+
+  describe('luonnoksen alle sentin tarkka à-hinta', () => {
+    const luonnos = (aNetto: number) =>
+      ({
+        id: 3,
+        tila: 80,
+        tyyppi: 210,
+        pvm: '2026-06-03',
+        sarja: '',
+        rivit: [{ myyntiKpl: 1000, aNetto, alvKoodi: 0, alvProsentti: 0 }],
+      }) as unknown as StoredTosite;
+
+    it('koskematon rivi säilyy täsmälleen (1000 × 0,1234 € = 123,40 €)', () => {
+      const tila = alustaLaskuTilaLuonnoksesta(luonnos(0.1234), false);
+      const syote = rakennaLaskuSyote(tila);
+      expect(syote.rivit[0]?.aNetto).toBe(0.1234);
+      expect(syote.rivit.map(nettoYhteensaCents)).toEqual([12_340]);
+    });
+
+    it('muokattu hinta korvaa alkuperäisen', () => {
+      let tila = alustaLaskuTilaLuonnoksesta(luonnos(0.1234), false);
+      const avain = tila.rivit[0]?.avain ?? 0;
+      tila = laskuReducer(tila, {
+        type: 'setRivi',
+        avain,
+        muutos: { aNettoSnt: Euro.fromCents(20) },
+      });
+      expect(rakennaLaskuSyote(tila).rivit[0]?.aNetto).toBe(0.2);
+    });
+
+    it('alle sentin hintainen rivi ei pudotu tyhjänä rivinä', () => {
+      const tila = alustaLaskuTilaLuonnoksesta(luonnos(0.004), false);
+      expect(rakennaLaskuSyote(tila).rivit).toHaveLength(1);
+      expect(rakennaLaskuSyote(tila).rivit[0]?.aNetto).toBe(0.004);
+    });
   });
 });

@@ -712,6 +712,47 @@ describe('Laskuluonnos', () => {
     expect(screen.queryByLabelText('laskulomake')).not.toBeInTheDocument();
   }, 30_000);
 
+  it('estetty PDF (ei IBANia): lasku kirjataan ja syy näytetään kirjatun laskun näkymässä', async () => {
+    const klikki = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const { LaskuIban: _pois, ...ilmanIbania } = SEED.asetukset;
+    const { user, client } = await renderRoute('/myyntilaskut/1', {
+      seed: { ...SEED, asetukset: ilmanIbania },
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Kirjaa ja lataa PDF' }));
+
+    expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/PDF:ää ei ladattu: Lisää IBAN asetuksissa/),
+    ).toBeInTheDocument();
+    expect((await client.haeTosite(1))?.tila).toBe(100);
+    expect(klikki).not.toHaveBeenCalled();
+  });
+
+  it('PDF:n liitetallennuksen epäonnistuminen näkyy kirjatun laskun näkymässä', async () => {
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:lasku'), revokeObjectURL: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const { user } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: async (c) => {
+        await luonnos(c);
+        vi.spyOn(c, 'lisaaLiite').mockRejectedValue(
+          new ResourceError('PVMLUKITTU', 'Tilikausi on lukittu'),
+        );
+      },
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Kirjaa ja lataa PDF' }));
+
+    expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
+    expect(
+      await screen.findByText('PDF:ää ei voitu tallentaa liitteeksi (kausi lukittu)'),
+    ).toBeInTheDocument();
+  }, 30_000);
+
   it('kirjausvirhe näytetään eikä luonnos katoa', async () => {
     const { user, client } = await renderRoute('/myyntilaskut/1', {
       seed: SEED,

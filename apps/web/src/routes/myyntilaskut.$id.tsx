@@ -20,12 +20,14 @@ export const Route = createFileRoute('/myyntilaskut/$id')({ component: LaskuReit
 function LaskuReitti() {
   const { id } = Route.useParams();
   const { data: tosite } = useTosite(Number(id));
+  // Luonnoksen kirjauksen PDF-huomautus elää tässä, jotta se säilyy vaihdossa laskunäkymään.
+  const [alkuHuomio, setAlkuHuomio] = useState<string | null>(null);
   if (tosite && tosite.tyyppi === TositeTyyppi.MYYNTILASKU && onLaskuluonnos(tosite))
-    return <LaskuLuonnos key={id} tosite={tosite} />;
-  return <LaskuNaytto key={id} />;
+    return <LaskuLuonnos key={id} tosite={tosite} onHuomio={setAlkuHuomio} />;
+  return <LaskuNaytto key={id} alkuHuomio={alkuHuomio} />;
 }
 
-function LaskuNaytto() {
+function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { data: tosite, isLoading } = useTosite(Number(id));
@@ -42,7 +44,7 @@ function LaskuNaytto() {
   const client = useKpClient();
   const { lisaa } = useLisaaLiite();
   const [pdfTyossa, setPdfTyossa] = useState(false);
-  const [pdfHuomio, setPdfHuomio] = useState<string | null>(null);
+  const [pdfHuomio, setPdfHuomio] = useState<string | null>(alkuHuomio);
   const naapurit = useLaskuNaapurit(myyntirivit, Number(id));
 
   // Vartija (spec §4.1): dokumenttireitti ei yritä renderöidä muita tositetyyppejä,
