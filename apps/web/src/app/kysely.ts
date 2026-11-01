@@ -21,6 +21,7 @@ import type {
   LiiteMeta,
   LiitetiedotSyote,
   ListattuTosite,
+  MaksumuistutusSyote,
   MyyntilaskuRivi,
   MyyntilaskuSuodatin,
   MyyntilaskuSyote,
@@ -506,6 +507,14 @@ function laskuVirheViesti(e: unknown): string {
         return 'Laskuluonnosta ei löydy (se on jo kirjattu tai poistettu)';
       case 'EIJAKSO':
         return 'Laskutusjakson päivät ovat virheelliset';
+      case 'EIMUISTUTETTAVA':
+        return 'Laskusta ei voi tehdä muistutusta (ei erääntynyt, ei avointa saldoa tai edellinen muistutus on vielä voimassa)';
+      case 'MAKSUPERUSTEINEN':
+        return 'Maksumuistutusta ei voi tehdä, kun maksuperusteinen alv on käytössä';
+      case 'EIMUISTUTUSARVO':
+        return 'Muistutusmaksun tai viivästyskoron arvo on virheellinen';
+      case 'EIERAPVM':
+        return 'Eräpäivä ei voi olla ennen muistutuksen päivää';
       default:
         return `Tallennus epäonnistui (${e.code})`;
     }
@@ -609,6 +618,34 @@ export function useKirjaaLaskuluonnos() {
   }
 
   return { kirjaa, virheviesti, kirjaamassa: mutaatio.isPending };
+}
+
+/** Luo maksumuistutusluonnokset erääntyneistä laskuista. Palauttaa luodut luonnokset tai
+ *  undefined virheessä (virheviesti kertoo syyn). Luonnokset ilmestyvät Lähtevät-listaan. */
+export function useLuoMaksumuistutukset() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<StoredTosite[], unknown, MaksumuistutusSyote>({
+    mutationFn: (syote) => client.luoMaksumuistutukset(syote),
+    onSuccess: () => {
+      for (const queryKey of [avaimet.laskuluonnokset, ['tulot'], ['tositteet'], ['myyntilaskut']])
+        void qc.invalidateQueries({ queryKey });
+    },
+  });
+
+  async function luo(syote: MaksumuistutusSyote): Promise<StoredTosite[] | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(syote);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { luo, virheviesti, luomassa: mutaatio.isPending };
 }
 
 /** Poista laskuluonnos (tavallinen tositteen pehmeä poisto; luonnoksella ei ole numeroa). */

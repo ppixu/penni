@@ -90,7 +90,7 @@ function avain(
     case 'kumppani':
       return teksti(r.kumppaniNimi);
     case 'laji':
-      return onkoLasku(r) ? 'Lasku' : 'Suora';
+      return r.muistutus ? 'Muistutus' : onkoLasku(r) ? 'Lasku' : 'Suora';
     case 'netto':
       return r.netto;
     case 'alv':

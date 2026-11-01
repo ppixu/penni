@@ -4,6 +4,7 @@ import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { LaskuDokumentti } from '@/laskutus/LaskuDokumentti';
 import { LaskuLuonnos } from '@/laskutus/LaskuLuonnos';
+import { MuistutusNaytto } from '@/laskutus/MuistutusNaytto';
 import { lataaLaskuPdf } from '@/laskutus/lataaLaskuPdf';
 import { HyvitaVahvistus } from '@/ostolaskut/HyvitaVahvistus';
 import { EdellinenSeuraava, useLaskuNaapurit } from '@/tositteet/EdellinenSeuraava.js';
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/myyntilaskut/$id')({ component: LaskuReit
 
 /** Avain nollaa laskukohtaisen tilan (avoin hyvitysdialogi), kun Edellinen/Seuraava vaihtaa id:n.
  *  Myyntilaskuluonnos (tila 50–99) avautuu muokattavana lomakkeena; kirjattu lasku dokumenttina.
- *  Muut luonnostyypit (maksumuistutus) kulkevat dokumenttireitin vartijan kautta tositenäkymään. */
+ *  Maksumuistutus (luonnos tai kirjattu) on oma näkymänsä; muut tyypit ohjataan tositenäkymään. */
 function LaskuReitti() {
   const { id } = Route.useParams();
   const { data: tosite } = useTosite(Number(id));
@@ -24,6 +25,8 @@ function LaskuReitti() {
   const [alkuHuomio, setAlkuHuomio] = useState<string | null>(null);
   if (tosite && tosite.tyyppi === TositeTyyppi.MYYNTILASKU && onLaskuluonnos(tosite))
     return <LaskuLuonnos key={id} tosite={tosite} onHuomio={setAlkuHuomio} />;
+  if (tosite && tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS)
+    return <MuistutusNaytto key={id} tosite={tosite} />;
   return <LaskuNaytto key={id} alkuHuomio={alkuHuomio} />;
 }
 
@@ -47,8 +50,8 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
   const [pdfHuomio, setPdfHuomio] = useState<string | null>(alkuHuomio);
   const naapurit = useLaskuNaapurit(myyntirivit, Number(id));
 
-  // Vartija (spec §4.1): dokumenttireitti ei yritä renderöidä muita tositetyyppejä,
-  // vaan ohjaa tavalliseen tositenäkymään.
+  // Vartija (spec §4.1): dokumenttireitti ei yritä renderöidä muita tositetyyppejä
+  // (maksumuistutus on käsitelty jo LaskuReitissä), vaan ohjaa tavalliseen tositenäkymään.
   const vieras =
     tosite != null &&
     tosite.tyyppi !== TositeTyyppi.MYYNTILASKU &&

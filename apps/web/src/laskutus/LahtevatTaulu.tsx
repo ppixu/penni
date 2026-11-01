@@ -14,8 +14,8 @@ function alkupera(r: LaskuluonnosRivi): string | null {
 
 /**
  * Tulot-näkymän Lähtevät-välilehti: laskuluonnokset (myyntilasku ja maksumuistutus, tila 50–99).
- * Myyntilaskuluonnos avautuu muokattavana lomakkeena (`/myyntilaskut/$id`); muistutusluonnos
- * ohjautuu sieltä tositenäkymään.
+ * Myyntilaskuluonnos avautuu muokattavana lomakkeena ja muistutusluonnos erittelynäkymänä
+ * (kumpikin `/myyntilaskut/$id`).
  */
 export function LahtevatTaulu({ rivit }: { rivit: LaskuluonnosRivi[] }) {
   const navigate = useNavigate();

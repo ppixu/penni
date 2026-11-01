@@ -1,6 +1,7 @@
 import { useInit } from '@/app/kysely';
 import { LajiteltavaOtsikko } from '@/components/LajiteltavaOtsikko';
 import { Button } from '@/components/ui/button';
+import { MuistutusDialog } from '@/laskutus/MuistutusDialog';
 import { SuoritusDialog } from '@/laskutus/SuoritusDialog';
 import { laskuTila } from '@/laskutus/laskuTila';
 import { LISTALTA } from '@/tositteet/listanJarjestys';
@@ -13,7 +14,7 @@ import {
   tiliAsetuksesta,
 } from '@penni/engine';
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import {
@@ -30,7 +31,7 @@ export type RahavirtaLaji = 'tulot' | 'menot';
  * Onko rivi lasku (Laji-sarake 'Lasku' vs 'Suora' sekä rivin klikkauksen kohde). Vakaat
  * viitteet: lajittelu lasketaan uudelleen vain, kun predikaatti vaihtuu.
  *
- * Tulot: MYYNTILASKU (210) ja HYVITYSLASKU (214), jolla on alkuperäinen lasku — hyvityslaskun
+ * Tulot: MYYNTILASKU (210), MAKSUMUISTUTUS (216) ja HYVITYSLASKU (214), jolla on alkuperäinen lasku — hyvityslaskun
  * dokumenttinäkymä ('/myyntilaskut/$id') tulostaa alkuperäisen rivit, joten alkuperäisettömän
  * (esim. Kitsas-tuonnin) hyvityslaskun dokumentti olisi tyhjä; se avautuu tositteena.
  *
@@ -42,6 +43,7 @@ export type RahavirtaLaji = 'tulot' | 'menot';
 export const ONKO_LASKU: Record<RahavirtaLaji, (r: RahavirtaRivi) => boolean> = {
   tulot: (r) =>
     r.tyyppi === TositeTyyppi.MYYNTILASKU ||
+    r.tyyppi === TositeTyyppi.MAKSUMUISTUTUS ||
     (r.tyyppi === TositeTyyppi.HYVITYSLASKU && r.alkuperainenTosite !== undefined),
   menot: (r) => r.era !== undefined && r.eraKredit === true,
 };
@@ -51,6 +53,19 @@ const LASKUPOLKU: Record<RahavirtaLaji, '/myyntilaskut/$id' | '/ostolaskut/$id'>
   tulot: '/myyntilaskut/$id',
   menot: '/ostolaskut/$id',
 };
+
+/**
+ * Voiko rivin laskusta tehdä muistutuksen (spec §4.1, UI-ennakkotarkistus): kirjattu myyntilasku,
+ * jolla on avointa saldoa ja jonka eräpäivä on ohi. Muistutusrivillä (216) avoin on aina 0 ja
+ * "Muistuta" kuuluu alkuperäisen laskun riville; moottori tekee lopullisen tarkistuksen.
+ */
+export const voiMuistuttaa = (r: RahavirtaRivi, tanaan: string): boolean =>
+  r.tyyppi === TositeTyyppi.MYYNTILASKU &&
+  r.tila >= TositeTila.KIRJANPIDOSSA &&
+  !r.muistutus &&
+  r.avoin > 0 &&
+  r.erapvm !== undefined &&
+  r.erapvm < tanaan;
 
 const onLuonnos = (r: RahavirtaRivi): boolean =>
   r.tila >= TositeTila.LUONNOS && r.tila < TositeTila.KIRJANPIDOSSA;
@@ -79,6 +94,10 @@ export function RahavirtaTaulu({
   const navigate = useNavigate();
   const { data: init } = useInit();
   const [maksuRivi, setMaksuRivi] = useState<RahavirtaRivi | null>(null);
+  // Muistutettavat laskut (valintaruudut tai rivin Muistuta-nappi) ja luonnosten luonnin ilmoitus.
+  const [valitut, setValitut] = useState<ReadonlySet<number>>(new Set());
+  const [muistutettavat, setMuistutettavat] = useState<RahavirtaRivi[] | null>(null);
+  const [ilmoitus, setIlmoitus] = useState<number | null>(null);
   const onkoLasku = ONKO_LASKU[laji];
 
   // "Tänään" luetaan renderöintihetkellä (UI-tilaväritys, ei rahaa).
@@ -87,7 +106,40 @@ export function RahavirtaTaulu({
   const kartta = useMemo(() => (init ? lataaKartta(init.tilit) : []), [init]);
   const oletusRahatili = init ? tiliAsetuksesta(init.asetukset, 'LaskuMaksutili') : undefined;
 
+  // Valinta rajataan rivien nykyiseen joukkoon: suodatin tai päivitys voi poistaa valitun rivin.
+  const valitutRivit = rivit.filter((r) => valitut.has(r.tosite) && voiMuistuttaa(r, tanaan));
+  function vaihdaValinta(tosite: number, paalla: boolean) {
+    setValitut((vanha) => {
+      const uusi = new Set(vanha);
+      if (paalla) uusi.add(tosite);
+      else uusi.delete(tosite);
+      return uusi;
+    });
+  }
+
   const sarakkeet: ColumnDef<RahavirtaRivi>[] = [
+    ...(laji === 'tulot'
+      ? [
+          {
+            id: 'valinta',
+            header: () => <span className="sr-only">Valitse muistutettavaksi</span>,
+            cell: ({ row }) => {
+              const r = row.original;
+              if (!voiMuistuttaa(r, tanaan)) return null;
+              return (
+                <input
+                  type="checkbox"
+                  aria-label={`Valitse lasku ${r.numero ?? r.tosite} muistutettavaksi`}
+                  checked={valitut.has(r.tosite)}
+                  onChange={(e) => vaihdaValinta(r.tosite, e.target.checked)}
+                  onClick={(e) => e.stopPropagation()} // ei rivinavigointia
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              );
+            },
+          } satisfies ColumnDef<RahavirtaRivi>,
+        ]
+      : []),
     { id: 'pvm', header: 'Pvm', accessorFn: (r) => muotoilePvm(r.pvm) },
     {
       id: 'otsikko',
@@ -106,7 +158,12 @@ export function RahavirtaTaulu({
       header: 'Laji',
       cell: ({ row }) => (
         <span className="inline-flex items-center gap-1.5">
-          {onkoLasku(row.original) ? 'Lasku' : 'Suora'}
+          {row.original.muistutus ? 'Muistutus' : onkoLasku(row.original) ? 'Lasku' : 'Suora'}
+          {row.original.muistutettu !== undefined && (
+            <span className="rounded-[4px] bg-[var(--track)] px-1.5 py-[1px] text-[10.5px] font-semibold text-[var(--text-muted)]">
+              Muistutettu ×{row.original.muistutettu}
+            </span>
+          )}
           {onLuonnos(row.original) && (
             <span className="rounded-[4px] bg-[var(--track)] px-1.5 py-[1px] text-[10.5px] font-semibold text-[var(--text-muted)]">
               Luonnos
@@ -145,6 +202,8 @@ export function RahavirtaTaulu({
       meta: { oikealle: true },
       cell: ({ row }) => {
         const r = row.original;
+        // Muistutusrivillä ei ole omaa tilaa: yhteinen erä kuuluu alkuperäisen laskun riville.
+        if (r.muistutus) return <span className="text-[var(--text-subtle)]">—</span>;
         const tila = laskuTila(r, tanaan);
         const luokka =
           tila === 'maksettu'
@@ -185,20 +244,37 @@ export function RahavirtaTaulu({
     {
       id: 'maksu',
       header: '',
-      cell: ({ row }) =>
-        row.original.avoin !== 0 ? (
-          <Button
-            variant="sec"
-            size="compact"
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation(); // ei rivinavigointia
-              setMaksuRivi(row.original);
-            }}
-          >
-            Kirjaa maksu
-          </Button>
-        ) : null,
+      cell: ({ row }) => (
+        <span className="inline-flex items-center gap-1.5">
+          {voiMuistuttaa(row.original, tanaan) && (
+            <Button
+              variant="sec"
+              size="compact"
+              type="button"
+              aria-label={`Muistuta laskusta ${row.original.numero ?? row.original.tosite}`}
+              onClick={(e) => {
+                e.stopPropagation(); // ei rivinavigointia
+                setMuistutettavat([row.original]);
+              }}
+            >
+              Muistuta
+            </Button>
+          )}
+          {row.original.avoin !== 0 && (
+            <Button
+              variant="sec"
+              size="compact"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // ei rivinavigointia
+                setMaksuRivi(row.original);
+              }}
+            >
+              Kirjaa maksu
+            </Button>
+          )}
+        </span>
+      ),
     },
   ];
 
@@ -210,6 +286,30 @@ export function RahavirtaTaulu({
 
   return (
     <>
+      {ilmoitus !== null && (
+        <output className="mb-3 flex items-center gap-3 rounded-[6px] bg-[var(--accent-soft)] px-3 py-2 text-[12.5px]">
+          <span>
+            {ilmoitus === 1 ? '1 muistutus odottaa' : `${ilmoitus} muistutusta odottaa`} Lähtevissä.
+          </span>
+          <Link
+            to="/tositteet"
+            search={{ laji: 'tulot', valilehti: 'lahtevat' }}
+            className="font-medium text-[var(--accent)] underline"
+          >
+            Avaa Lähtevät
+          </Link>
+        </output>
+      )}
+      {valitutRivit.length > 0 && (
+        <div className="mb-3 flex items-center gap-3">
+          <Button type="button" size="compact" onClick={() => setMuistutettavat(valitutRivit)}>
+            Muistuta ({valitutRivit.length})
+          </Button>
+          <span className="text-[12.5px] text-[var(--text-muted)]">
+            {valitutRivit.length} erääntynyttä laskua valittu
+          </span>
+        </div>
+      )}
       <table className="w-full border-collapse text-[12.5px]">
         <thead>
           {table.getHeaderGroups().map((hg) => (
@@ -280,6 +380,17 @@ export function RahavirtaTaulu({
         </tbody>
       </table>
 
+      {muistutettavat && (
+        <MuistutusDialog
+          laskut={muistutettavat}
+          onPeruuta={() => setMuistutettavat(null)}
+          onValmis={(luodut) => {
+            setMuistutettavat(null);
+            setValitut(new Set());
+            setIlmoitus(luodut.length);
+          }}
+        />
+      )}
       {maksuRivi && (
         <SuoritusDialog
           lasku={maksuRivi}
