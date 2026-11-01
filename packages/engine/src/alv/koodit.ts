@@ -17,6 +17,7 @@ export const AlvKoodi = {
   MAAHANTUONTI_PALVELUT: 29,
   MAKSUPERUSTEINEN_MYYNTI: 18,
   MAKSUPERUSTEINEN_OSTO: 28,
+  ENNAKKOLASKU_MYYNTI: 51,
   ALVKIRJAUS: 100,
   ALVVAHENNYS: 200,
   MAKSUPERUSTEINEN_KOHDENTAMATON: 400,
@@ -202,6 +203,8 @@ export function palautuskoodi(alvKoodi: number, rateKey: number): number | undef
     alvKoodi === alvKoodilla(AlvKoodi.MYYNNIT_BRUTTO, AlvKoodi.ALVKIRJAUS) ||
     alvKoodi === alvKoodilla(AlvKoodi.MAKSUPERUSTEINEN_MYYNTI, AlvKoodi.ALVKIRJAUS) ||
     alvKoodi === alvKoodilla(AlvKoodi.MYYNNIT_MARGINAALI, AlvKoodi.ALVKIRJAUS) ||
+    // Ennakkolaskun vero (151) kuuluu kotimaan myynnin veroon (alvlaskelma.cpp:471).
+    alvKoodi === alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.ALVKIRJAUS) ||
     // EU:n ulkopuolisen palveluoston suoritettava vero (129) summautuu kotimaan myyntiin
     // (alvlaskelma.cpp:472, kotimaanmyyntivero) -> 301/302/303.
     alvKoodi === alvKoodilla(AlvKoodi.MAAHANTUONTI_PALVELUT, AlvKoodi.ALVKIRJAUS)

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Maksutapa } from '../vouchers/enums.js';
 import {
   AlvKoodi,
   TILITYS,
@@ -156,5 +157,24 @@ describe('maksuperusteinen codes', () => {
     // recognized codes ARE in-range
     expect(118 >= 100 && 118 <= 199).toBe(true);
     expect(228 >= 200 && 228 <= 299).toBe(true);
+  });
+});
+
+describe('ennakkolasku (51/151/451)', () => {
+  it('palautuskoodi: ennakkolaskun alv (151) menee samoihin kenttiin kuin 111', () => {
+    for (const kanta of [25.5, 24, 14, 13.5, 10]) {
+      const avain = Math.round(kanta * 100);
+      expect(palautuskoodi(151, avain)).toBeDefined();
+      expect(palautuskoodi(151, avain)).toBe(palautuskoodi(111, avain));
+    }
+  });
+
+  it('Maksutapa.ENNAKKOLASKU on 2 ja AlvKoodi.ENNAKKOLASKU_MYYNTI on 51', () => {
+    expect(Maksutapa.ENNAKKOLASKU).toBe(2);
+    expect(AlvKoodi.ENNAKKOLASKU_MYYNTI).toBe(51);
+    expect(alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.ALVKIRJAUS)).toBe(151);
+    expect(alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON)).toBe(
+      451,
+    );
   });
 });

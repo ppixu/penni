@@ -47,6 +47,7 @@ export const VientiTyyppi = {
 export const Maksutapa = {
   LASKU: 0,
   KATEINEN: 1,
+  ENNAKKOLASKU: 2,
   KORTTIMAKSU: 5,
 } as const;
 

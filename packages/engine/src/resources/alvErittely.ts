@@ -163,10 +163,11 @@ export async function haeAlvErittely(
   };
 }
 
-/** Kitsasin nimet tyypeille, joita Penni ei tarjoa valittaviksi (verotyyppimodel.cpp:35-36, :54). */
+/** Kitsasin nimet tyypeille, joita Penni ei tarjoa valittaviksi (verotyyppimodel.cpp:35-37, :54). */
 const LISANIMET: ReadonlyMap<number, string> = new Map([
   [AlvKoodi.MAKSUPERUSTEINEN_MYYNTI, 'Verollinen myynti (maksuperusteinen alv)'],
   [AlvKoodi.MAKSUPERUSTEINEN_OSTO, 'Verollinen osto (maksuperusteinen alv)'],
+  [AlvKoodi.ENNAKKOLASKU_MYYNTI, 'Ennakkolasku (myynti)'],
   [AlvKoodi.VAHENNYSKELVOTON, 'Vähennyskelvottoman oston veron osuus'],
 ]);
 
