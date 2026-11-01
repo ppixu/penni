@@ -1,6 +1,7 @@
 import { renderRoute } from '@/test/renderRoute';
 import { Euro } from '@penni/euro';
 import { screen, waitFor, within } from '@testing-library/react';
+import { vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
 
 const SEED = {
@@ -30,7 +31,7 @@ describe('Uusi myyntilasku -lomake', () => {
     await screen.findByLabelText('laskulomake');
 
     // Tallenna on aluksi disabloitu (ei summallista riviä, ei asiakasta).
-    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeDisabled();
 
     // Pikaluo asiakas: tyhjällä kumppanilistalla ainoa vaihtoehto on "+ Uusi asiakas".
     const asiakas = screen.getByRole('combobox', { name: 'Asiakas' });
@@ -59,7 +60,7 @@ describe('Uusi myyntilasku -lomake', () => {
     expect(summat).toHaveTextContent('12,55 €');
 
     // Tallenna → moottori numeroi ja kirjaa → navigointi dokumenttiin.
-    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna ja kirjaa' }));
     expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
 
     // Saman clientin kautta: lista näyttää oikean summan ja avoimen; kumppani persistoitui.
@@ -78,10 +79,10 @@ describe('Uusi myyntilasku -lomake', () => {
     await user.type(screen.getByLabelText('À-hinta, rivi 1'), '10');
     await user.tab();
     // LASKU ilman asiakasta → estetty.
-    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeDisabled();
     // Käteismyynti ilman asiakasta on laillinen (kuitti, ei saatavaa).
     await user.click(screen.getByRole('radio', { name: 'Käteinen' }));
-    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeEnabled();
   });
 
   it('näyttää §8-virheviestin kun laskutustili puuttuu (EILASKUTILIA)', async () => {
@@ -92,7 +93,7 @@ describe('Uusi myyntilasku -lomake', () => {
     await user.tab();
     // Käteinen ilman LaskuKateistili-asetusta → moottori heittää EILASKUTILIA.
     await user.click(screen.getByRole('radio', { name: 'Käteinen' }));
-    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna ja kirjaa' }));
     expect(await screen.findByText('Laskutuksen tili puuttuu asetuksista')).toBeInTheDocument();
   });
 
@@ -112,12 +113,12 @@ describe('Uusi myyntilasku -lomake', () => {
     await waitFor(() =>
       expect(screen.getByRole('combobox', { name: 'Asiakas' })).toHaveValue('Asiakas Oy'),
     );
-    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeEnabled();
 
     // Käyttäjä tyhjentää eräpäivän: Tallenna estyy, ettei tosite tallennu tyhjällä
     // eräpäivällä (regressio: rakennaLaskuSyote.ts jätti sen aiemmin tarkistamatta).
     await user.clear(screen.getByLabelText('Eräpäivä'));
-    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeDisabled();
   });
 
   it('rivin lisäys ja poisto pitävät aina vähintään yhden rivin', async () => {
@@ -214,7 +215,7 @@ describe('Uusi myyntilasku — kohdennukset', () => {
     expect(router.state.location.pathname).toBe('/myyntilaskut/uusi');
 
     await user.click(screen.getByRole('radio', { name: 'Korttimaksu' }));
-    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna ja kirjaa' }));
     expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
 
     const tosite = await client.haeTosite(1);
@@ -233,7 +234,7 @@ describe('Uusi myyntilasku — tallentamattomat muutokset', () => {
     await user.type(screen.getByLabelText('À-hinta, rivi 1'), '10');
     await user.tab();
     await user.click(screen.getByRole('radio', { name: 'Korttimaksu' }));
-    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna ja kirjaa' }));
 
     expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -252,5 +253,82 @@ describe('Uusi myyntilasku — tallentamattomat muutokset', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(router.state.location.pathname).toBe('/myyntilaskut/uusi');
     expect(screen.getByLabelText('Otsikko')).toHaveValue('Konsultointi');
+  });
+});
+
+describe('Uusi myyntilasku — luonnos ja laskutusjakso', () => {
+  const SEED_KORTTI = { ...SEED, asetukset: { ...SEED.asetukset, LaskuKorttitili: '1900' } };
+
+  async function taytaKorttimyynti(user: Awaited<ReturnType<typeof renderRoute>>['user']) {
+    await screen.findByLabelText('laskulomake');
+    await user.type(screen.getByLabelText('À-hinta, rivi 1'), '10');
+    await user.tab();
+    await user.click(screen.getByRole('radio', { name: 'Korttimaksu' }));
+  }
+
+  it('"Tallenna luonnokseksi" tallentaa luonnoksen (luonnos: true) ja palaa Lähtevät-listaan', async () => {
+    const { user, client, router } = await renderRoute('/myyntilaskut/uusi', {
+      seed: SEED_KORTTI,
+    });
+    const tallenna = vi.spyOn(client, 'tallennaMyyntilasku');
+    await taytaKorttimyynti(user);
+
+    await user.click(screen.getByRole('button', { name: 'Tallenna luonnokseksi' }));
+
+    await waitFor(() => expect(tallenna).toHaveBeenCalledTimes(1));
+    expect(tallenna.mock.calls[0]?.[0]).toMatchObject({
+      luonnos: true,
+      laskupvm: expect.any(String),
+    });
+    const luonnokset = await client.listaaLaskuluonnokset();
+    expect(luonnokset).toHaveLength(1);
+    expect(luonnokset[0]?.summa).toBe(Euro.fromCents(1_255));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/tositteet'));
+    expect(router.state.location.search).toMatchObject({ laji: 'tulot', valilehti: 'lahtevat' });
+    // Luonnoksella ei ole numeroa eikä kirjattua laskua.
+    expect(await client.listaaMyyntilaskut({})).toHaveLength(0);
+  });
+
+  it('"Tallenna ja kirjaa" kirjaa edelleen ilman luonnos-lippua', async () => {
+    const { user, client } = await renderRoute('/myyntilaskut/uusi', { seed: SEED_KORTTI });
+    const tallenna = vi.spyOn(client, 'tallennaMyyntilasku');
+    await taytaKorttimyynti(user);
+
+    await user.click(screen.getByRole('button', { name: 'Tallenna ja kirjaa' }));
+
+    expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
+    expect(tallenna).toHaveBeenCalledTimes(1);
+    expect(tallenna.mock.calls[0]?.[0]).not.toHaveProperty('luonnos');
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(0);
+  });
+
+  it('laskutusjakso on oletuksena tyhjä eikä päädy syötteeseen', async () => {
+    const { user, client } = await renderRoute('/myyntilaskut/uusi', { seed: SEED_KORTTI });
+    const tallenna = vi.spyOn(client, 'tallennaMyyntilasku');
+    await taytaKorttimyynti(user);
+    expect(screen.getByLabelText('Laskutusjakso alkaa')).toHaveValue('');
+    expect(screen.getByLabelText('Laskutusjakso loppuu')).toHaveValue('');
+
+    await user.click(screen.getByRole('button', { name: 'Tallenna luonnokseksi' }));
+    await waitFor(() => expect(tallenna).toHaveBeenCalled());
+    expect(tallenna.mock.calls[0]?.[0]).not.toHaveProperty('jakso');
+  });
+
+  it('täytetty laskutusjakso tallentuu luonnokseen; vain toinen päivä estää tallennuksen', async () => {
+    const { user, client } = await renderRoute('/myyntilaskut/uusi', { seed: SEED_KORTTI });
+    await taytaKorttimyynti(user);
+
+    await user.type(screen.getByLabelText('Laskutusjakso alkaa'), '2026-05-01');
+    expect(screen.getByRole('alert')).toHaveTextContent('Laskutusjakso');
+    expect(screen.getByRole('button', { name: 'Tallenna luonnokseksi' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tallenna ja kirjaa' })).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Laskutusjakso loppuu'), '2026-05-31');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Tallenna luonnokseksi' }));
+
+    await waitFor(async () => expect(await client.listaaLaskuluonnokset()).toHaveLength(1));
+    const luonnos = await client.haeTosite(1);
+    expect(luonnos?.jakso).toEqual({ alkaa: '2026-05-01', loppuu: '2026-05-31' });
   });
 });

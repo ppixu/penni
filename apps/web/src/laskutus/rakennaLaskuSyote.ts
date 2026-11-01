@@ -1,4 +1,9 @@
-import { type MyyntilaskuSyote, type TositeRivi, normalisoiMerkkaukset } from '@penni/engine';
+import {
+  type MyyntilaskuSyote,
+  type StoredTosite,
+  type TositeRivi,
+  normalisoiMerkkaukset,
+} from '@penni/engine';
 import type { LaskuTila, LomakeRivi } from './laskuReducer.js';
 
 /**
@@ -11,6 +16,7 @@ import type { LaskuTila, LomakeRivi } from './laskuReducer.js';
 export function riviTositeRiviksi(rivi: LomakeRivi): TositeRivi {
   const merkkaukset = normalisoiMerkkaukset(rivi.merkkaukset);
   return {
+    ...rivi.lisat,
     myyntiKpl: rivi.myyntiKpl,
     aNetto: rivi.aNettoSnt / 100,
     alvKoodi: rivi.alvKoodi,
@@ -21,13 +27,42 @@ export function riviTositeRiviksi(rivi: LomakeRivi): TositeRivi {
   };
 }
 
+/** Luonnoksen kentät, joita lomake ei muokkaa; ne kulkevat mukana, kun luonnos tallennetaan
+ *  uudelleen (tallennus korvaa koko tositteen, joten pois jättäminen pudottaisi ne). */
+export function luonnoksenSailytettavat(t: StoredTosite): Partial<MyyntilaskuSyote> {
+  return {
+    ...(t.sarja !== '' ? { sarja: t.sarja } : {}),
+    ...(t.info !== undefined ? { info: t.info } : {}),
+    ...(t.viivkorko !== undefined ? { viivkorko: t.viivkorko } : {}),
+    ...(t.toisto !== undefined ? { toisto: t.toisto } : {}),
+    ...(t.toistoPvm !== undefined ? { toistoPvm: t.toistoPvm } : {}),
+    ...(t.ryhma !== undefined ? { ryhma: t.ryhma } : {}),
+  };
+}
+
+/** Lomakkeen tallennuksen estävä virhe laskutusjaksosta (molemmat päivät tai ei kumpaakaan,
+ *  loppu ei ennen alkua), tai null. Sama sääntö kuin moottorin validoiJakso. */
+export function laskuLomakeVirhe(tila: LaskuTila): string | null {
+  if (tila.jaksoAlkaa === '' && tila.jaksoLoppuu === '') return null;
+  if (tila.jaksoAlkaa === '' || tila.jaksoLoppuu === '')
+    return 'Laskutusjaksolta puuttuu alku- tai loppupäivä';
+  if (tila.jaksoLoppuu < tila.jaksoAlkaa) return 'Laskutusjakson loppu on ennen alkua';
+  return null;
+}
+
 /** Lomaketila → MyyntilaskuSyote. Nollahintaiset rivit (tyhjät häntärivit) pudotetaan;
  *  kumppani ja otsikko liitetään vain kun ne on annettu. Tyhjäksi tyhjennetty eräpäivä
  *  (tila.erapvm === '') EI päädy syötteeseen — tallennettu tosite ei saa koskaan saada
  *  erapvm: ''-arvoa, koska se näyttäytyy myöhemmin erääntyneenä eräpäivänä (ks. laskuTila.ts). */
-export function rakennaLaskuSyote(tila: LaskuTila): MyyntilaskuSyote {
+export function rakennaLaskuSyote(
+  tila: LaskuTila,
+  sailytettavat: Partial<MyyntilaskuSyote> = {},
+): MyyntilaskuSyote {
+  const virhe = laskuLomakeVirhe(tila);
+  if (virhe !== null) throw new Error(virhe);
   const rivit = tila.rivit.filter((r) => r.aNettoSnt !== 0).map(riviTositeRiviksi);
   return {
+    ...sailytettavat,
     pvm: tila.laskupvm,
     laskupvm: tila.laskupvm,
     maksutapa: tila.maksutapa,
@@ -35,5 +70,8 @@ export function rakennaLaskuSyote(tila: LaskuTila): MyyntilaskuSyote {
     ...(tila.erapvm !== '' ? { erapvm: tila.erapvm } : {}),
     ...(tila.kumppani !== undefined ? { kumppani: tila.kumppani } : {}),
     ...(tila.otsikko.trim() !== '' ? { otsikko: tila.otsikko.trim() } : {}),
+    ...(tila.jaksoAlkaa !== '' && tila.jaksoLoppuu !== ''
+      ? { jakso: { alkaa: tila.jaksoAlkaa, loppuu: tila.jaksoLoppuu } }
+      : {}),
   };
 }

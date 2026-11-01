@@ -688,3 +688,73 @@ describe('Tositeselaus — tiliotteen loppusaldo', () => {
     expect(summa.className).toContain('text-[var(--danger)]');
   });
 });
+
+describe('Tositeselaus — Tulot-näkymän Lähtevät-välilehti', () => {
+  const MYYNTISEED = {
+    ...SEED,
+    tilit: [
+      { numero: 1701, tyyppi: 'AS', nimi: { fi: 'Myyntisaamiset' } },
+      ...SEED.tilit,
+      { numero: 2939, tyyppi: 'BL', nimi: { fi: 'Alv-velka' } },
+    ],
+    asetukset: {
+      ...SEED.asetukset,
+      OletusMyyntitili: '3000',
+      LaskuSaatavaTili: '1701',
+      AlvVelkaTili: '2939',
+    },
+  };
+
+  async function luonnoksia(c: KpClient) {
+    const asiakas = await c.tallennaKumppani({ nimi: 'Asiakas Oy' });
+    await c.tallennaMyyntilasku({
+      pvm: '2026-05-10',
+      erapvm: '2026-05-24',
+      kumppani: asiakas.id,
+      luonnos: true,
+      rivit: [{ myyntiKpl: 1, aNetto: 100, alvKoodi: 0, alvProsentti: 0 }],
+    });
+  }
+
+  it('listaa luonnokset (asiakas, päivä, summa) ja rivin klikkaus avaa luonnoksen', async () => {
+    const { user, router } = await renderRoute('/tositteet?laji=tulot', {
+      seed: MYYNTISEED,
+      arrange: luonnoksia,
+    });
+    await user.click(await screen.findByRole('button', { name: 'Lähtevät' }));
+
+    const rivi = await screen.findByRole('row', { name: /Asiakas Oy/ });
+    expect(rivi).toHaveTextContent('10.5.2026');
+    expect(rivi).toHaveTextContent('100,00 €');
+    expect(router.state.location.search).toMatchObject({ laji: 'tulot', valilehti: 'lahtevat' });
+
+    await user.click(rivi);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/myyntilaskut/1'));
+  });
+
+  it('Lähtevät-välilehti avautuu suoraan osoitteesta ja Tulot palaa kirjattuihin', async () => {
+    const { user } = await renderRoute('/tositteet?laji=tulot&valilehti=lahtevat', {
+      seed: MYYNTISEED,
+      arrange: luonnoksia,
+    });
+    expect(await screen.findByRole('row', { name: /Asiakas Oy/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lähtevät' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Kirjatut' }));
+    await screen.findByText('Ei tuloja. Luo ensimmäinen lasku.');
+    expect(screen.queryByRole('row', { name: /Asiakas Oy/ })).not.toBeInTheDocument();
+  });
+
+  it('tyhjä Lähtevät-lista kertoo ettei luonnoksia ole', async () => {
+    await renderRoute('/tositteet?laji=tulot&valilehti=lahtevat', { seed: MYYNTISEED });
+    expect(await screen.findByText('Ei lähteviä laskuluonnoksia.')).toBeInTheDocument();
+  });
+
+  it('välilehti näkyy vain Tulot-rajauksella', async () => {
+    await renderRoute('/tositteet?laji=menot', { seed: MYYNTISEED });
+    await screen.findByRole('group', { name: 'Laji' });
+    expect(screen.queryByRole('button', { name: 'Lähtevät' })).not.toBeInTheDocument();
+  });
+});

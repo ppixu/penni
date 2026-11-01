@@ -3,19 +3,25 @@ import { useInit, useKumppanit, useLisaaLiite, useMyyntilaskut, useTosite } from
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { LaskuDokumentti } from '@/laskutus/LaskuDokumentti';
-import { lataaSelaimeen, tallennaLaskuPdf } from '@/laskutus/lataaLaskuPdf';
+import { LaskuLuonnos } from '@/laskutus/LaskuLuonnos';
+import { lataaLaskuPdf } from '@/laskutus/lataaLaskuPdf';
 import { HyvitaVahvistus } from '@/ostolaskut/HyvitaVahvistus';
 import { EdellinenSeuraava, useLaskuNaapurit } from '@/tositteet/EdellinenSeuraava.js';
-import { TositeTyyppi } from '@penni/engine';
+import { TositeTyyppi, onLaskuluonnos } from '@penni/engine';
 import { laskuMalli } from '@penni/lasku-pdf';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/myyntilaskut/$id')({ component: LaskuReitti });
 
-/** Avain nollaa laskukohtaisen tilan (avoin hyvitysdialogi), kun Edellinen/Seuraava vaihtaa id:n. */
+/** Avain nollaa laskukohtaisen tilan (avoin hyvitysdialogi), kun Edellinen/Seuraava vaihtaa id:n.
+ *  Myyntilaskuluonnos (tila 50–99) avautuu muokattavana lomakkeena; kirjattu lasku dokumenttina.
+ *  Muut luonnostyypit (maksumuistutus) kulkevat dokumenttireitin vartijan kautta tositenäkymään. */
 function LaskuReitti() {
   const { id } = Route.useParams();
+  const { data: tosite } = useTosite(Number(id));
+  if (tosite && tosite.tyyppi === TositeTyyppi.MYYNTILASKU && onLaskuluonnos(tosite))
+    return <LaskuLuonnos key={id} tosite={tosite} />;
   return <LaskuNaytto key={id} />;
 }
 
@@ -62,31 +68,18 @@ function LaskuNaytto() {
   /** Lataa PDF: muodosta tavut → lataa selaimeen → yritä tallentaa liitteeksi vain-lisäävästi.
    *  Tallennusongelmat eivät koskaan estä latausta; vain PDF:n muodostusvirhe näytetään virheenä. */
   async function lataaPdf() {
-    if (!tosite || !malli || malli.pdfEste !== null || malli.numero === null) return;
+    if (!tosite || !malli) return;
     setPdfTyossa(true);
     setPdfHuomio(null);
-    try {
-      // Dynaaminen import: Inter-fontit (~1,1 MB base64) eivät kuulu pääpaketin latausjonoon.
-      const { rakennaLaskuPdf } = await import('@penni/lasku-pdf');
-      const tavut = await rakennaLaskuPdf(malli);
-      lataaSelaimeen(tavut, malli.tiedostonimi);
-      const tulos = await tallennaLaskuPdf({
-        client: { haeLiitteet: (id) => client.haeLiitteet(id), lisaaLiite: lisaa },
+    setPdfHuomio(
+      await lataaLaskuPdf({
+        malli,
         tositeId: tosite.id,
-        numero: malli.numero,
-        tavut,
+        client: { haeLiitteet: (id) => client.haeLiitteet(id), lisaaLiite: lisaa },
         nyt: new Date().toISOString(),
-      });
-      if (tulos === 'kausi-lukittu')
-        setPdfHuomio('PDF:ää ei voitu tallentaa liitteeksi (kausi lukittu)');
-      else if (tulos === 'ei-tallennettu') setPdfHuomio('PDF:ää ei voitu tallentaa liitteeksi');
-    } catch (e) {
-      setPdfHuomio(
-        `PDF:n muodostus epäonnistui${e instanceof Error && e.message ? `: ${e.message}` : '.'}`,
-      );
-    } finally {
-      setPdfTyossa(false);
-    }
+      }),
+    );
+    setPdfTyossa(false);
   }
   useEffect(() => {
     if (vieras && tosite) {

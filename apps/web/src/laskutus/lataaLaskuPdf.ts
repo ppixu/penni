@@ -1,5 +1,6 @@
 import { laskeSha } from '@/liitteet/laskeSha';
 import type { KpClient } from '@penni/asiakas';
+import type { LaskuMalli } from '@penni/lasku-pdf';
 
 export type TallennusTulos = 'tallennettu' | 'oli-jo' | 'ei-tallennettu' | 'kausi-lukittu';
 
@@ -65,4 +66,38 @@ export function lataaSelaimeen(
   linkki.click();
   linkki.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/**
+ * Lataa laskun PDF:n: muodostaa tavut, lataa ne selaimeen ja yrittää tallentaa ne tositteen
+ * liitteeksi vain-lisäävästi. Tallennusongelmat eivät koskaan estä latausta. Palauttaa käyttäjälle
+ * näytettävän huomautuksen (liitteen tallennus jäi tekemättä tai PDF:n muodostus epäonnistui)
+ * tai null. Mallin on oltava ladattavissa (`pdfEste === null`, numero annettu), muuten ei tee mitään.
+ */
+export async function lataaLaskuPdf(p: {
+  malli: LaskuMalli;
+  tositeId: number;
+  client: Pick<KpClient, 'haeLiitteet' | 'lisaaLiite'>;
+  nyt: string;
+}): Promise<string | null> {
+  const { malli } = p;
+  if (malli.pdfEste !== null || malli.numero === null) return null;
+  try {
+    // Dynaaminen import: Inter-fontit (~1,1 MB base64) eivät kuulu pääpaketin latausjonoon.
+    const { rakennaLaskuPdf } = await import('@penni/lasku-pdf');
+    const tavut = await rakennaLaskuPdf(malli);
+    lataaSelaimeen(tavut, malli.tiedostonimi);
+    const tulos = await tallennaLaskuPdf({
+      client: p.client,
+      tositeId: p.tositeId,
+      numero: malli.numero,
+      tavut,
+      nyt: p.nyt,
+    });
+    if (tulos === 'kausi-lukittu') return 'PDF:ää ei voitu tallentaa liitteeksi (kausi lukittu)';
+    if (tulos === 'ei-tallennettu') return 'PDF:ää ei voitu tallentaa liitteeksi';
+    return null;
+  } catch (e) {
+    return `PDF:n muodostus epäonnistui${e instanceof Error && e.message ? `: ${e.message}` : '.'}`;
+  }
 }

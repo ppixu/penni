@@ -598,3 +598,162 @@ describe('Laskunäkymä — asiakkaiden lataus', () => {
     expect(within(doc).getByText('Asiakkaankatu 2')).toBeInTheDocument();
   });
 });
+
+describe('Laskuluonnos', () => {
+  const alkuperaiset = {
+    createObjectURL: URL.createObjectURL,
+    revokeObjectURL: URL.revokeObjectURL,
+  };
+  afterEach(() => {
+    Object.assign(URL, alkuperaiset);
+    vi.restoreAllMocks();
+  });
+
+  /** Luonnos (id 1): asiakas, eräpäivä, yksi 100 € rivi (alv 25,5 %). */
+  async function luonnos(c: KpClient) {
+    const asiakas = await c.tallennaKumppani({
+      nimi: 'Asiakas Oy',
+      osoite: 'Asiakkaankatu 2',
+      postinumero: '00200',
+      kaupunki: 'Espoo',
+    });
+    await c.tallennaMyyntilasku({
+      pvm: '2026-06-01',
+      laskupvm: '2026-06-01',
+      erapvm: '2026-06-15',
+      kumppani: asiakas.id,
+      otsikko: 'Kesäkuun työt',
+      luonnos: true,
+      rivit: [{ myyntiKpl: 1, aNetto: 100, alvKoodi: 11, alvProsentti: 25.5, selite: 'Työ' }],
+    });
+  }
+
+  it('avaa luonnoksen lomakkeeseen: Tallenna, Kirjaa ja lataa PDF, Poista; ei dokumenttia', async () => {
+    await renderRoute('/myyntilaskut/1', { seed: SEED, arrange: luonnos });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+
+    expect(screen.getByLabelText('Otsikko')).toHaveValue('Kesäkuun työt');
+    expect(screen.getByLabelText('Laskun päivämäärä')).toHaveValue('2026-06-01');
+    expect(screen.getByLabelText('Eräpäivä')).toHaveValue('2026-06-15');
+    expect(screen.getByLabelText('Selite, rivi 1')).toHaveValue('Työ');
+    expect(screen.getByLabelText('summat')).toHaveTextContent('125,50 €');
+    expect(screen.getByRole('combobox', { name: 'Asiakas' })).toHaveValue('Asiakas Oy');
+
+    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Kirjaa ja lataa PDF' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Poista' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Tallenna luonnokseksi' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('laskudokumentti')).not.toBeInTheDocument();
+    // Luonnoksen PDF pysyy pois käytöstä: ei Lataa PDF -nappia ennen kirjausta.
+    expect(screen.queryByRole('button', { name: 'Lataa PDF' })).not.toBeInTheDocument();
+  });
+
+  it('Tallenna päivittää luonnoksen samalla id:llä ja lähettää laskupvm:n', async () => {
+    const { user, client } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+    const tallenna = vi.spyOn(client, 'tallennaMyyntilasku');
+    const haeTosite = vi.spyOn(client, 'haeTosite');
+
+    await user.clear(screen.getByLabelText('Otsikko'));
+    await user.type(screen.getByLabelText('Otsikko'), 'Muokattu otsikko');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+
+    await waitFor(() => expect(tallenna).toHaveBeenCalledTimes(1));
+    expect(tallenna.mock.calls[0]?.[0]).toMatchObject({
+      luonnos: true,
+      id: 1,
+      laskupvm: '2026-06-01',
+      otsikko: 'Muokattu otsikko',
+    });
+    await waitFor(async () =>
+      expect((await client.haeTosite(1))?.otsikko).toBe('Muokattu otsikko'),
+    );
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(1);
+    // Välimuistissa oleva luonnos haetaan uudelleen, ettei vanha versio täytä lomaketta myöhemmin.
+    await waitFor(() => expect(haeTosite).toHaveBeenCalled());
+    expect(await screen.findByText('Luonnos tallennettu')).toBeInTheDocument();
+  });
+
+  it('Kirjaa ja lataa PDF kirjaa luonnoksen lomakkeen päivällä ja lataa PDF:n', async () => {
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:lasku'), revokeObjectURL: vi.fn() });
+    const klikki = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const { user, client } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+    const kirjaa = vi.spyOn(client, 'kirjaaLaskuluonnos');
+
+    // Lomakkeen päivä ohittaa luonnokseen tallennetun laskupvm:n.
+    await user.clear(screen.getByLabelText('Laskun päivämäärä'));
+    await user.type(screen.getByLabelText('Laskun päivämäärä'), '2026-06-05');
+    await user.click(screen.getByRole('button', { name: 'Kirjaa ja lataa PDF' }));
+
+    await waitFor(() => expect(kirjaa).toHaveBeenCalledTimes(1));
+    expect(kirjaa.mock.calls[0]?.[0]).toBe(1);
+    expect(kirjaa.mock.calls[0]?.[1]).toMatchObject({ laskupvm: '2026-06-05' });
+
+    await waitFor(() => expect(klikki).toHaveBeenCalledTimes(1));
+    const kirjattu = await client.haeTosite(1);
+    expect(kirjattu?.tila).toBe(100);
+    expect(kirjattu?.numero).toBe('1');
+    expect(kirjattu?.laskupvm).toBe('2026-06-05');
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(0);
+    await waitFor(async () => {
+      const liitteet = await client.haeLiitteet(1);
+      expect(liitteet).toHaveLength(1);
+      expect(liitteet[0]).toMatchObject({ tyyppi: 'application/pdf', nimi: 'lasku-1.pdf' });
+    });
+    // Kirjattu lasku näkyy tavallisena dokumenttinäkymänä.
+    expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
+    expect(screen.queryByLabelText('laskulomake')).not.toBeInTheDocument();
+  }, 30_000);
+
+  it('kirjausvirhe näytetään eikä luonnos katoa', async () => {
+    const { user, client } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+    vi.spyOn(client, 'kirjaaLaskuluonnos').mockRejectedValue(
+      new ResourceError('PVMLUKITTU', 'Tilikausi on lukittu'),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Kirjaa ja lataa PDF' }));
+
+    expect(await screen.findByText('Tilikausi on lukittu tälle päivälle')).toBeInTheDocument();
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(1);
+    expect(screen.getByLabelText('laskulomake')).toBeInTheDocument();
+  });
+
+  it('Poista poistaa luonnoksen vahvistuksen jälkeen ja palaa Lähtevät-listaan', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { user, client, router } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Poista' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/tositteet'));
+    expect(router.state.location.search).toMatchObject({ laji: 'tulot', valilehti: 'lahtevat' });
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(0);
+    expect(await screen.findByText('Ei lähteviä laskuluonnoksia.')).toBeInTheDocument();
+  });
+
+  it('Poista ei tee mitään jos vahvistus peruutetaan', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { user, client } = await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: luonnos,
+    });
+    await screen.findByLabelText('laskulomake', undefined, { timeout: 5_000 });
+    await user.click(screen.getByRole('button', { name: 'Poista' }));
+    expect(await client.listaaLaskuluonnokset()).toHaveLength(1);
+    expect(screen.getByLabelText('laskulomake')).toBeInTheDocument();
+  });
+});

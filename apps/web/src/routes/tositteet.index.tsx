@@ -1,9 +1,10 @@
-import { useKumppanit, useMenot, useTositteet, useTulot } from '@/app/kysely';
+import { useKumppanit, useLaskuluonnokset, useMenot, useTositteet, useTulot } from '@/app/kysely';
 import { LajiteltavaOtsikko } from '@/components/LajiteltavaOtsikko';
 import { TositeSumma } from '@/components/TositeSumma';
 import { TositeTyyppiIkoni } from '@/components/TositeTyyppiIkoni';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
+import { LahtevatTaulu } from '@/laskutus/LahtevatTaulu';
 import { tositeTyyppiLabel, tositteenSumma } from '@/lib/tosite';
 import { ONKO_LASKU, RahavirtaTaulu } from '@/rahavirta/RahavirtaTaulu';
 import {
@@ -36,6 +37,7 @@ import {
 } from '@/tositteet/suodattimet';
 import {
   type Kumppani,
+  type LaskuluonnosRivi,
   type ListattuTosite,
   type RahavirtaRivi,
   type RahavirtaSuodatin,
@@ -57,6 +59,8 @@ interface TositeHaku {
   jarj?: string | undefined;
   suunta?: Lajittelu['suunta'] | undefined;
   kumppani?: number | undefined;
+  /** Tulot-rajauksen välilehti: puuttuva = kirjatut tulot, 'lahtevat' = laskuluonnokset. */
+  valilehti?: 'lahtevat' | undefined;
 }
 
 const onLaji = (x: unknown): x is TositeLaji =>
@@ -81,6 +85,7 @@ export const Route = createFileRoute('/tositteet/')({
       jarj: lajittelu ? (haku.jarj as string) : undefined,
       suunta: lajittelu ? (haku.suunta as Lajittelu['suunta']) : undefined,
       kumppani: kumppaniId(haku.kumppani),
+      valilehti: haku.valilehti === 'lahtevat' ? 'lahtevat' : undefined,
     };
   },
   component: Selaus,
@@ -96,6 +101,12 @@ const LAJI_VALINNAT: { arvo: TositeLaji; label: string }[] = [
   { arvo: 'kaikki', label: 'Kaikki' },
   { arvo: 'tulot', label: 'Tulot' },
   { arvo: 'menot', label: 'Menot' },
+];
+
+type TuloNakyma = 'kirjatut' | 'lahtevat';
+const TULO_NAKYMAT: { arvo: TuloNakyma; label: string }[] = [
+  { arvo: 'kirjatut', label: 'Kirjatut' },
+  { arvo: 'lahtevat', label: 'Lähtevät' },
 ];
 
 const MAKSUTILAT: { arvo: Maksutila; label: string }[] = [
@@ -199,6 +210,7 @@ function kumppanilleRajaus(kumppani: number | undefined, kumppanit: readonly Kum
 // sivunollauksen jokaisella renderöinnillä ja voisi jäädyttää renderöijän.
 const EI_TOSITTEITA: ListattuTosite[] = [];
 const EI_RIVEJA: RahavirtaRivi[] = [];
+const EI_LUONNOKSIA: LaskuluonnosRivi[] = [];
 
 function Selaus() {
   const navigate = useNavigate();
@@ -212,6 +224,8 @@ function Selaus() {
 
   const laji: TositeLaji = haku.laji ?? muisti.laji;
   const rahavirta = laji === 'kaikki' ? null : laji;
+  // Lähtevät-välilehti kuuluu vain Tulot-rajaukseen; muilla lajeilla osoitteen valilehti ohitetaan.
+  const lahtevat = laji === 'tulot' && haku.valilehti === 'lahtevat';
   const [jarj, suunta] =
     haku.jarj !== undefined && haku.suunta !== undefined
       ? [haku.jarj, haku.suunta]
@@ -245,16 +259,31 @@ function Selaus() {
 
   /** Osoite seuraa lajia ja lajittelua; oletukset jätetään pois, replace ei kasvata historiaa.
    *  Kumppanirajaus kulkee mukana, kunnes se poistetaan. */
-  function paivitaOsoite(uusiLaji: TositeLaji, l: { kentta: string; suunta: string } | null) {
+  function paivitaOsoite(
+    uusiLaji: TositeLaji,
+    l: { kentta: string; suunta: string } | null,
+    uusiLahtevat: boolean = lahtevat,
+  ) {
     void navigate({
       to: '/tositteet',
       search: {
         ...(uusiLaji !== 'kaikki' ? { laji: uusiLaji } : {}),
         ...(l ? { jarj: l.kentta, suunta: l.suunta as Lajittelu['suunta'] } : {}),
         ...(kumppani !== undefined ? { kumppani } : {}),
+        ...(uusiLaji === 'tulot' && uusiLahtevat ? { valilehti: 'lahtevat' as const } : {}),
       },
       replace: true,
     });
+  }
+
+  /** Tulot-rajauksen välilehti (Kirjatut/Lähtevät); lajittelu säilyy Kirjatut-näkymää varten. */
+  function valitseNakyma(nakyma: TuloNakyma): void {
+    const s = paivita({ laji: 'tulot' });
+    paivitaOsoite(
+      'tulot',
+      s.jarj && s.suunta ? { kentta: s.jarj, suunta: s.suunta } : null,
+      nakyma === 'lahtevat',
+    );
   }
 
   function poistaKumppanirajaus(): void {
@@ -290,10 +319,16 @@ function Selaus() {
     ...(muisti.maksutila === 'eraantyneet' ? { eraantynyt: tanaan } : {}),
   };
   const tositeKysely = useTositteet(rajaus, valmis && rahavirta === null);
-  const tuloKysely = useTulot(rahavirtaSuodatin, valmis && rahavirta === 'tulot');
+  const tuloKysely = useTulot(rahavirtaSuodatin, valmis && rahavirta === 'tulot' && !lahtevat);
+  const luonnosKysely = useLaskuluonnokset(lahtevat);
   const menoKysely = useMenot(rahavirtaSuodatin, valmis && rahavirta === 'menot');
-  const kysely =
-    rahavirta === 'tulot' ? tuloKysely : rahavirta === 'menot' ? menoKysely : tositeKysely;
+  const kysely = lahtevat
+    ? luonnosKysely
+    : rahavirta === 'tulot'
+      ? tuloKysely
+      : rahavirta === 'menot'
+        ? menoKysely
+        : tositeKysely;
 
   // Hakusuodatus ja lajittelu (oletuksena uusin ensin); ilman dataa vakaa tyhjä (ks. yllä).
   const tositteet = tositeKysely.data;
@@ -319,21 +354,42 @@ function Selaus() {
     );
   }, [rahavirtaData, hakusana, rahavirta, rahavirtaLajittelu, kumppani, kaikkiKumppanit]);
 
+  // Lähtevät: luonnokset (vanhin päivä ensin, kuten moottori palauttaa), rajattuna haulla ja kumppanilla.
+  const luonnokset = luonnosKysely.data;
+  const lahtevatRivit = useMemo(() => {
+    if (!luonnokset) return EI_LUONNOKSIA;
+    const q = hakusana.trim().toLowerCase();
+    const summa = hakuSumma(q);
+    return luonnokset.filter(
+      (r) =>
+        (kumppani === undefined || r.kumppani === kumppani) &&
+        (q === '' ||
+          (summa !== undefined && Euro.abs(r.summa) === summa) ||
+          [r.otsikko, r.asiakas].some((x) => (x ?? '').toLowerCase().includes(q))),
+    );
+  }, [luonnokset, hakusana, kumppani]);
+
   const table = useReactTable({
     data: naytettavat,
     columns: sarakkeet,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const lataa = !valmis || (kysely.isFetching && !kysely.data);
-  const tyhja = rahavirta ? rivit.length === 0 : table.getRowModel().rows.length === 0;
+  const lataa = lahtevat
+    ? luonnosKysely.isFetching && !luonnosKysely.data
+    : !valmis || (kysely.isFetching && !kysely.data);
+  const tyhja = lahtevat
+    ? lahtevatRivit.length === 0
+    : rahavirta
+      ? rivit.length === 0
+      : table.getRowModel().rows.length === 0;
 
   // Näytettyjen rivien tositteet täsmälleen näytetyssä järjestyksessä (suodattimet, haku ja
   // lajittelu huomioiden) tositesivun Edellinen/Seuraava-selausta varten.
   const naytetytIdt = useMemo(() => {
-    if (lataa || kysely.isError || !kysely.data) return null;
+    if (lahtevat || lataa || kysely.isError || !kysely.data) return null;
     return rahavirta ? rivit.map((r) => r.tosite) : naytettavat.map((t) => t.id);
-  }, [lataa, kysely.isError, kysely.data, rahavirta, rivit, naytettavat]);
+  }, [lahtevat, lataa, kysely.isError, kysely.data, rahavirta, rivit, naytettavat]);
   useEffect(() => {
     if (naytetytIdt) tallennaListanJarjestys(muisti.bucket, naytetytIdt);
   }, [naytetytIdt, muisti.bucket]);
@@ -359,19 +415,29 @@ function Selaus() {
       <section aria-label="tositteselaus" className="flex-1 overflow-auto px-[22px] py-5">
         <div className="mb-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <Segmentit
-              otsikko="Tositteiden tila"
-              vaihtoehdot={BUCKETIT}
-              valittu={muisti.bucket}
-              onValitse={(bucket) => paivita({ bucket })}
-            />
+            {!lahtevat && (
+              <Segmentit
+                otsikko="Tositteiden tila"
+                vaihtoehdot={BUCKETIT}
+                valittu={muisti.bucket}
+                onValitse={(bucket) => paivita({ bucket })}
+              />
+            )}
             <Segmentit
               otsikko="Laji"
               vaihtoehdot={LAJI_VALINNAT}
               valittu={laji}
               onValitse={valitseLaji}
             />
-            {rahavirta && (
+            {rahavirta === 'tulot' && (
+              <Segmentit
+                otsikko="Tulojen näkymä"
+                vaihtoehdot={TULO_NAKYMAT}
+                valittu={lahtevat ? 'lahtevat' : 'kirjatut'}
+                onValitse={valitseNakyma}
+              />
+            )}
+            {rahavirta && !lahtevat && (
               <Segmentit
                 otsikko="Maksutila"
                 vaihtoehdot={MAKSUTILAT}
@@ -395,14 +461,16 @@ function Selaus() {
           </div>
 
           <div className="flex flex-wrap items-end gap-3">
-            <Aikavalitsin
-              valinta={muisti.valinta}
-              vali={vali}
-              onValinta={(valinta) => paivita({ valinta })}
-              onPaiva={(kentta, arvo) =>
-                paivita({ valinta: null, oma: { ...vali, [kentta]: arvo } })
-              }
-            />
+            {!lahtevat && (
+              <Aikavalitsin
+                valinta={muisti.valinta}
+                vali={vali}
+                onValinta={(valinta) => paivita({ valinta })}
+                onPaiva={(kentta, arvo) =>
+                  paivita({ valinta: null, oma: { ...vali, [kentta]: arvo } })
+                }
+              />
+            )}
             <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-[9.5px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]">
               Haku
               <input
@@ -422,7 +490,14 @@ function Selaus() {
         ) : lataa ? (
           <output className="block">Ladataan tositteita…</output>
         ) : tyhja ? (
-          rahavirta && hakusana.trim() === '' && kumppani === undefined ? (
+          lahtevat && hakusana.trim() === '' && kumppani === undefined ? (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-[13.5px] text-[var(--text-muted)]">Ei lähteviä laskuluonnoksia.</p>
+              <Button variant="sec" asChild>
+                <Link to="/myyntilaskut/uusi">Luo lasku</Link>
+              </Button>
+            </div>
+          ) : rahavirta && !lahtevat && hakusana.trim() === '' && kumppani === undefined ? (
             <div className="flex flex-col items-start gap-3">
               <p className="text-[13.5px] text-[var(--text-muted)]">
                 {TYHJA_RAHAVIRTA[rahavirta].teksti}
@@ -438,6 +513,8 @@ function Selaus() {
               Ei tositteita valituilla ehdoilla.
             </p>
           )
+        ) : lahtevat ? (
+          <LahtevatTaulu rivit={lahtevatRivit} />
         ) : rahavirta ? (
           <RahavirtaTaulu
             laji={rahavirta}

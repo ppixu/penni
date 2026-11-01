@@ -1,18 +1,29 @@
-import { useKohdennukset, useKumppanit, useTallennaMyyntilasku } from '@/app/kysely';
+import {
+  useKirjaaLaskuluonnos,
+  useKohdennukset,
+  useKumppanit,
+  usePoistaLaskuluonnos,
+  useTallennaMyyntilasku,
+} from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/editori/SegmentedControl';
 import { useMuutosseuranta } from '@/tallentamaton/useMuutosseuranta';
 import { useTallentamatonVaroitus } from '@/tallentamaton/useTallentamatonVaroitus';
 import { laskuVertailuun } from '@/tallentamaton/vertailu';
-import { Maksutapa, laskuSummat } from '@penni/engine';
+import { Maksutapa, type StoredTosite, laskuSummat } from '@penni/engine';
 import { muotoileEuro } from '@penni/euro';
 import { useMemo, useReducer, useState } from 'react';
 import { KumppaniDialog } from './KumppaniDialog.js';
 import { KumppaniValitsin } from './KumppaniValitsin.js';
 import { LaskuriviTaulukko } from './LaskuriviTaulukko.js';
-import { alustaLaskuTila, laskuReducer } from './laskuReducer.js';
-import { rakennaLaskuSyote, riviTositeRiviksi } from './rakennaLaskuSyote.js';
+import { alustaLaskuTila, alustaLaskuTilaLuonnoksesta, laskuReducer } from './laskuReducer.js';
+import {
+  laskuLomakeVirhe,
+  luonnoksenSailytettavat,
+  rakennaLaskuSyote,
+  riviTositeRiviksi,
+} from './rakennaLaskuSyote.js';
 
 const LABEL_LUOKKA =
   'flex flex-col gap-1 text-[9.5px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]';
@@ -30,29 +41,53 @@ function prosenttiTeksti(prosentti: number): string {
   return String(prosentti).replace('.', ',');
 }
 
+/** Olemassa olevan luonnoksen muokkaustila: lomake latautuu luonnoksesta, ja toiminnot ovat
+ *  Tallenna, Kirjaa ja lataa PDF sekä Poista. */
+export interface LuonnosToiminnot {
+  tosite: StoredTosite;
+  /** Luonnos on kirjattu; kutsuja lataa PDF:n ja siirtää näkymän kirjattuun laskuun. */
+  onKirjattu: (kirjattu: StoredTosite) => Promise<void>;
+  /** Luonnos on poistettu. */
+  onPoistettu: () => void;
+}
+
 /**
  * Koko laskulomake. Live-summat lasketaan samoilla engine-funktioilla kuin syötteen
  * saama TositeRivi (laskuSummat ~ generoiLaskunViennit) — ei omaa rinnakkaista
- * rahalaskentaa. Moottori numeroi (numero, viite), generoi viennit ja kirjaa suoraan
- * KIRJANPIDOSSA-tilaan — luonnostilaa ei ole (1d-päätös).
+ * rahalaskentaa. Moottori numeroi (numero, viite) ja generoi viennit vasta kirjauksessa.
+ *
+ * Uusi lasku: "Tallenna luonnokseksi" (ei numeroa, ei vientejä) tai "Tallenna ja kirjaa".
+ * Muokkaustila (`luonnos`): Tallenna, Kirjaa ja lataa PDF, Poista. Luonnos tallennetaan ja
+ * kirjataan aina lomakkeen laskupäivällä (`laskupvm` lähtee eksplisiittisesti), jottei
+ * luonnokseen jäänyt vanha päivä päädy kirjattuun laskuun.
  */
 export function LaskuLomake({
   alkupaiva,
   alvVelvollinen,
   onTallennettu,
+  onLuonnosTallennettu,
+  luonnos,
 }: {
   alkupaiva: string;
   alvVelvollinen: boolean;
-  onTallennettu: (id: number) => void;
+  /** Uusi lasku kirjattu. */
+  onTallennettu?: (id: number) => void;
+  /** Uusi lasku tallennettu luonnokseksi. */
+  onLuonnosTallennettu?: (id: number) => void;
+  luonnos?: LuonnosToiminnot;
 }) {
   const [tila, dispatch] = useReducer(
     laskuReducer,
-    { laskupvm: alkupaiva, alvVelvollinen },
-    alustaLaskuTila,
+    { laskupvm: alkupaiva, alvVelvollinen, luonnos: luonnos?.tosite },
+    ({ luonnos: l, ...alustus }) =>
+      l ? alustaLaskuTilaLuonnoksesta(l, alustus.alvVelvollinen) : alustaLaskuTila(alustus),
   );
   const { data: kumppanit } = useKumppanit();
   const { data: kohdennukset } = useKohdennukset();
   const { tallenna, virheviesti, tallentaa } = useTallennaMyyntilasku();
+  const { kirjaa, virheviesti: kirjausVirhe, kirjaamassa } = useKirjaaLaskuluonnos();
+  const { poista, virheviesti: poistoVirhe, poistaa } = usePoistaLaskuluonnos();
+  const [huomio, setHuomio] = useState<string | null>(null);
   const [dialogiAuki, setDialogiAuki] = useState(false);
   const { onkoLikainen, asetaPohja } = useMuutosseuranta(tila, laskuVertailuun);
   const varoitus = useTallentamatonVaroitus(onkoLikainen);
@@ -68,18 +103,69 @@ export function LaskuLomake({
   const eiSummaa = !tila.rivit.some((r) => r.aNettoSnt !== 0);
   const asiakasPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.kumppani === undefined;
   const erapvmPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.erapvm === '';
-  const estetty = eiSummaa || asiakasPuuttuu || erapvmPuuttuu || tallentaa;
+  const lomakeVirhe = laskuLomakeVirhe(tila);
+  const tyossa = tallentaa || kirjaamassa || poistaa;
+  // Luonnos on keskeneräinen työ: se tarvitsee vain summallisen rivin ja kelvollisen jakson.
+  // Kirjaus vaatii lisäksi asiakkaan ja eräpäivän.
+  const luonnosEstetty = eiSummaa || lomakeVirhe !== null || tyossa;
+  const estetty = luonnosEstetty || asiakasPuuttuu || erapvmPuuttuu;
 
-  async function lahetaTallennus() {
+  const sailytettavat = useMemo(
+    () => (luonnos ? luonnoksenSailytettavat(luonnos.tosite) : {}),
+    [luonnos],
+  );
+
+  /** Tallenna luonnoksena: uusi luonnos tai olemassa olevan päivitys (sama id, joten erä- ja
+   *  tunnisteavain säilyy). Palauttaa tallennetun tositteen tai undefined virheessä. */
+  async function tallennaLuonnoksena() {
+    setHuomio(null);
+    const stored = await tallenna({
+      ...rakennaLaskuSyote(tila, sailytettavat),
+      luonnos: true,
+      ...(luonnos ? { id: luonnos.tosite.id } : {}),
+    });
+    if (stored) asetaPohja(tila); // puhdas ennen navigointia, ettei tallennus laukaise varoitusta
+    return stored;
+  }
+
+  async function lahetaLuonnokseksi() {
+    const stored = await tallennaLuonnoksena();
+    if (!stored) return;
+    if (luonnos) setHuomio('Luonnos tallennettu');
+    else onLuonnosTallennettu?.(stored.id);
+  }
+
+  async function lahetaKirjaus() {
     const stored = await tallenna(rakennaLaskuSyote(tila));
     if (!stored) return;
-    asetaPohja(tila); // puhdas ennen navigointia, ettei tallennus laukaise varoitusta
-    onTallennettu(stored.id);
+    asetaPohja(tila);
+    onTallennettu?.(stored.id);
   }
+
+  /** Muokkaustilan "Kirjaa ja lataa PDF": tallenna lomake luonnokseen, kirjaa se lomakkeen
+   *  laskupäivällä ja anna kirjattu lasku kutsujalle PDF:n latausta varten. */
+  async function kirjaaLuonnos() {
+    if (!luonnos) return;
+    const tallennettu = await tallennaLuonnoksena();
+    if (!tallennettu) return;
+    const kirjattu = await kirjaa(luonnos.tosite.id, { laskupvm: tila.laskupvm });
+    if (!kirjattu) return;
+    await luonnos.onKirjattu(kirjattu);
+  }
+
+  async function poistaLuonnos() {
+    if (!luonnos) return;
+    if (!window.confirm('Poistetaanko laskuluonnos? Poisto kirjataan tositelokiin.')) return;
+    if (!(await poista(luonnos.tosite.id))) return;
+    asetaPohja(tila);
+    luonnos.onPoistettu();
+  }
+
+  const virhe = lomakeVirhe ?? virheviesti ?? kirjausVirhe ?? poistoVirhe;
 
   return (
     <>
-      <TopBar otsikko="Uusi lasku" />
+      <TopBar otsikko={luonnos ? 'Lasku (luonnos)' : 'Uusi lasku'} />
       <section
         aria-label="laskulomake"
         className="flex flex-1 flex-col gap-4 overflow-auto px-[22px] py-5"
@@ -112,6 +198,31 @@ export function LaskuLomake({
             onMuutos={(m) => dispatch({ type: 'setMaksutapa', maksutapa: m })}
           />
         </div>
+        <div className="grid max-w-3xl grid-cols-[160px_160px_auto] items-end gap-3">
+          <label className={LABEL_LUOKKA}>
+            Laskutusjakso alkaa
+            <input
+              type="date"
+              aria-label="Laskutusjakso alkaa"
+              value={tila.jaksoAlkaa}
+              onChange={(e) => dispatch({ type: 'setJaksoAlkaa', pvm: e.target.value })}
+              className={`${KENTTA_LUOKKA} tabular-nums`}
+            />
+          </label>
+          <label className={LABEL_LUOKKA}>
+            Laskutusjakso loppuu
+            <input
+              type="date"
+              aria-label="Laskutusjakso loppuu"
+              value={tila.jaksoLoppuu}
+              onChange={(e) => dispatch({ type: 'setJaksoLoppuu', pvm: e.target.value })}
+              className={`${KENTTA_LUOKKA} tabular-nums`}
+            />
+          </label>
+          <p className="pb-2 text-[11.5px] text-[var(--text-subtle)]">
+            Valinnainen: ajanjakso, jolta lasku on (esim. kuukausi).
+          </p>
+        </div>
         <div className="grid max-w-3xl grid-cols-2 gap-3">
           <div className={LABEL_LUOKKA}>
             Asiakas
@@ -142,10 +253,13 @@ export function LaskuLomake({
           kohdennukset={kohdennukset}
         />
 
-        {virheviesti ? (
+        {virhe ? (
           <p role="alert" className="text-[12.5px] text-[var(--danger)]">
-            {virheviesti}
+            {virhe}
           </p>
+        ) : null}
+        {huomio ? (
+          <output className="text-[12.5px] text-[var(--text-muted)]">{huomio}</output>
         ) : null}
 
         <div
@@ -171,9 +285,45 @@ export function LaskuLomake({
               <span>{muotoileEuro(summat.brutto)}</span>
             </div>
           </div>
-          <Button type="button" disabled={estetty} onClick={() => void lahetaTallennus()}>
-            Tallenna
-          </Button>
+          <div className="flex items-center gap-2">
+            {luonnos ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={tyossa}
+                  onClick={() => void poistaLuonnos()}
+                >
+                  Poista
+                </Button>
+                <Button
+                  type="button"
+                  variant="sec"
+                  disabled={luonnosEstetty}
+                  onClick={() => void lahetaLuonnokseksi()}
+                >
+                  Tallenna
+                </Button>
+                <Button type="button" disabled={estetty} onClick={() => void kirjaaLuonnos()}>
+                  Kirjaa ja lataa PDF
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="sec"
+                  disabled={luonnosEstetty}
+                  onClick={() => void lahetaLuonnokseksi()}
+                >
+                  Tallenna luonnokseksi
+                </Button>
+                <Button type="button" disabled={estetty} onClick={() => void lahetaKirjaus()}>
+                  Tallenna ja kirjaa
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {dialogiAuki && (

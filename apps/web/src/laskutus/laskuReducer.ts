@@ -1,4 +1,11 @@
-import { AlvKoodi, type IsoDate, Maksutapa, yleinenAlv } from '@penni/engine';
+import {
+  AlvKoodi,
+  type IsoDate,
+  Maksutapa,
+  type StoredTosite,
+  type TositeRivi,
+  yleinenAlv,
+} from '@penni/engine';
 import { type Cents, Euro } from '@penni/euro';
 
 /** Laskurivin lomaketila. À-hinta pidetään SENTTEINÄ (EuroInput-yhteensopiva);
@@ -16,6 +23,9 @@ export interface LomakeRivi {
   kohdennus?: number | undefined;
   /** Merkkaus-id:t (järjestetty, uniikit); puuttuu tai tyhjä = ei merkkauksia. */
   merkkaukset?: number[] | undefined;
+  /** Luonnoksen rivin kentät, joita lomake ei muokkaa (tili, tuote, alennus, yksikkö…):
+   *  säilyvät muokkauksen ja tallennuksen läpi. Lomakkeen omat kentät ohittavat nämä. */
+  lisat?: Partial<TositeRivi>;
 }
 
 /** Koko laskulomakkeen tila. alvVelvollinen kiinnitetään alustuksessa, jotta
@@ -28,6 +38,9 @@ export interface LaskuTila {
   maksutapa: number; // Maksutapa.LASKU (oletus) | KATEINEN | KORTTIMAKSU
   alvVelvollinen: boolean;
   rivit: LomakeRivi[]; // aina ≥ 1
+  /** Valinnainen laskutusjakso (spec 3.3); '' = ei täytetty. Molemmat tai ei kumpaakaan. */
+  jaksoAlkaa: IsoDate | '';
+  jaksoLoppuu: IsoDate | '';
 }
 
 /** Laskulomakkeen ALV-valitsimeen rajatut myyntikoodit (spec 3.5). */
@@ -81,6 +94,53 @@ export function alustaLaskuTila(alustus: LaskuAlustus): LaskuTila {
     maksutapa: Maksutapa.LASKU,
     alvVelvollinen: alustus.alvVelvollinen,
     rivit: [uusiRivi(alustus.laskupvm, alustus.alvVelvollinen)],
+    jaksoAlkaa: '',
+    jaksoLoppuu: '',
+  };
+}
+
+/** Moottorin euromuotoinen à-hinta senteiksi (käänteinen riviTositeRiviksi:lle). */
+function hintaSenteiksi(aNetto: number): Cents {
+  return Euro.fromCents(Math.round(aNetto * 100));
+}
+
+/** Tallennettu rivi → lomakerivi; lomakkeen omien kenttien ulkopuolinen jää `lisat`-kenttään. */
+function luonnosriviLomakeriviksi(r: TositeRivi): LomakeRivi {
+  const { myyntiKpl, aNetto, alvKoodi, alvProsentti, selite, kohdennus, merkkaukset, ...lisat } = r;
+  return {
+    avain: uusiAvain(),
+    selite: selite ?? '',
+    myyntiKpl,
+    aNettoSnt: hintaSenteiksi(aNetto),
+    alvKoodi,
+    alvProsentti,
+    ...(kohdennus ? { kohdennus } : {}),
+    ...(merkkaukset?.length ? { merkkaukset } : {}),
+    ...(Object.keys(lisat).length > 0 ? { lisat } : {}),
+  };
+}
+
+/**
+ * Olemassa oleva luonnos → lomaketila (muokkaustila). Laskupäivä on luonnoksen laskupvm (muuten
+ * pvm); puuttuva eräpäivä jää tyhjäksi. Rivi, jonka hinta ei ole kokonaisia senttejä, pyöristyy
+ * senttiin lomakkeella.
+ */
+export function alustaLaskuTilaLuonnoksesta(
+  luonnos: StoredTosite,
+  alvVelvollinen: boolean,
+): LaskuTila {
+  const laskupvm = luonnos.laskupvm ?? luonnos.pvm;
+  const rivit = (luonnos.rivit ?? []).map(luonnosriviLomakeriviksi);
+  return {
+    laskupvm,
+    erapvm: luonnos.erapvm ?? '',
+    ...(luonnos.kumppani !== undefined ? { kumppani: luonnos.kumppani } : {}),
+    otsikko: luonnos.otsikko ?? '',
+    maksutapa: luonnos.maksutapa ?? Maksutapa.LASKU,
+    alvVelvollinen,
+    rivit: rivit.length > 0 ? rivit : [uusiRivi(laskupvm, alvVelvollinen)],
+    jaksoAlkaa: luonnos.jakso?.alkaa ?? '',
+    jaksoLoppuu: luonnos.jakso?.loppuu ?? '',
   };
 }
 
@@ -90,6 +150,8 @@ export type LaskuAction =
   | { type: 'setKumppani'; kumppani: number | undefined }
   | { type: 'setOtsikko'; otsikko: string }
   | { type: 'setMaksutapa'; maksutapa: number }
+  | { type: 'setJaksoAlkaa'; pvm: IsoDate | '' }
+  | { type: 'setJaksoLoppuu'; pvm: IsoDate | '' }
   | { type: 'setRivi'; avain: number; muutos: Partial<Omit<LomakeRivi, 'avain'>> }
   | { type: 'lisaaRivi' }
   | { type: 'poistaRivi'; avain: number };
@@ -110,6 +172,10 @@ export function laskuReducer(tila: LaskuTila, action: LaskuAction): LaskuTila {
       return { ...tila, otsikko: action.otsikko };
     case 'setMaksutapa':
       return { ...tila, maksutapa: action.maksutapa };
+    case 'setJaksoAlkaa':
+      return { ...tila, jaksoAlkaa: action.pvm };
+    case 'setJaksoLoppuu':
+      return { ...tila, jaksoLoppuu: action.pvm };
     case 'setRivi':
       return {
         ...tila,

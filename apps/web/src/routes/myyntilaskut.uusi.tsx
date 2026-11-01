@@ -27,6 +27,9 @@ function UusiLasku() {
       alkupaiva={alkupaiva}
       alvVelvollinen={asetusPaalla(init.asetukset.AlvVelvollinen)}
       onTallennettu={(id) => navigate({ to: '/myyntilaskut/$id', params: { id: String(id) } })}
+      onLuonnosTallennettu={() =>
+        navigate({ to: '/tositteet', search: { laji: 'tulot', valilehti: 'lahtevat' } })
+      }
     />
   );
 }

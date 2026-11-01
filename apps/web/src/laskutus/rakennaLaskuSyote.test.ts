@@ -2,7 +2,7 @@ import { Maksutapa, nettoYhteensaCents } from '@penni/engine';
 import { Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import { alustaLaskuTila, laskuReducer } from './laskuReducer.js';
-import { rakennaLaskuSyote } from './rakennaLaskuSyote.js';
+import { laskuLomakeVirhe, rakennaLaskuSyote } from './rakennaLaskuSyote.js';
 
 const pohja = () => alustaLaskuTila({ laskupvm: '2026-06-01', alvVelvollinen: true });
 
@@ -123,5 +123,60 @@ describe('rakennaLaskuSyote', () => {
     const rivi = rakennaLaskuSyote(tila).rivit[0] ?? {};
     expect('kohdennus' in rivi).toBe(false);
     expect('merkkaukset' in rivi).toBe(false);
+  });
+
+  describe('laskutusjakso', () => {
+    const rivillinen = () => {
+      const tila = pohja();
+      const avain = tila.rivit[0]?.avain ?? 0;
+      return laskuReducer(tila, {
+        type: 'setRivi',
+        avain,
+        muutos: { aNettoSnt: Euro.fromCents(1000) },
+      });
+    };
+
+    it('välittää jakson kun molemmat päivät on täytetty', () => {
+      let tila = rivillinen();
+      tila = laskuReducer(tila, { type: 'setJaksoAlkaa', pvm: '2026-05-01' });
+      tila = laskuReducer(tila, { type: 'setJaksoLoppuu', pvm: '2026-05-31' });
+      expect(laskuLomakeVirhe(tila)).toBeNull();
+      expect(rakennaLaskuSyote(tila).jakso).toEqual({ alkaa: '2026-05-01', loppuu: '2026-05-31' });
+    });
+
+    it('jättää jakson pois kun molemmat ovat tyhjiä', () => {
+      const tila = rivillinen();
+      expect(laskuLomakeVirhe(tila)).toBeNull();
+      expect('jakso' in rakennaLaskuSyote(tila)).toBe(false);
+    });
+
+    it('raportoi lomakevirheen kun vain toinen päivä on täytetty', () => {
+      let tila = rivillinen();
+      tila = laskuReducer(tila, { type: 'setJaksoAlkaa', pvm: '2026-05-01' });
+      expect(laskuLomakeVirhe(tila)).toMatch(/Laskutusjakso/);
+      expect(() => rakennaLaskuSyote(tila)).toThrow(/Laskutusjakso/);
+
+      tila = laskuReducer(tila, { type: 'setJaksoAlkaa', pvm: '' });
+      tila = laskuReducer(tila, { type: 'setJaksoLoppuu', pvm: '2026-05-31' });
+      expect(laskuLomakeVirhe(tila)).toMatch(/Laskutusjakso/);
+    });
+
+    it('raportoi lomakevirheen kun loppu on ennen alkua', () => {
+      let tila = rivillinen();
+      tila = laskuReducer(tila, { type: 'setJaksoAlkaa', pvm: '2026-05-31' });
+      tila = laskuReducer(tila, { type: 'setJaksoLoppuu', pvm: '2026-05-01' });
+      expect(laskuLomakeVirhe(tila)).toMatch(/loppu/);
+    });
+  });
+
+  it('lähettää laskupvm:n aina eksplisiittisesti, myös luonnoksen muutoksina', () => {
+    const syote = rakennaLaskuSyote(pohja());
+    expect(syote.laskupvm).toBe('2026-06-01');
+    expect(syote.pvm).toBe('2026-06-01');
+  });
+
+  it('säilyttää luonnoksen lomakkeella muokkaamattomat kentät', () => {
+    const syote = rakennaLaskuSyote(pohja(), { info: 'Lisätieto', ryhma: 'r-1', toisto: 4 });
+    expect(syote).toMatchObject({ info: 'Lisätieto', ryhma: 'r-1', toisto: 4 });
   });
 });

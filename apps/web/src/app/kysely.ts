@@ -17,6 +17,7 @@ import type {
   KohdennusOsio,
   KohdennusRaporttiParams,
   Kumppani,
+  LaskuluonnosRivi,
   LiiteMeta,
   LiitetiedotSyote,
   ListattuTosite,
@@ -71,6 +72,7 @@ export const avaimet = {
   budjetti: (tilikausi: IsoDate) => ['budjetti', tilikausi] as const,
   kohdennusRaportti: (params: KohdennusRaporttiParams) => ['kohdennusRaportti', params] as const,
   budjettivertailu: (params: BudjettivertailuParams) => ['budjettivertailu', params] as const,
+  laskuluonnokset: ['laskuluonnokset'] as const,
   alvLaskelma: (params: AlvLaskelmaParams) => ['alvLaskelma', params] as const,
   alvErittely: (params: AlvLaskelmaParams) => ['alvErittely', params] as const,
   euMyynti: (params: AlvLaskelmaParams) => ['euMyynti', params] as const,
@@ -500,6 +502,10 @@ function laskuVirheViesti(e: unknown): string {
         return 'ALV-tili puuttuu tilikartasta';
       case 'EIHYVITETTAVAA':
         return 'Laskua ei voi hyvittää (ei erää)';
+      case 'EILUONNOS':
+        return 'Laskuluonnosta ei löydy (se on jo kirjattu tai poistettu)';
+      case 'EIJAKSO':
+        return 'Laskutusjakson päivät ovat virheelliset';
       default:
         return `Tallennus epäonnistui (${e.code})`;
     }
@@ -530,6 +536,9 @@ export function useTallennaMyyntilasku() {
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
       mitatoiKohdennustenToteuma(qc);
+      void qc.invalidateQueries({ queryKey: avaimet.laskuluonnokset });
+      // Luonnoksen päivitys: välimuistin vanha versio ei saa täyttää lomaketta uudelleen avattaessa.
+      void qc.invalidateQueries({ queryKey: ['tosite'] });
     },
   });
 
@@ -547,6 +556,89 @@ export function useTallennaMyyntilasku() {
 }
 
 /** Kirjaa suoritus laskun erälle. Invalidoi laskulistan, tositteet ja saldot. */
+/** Laskuluonnokset (tila 50–99: myyntilasku ja maksumuistutus) Tulot-näkymän Lähtevät-välilehteen. */
+export function useLaskuluonnokset(enabled = true) {
+  const client = useKpClient();
+  return useQuery<LaskuluonnosRivi[]>({
+    queryKey: avaimet.laskuluonnokset,
+    queryFn: () => client.listaaLaskuluonnokset(),
+    enabled,
+  });
+}
+
+/** Luonnoslistojen ja laskunäkymien välimuistit, jotka luonnoksen kirjaus tai poisto vanhentaa. */
+function mitatoiLaskuluonnoksenKyselyt(qc: ReturnType<typeof useQueryClient>) {
+  for (const queryKey of [
+    avaimet.laskuluonnokset,
+    ['myyntilaskut'],
+    ['tositteet'],
+    ['saldot'],
+    ['tulot'],
+    ['menot'],
+  ]) {
+    void qc.invalidateQueries({ queryKey });
+  }
+}
+
+/** Kirjaa laskuluonnos (`muutokset` yhdistetään luonnoksen päälle). Virhe → virheviesti, undefined. */
+export function useKirjaaLaskuluonnos() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<
+    StoredTosite,
+    unknown,
+    { id: number; muutokset?: Partial<MyyntilaskuSyote> }
+  >({
+    mutationFn: ({ id, muutokset }) => client.kirjaaLaskuluonnos(id, muutokset),
+    onSuccess: () => mitatoiLaskuluonnoksenKyselyt(qc),
+  });
+
+  async function kirjaa(
+    id: number,
+    muutokset?: Partial<MyyntilaskuSyote>,
+  ): Promise<StoredTosite | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync({ id, ...(muutokset ? { muutokset } : {}) });
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { kirjaa, virheviesti, kirjaamassa: mutaatio.isPending };
+}
+
+/** Poista laskuluonnos (tavallinen tositteen pehmeä poisto; luonnoksella ei ole numeroa). */
+export function usePoistaLaskuluonnos() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<void, unknown, number>({
+    mutationFn: (id) => client.poistaTosite(id),
+    onSuccess: (_data, id) => {
+      mitatoiLaskuluonnoksenKyselyt(qc);
+      qc.removeQueries({ queryKey: avaimet.tosite(id) });
+    },
+  });
+
+  async function poista(id: number): Promise<boolean> {
+    setVirheviesti(null);
+    try {
+      await mutaatio.mutateAsync(id);
+      return true;
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return false;
+    }
+  }
+
+  return { poista, virheviesti, poistaa: mutaatio.isPending };
+}
+
 export function useTallennaSuoritus() {
   const client = useKpClient();
   const qc = useQueryClient();
