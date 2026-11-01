@@ -22,6 +22,14 @@ function syote(muutos: Partial<MuistutusLaskentaSyote> = {}): MuistutusLaskentaS
   };
 }
 
+/** Kuten `syote`, mutta ilman viivkorkoa (avainta ei ole, ei `undefined`-arvoa). */
+function syoteIlmanViivkorkoa(
+  muutos: Partial<MuistutusLaskentaSyote> = {},
+): MuistutusLaskentaSyote {
+  const { viivkorko: _pois, ...loput } = syote();
+  return { ...loput, ...muutos };
+}
+
 describe('laskeMaksumuistutus', () => {
   it('perustapaus: korko eräpäivää seuraavasta päivästä muistutuspäivään', () => {
     expect(laskeMaksumuistutus(syote())).toEqual({
@@ -92,16 +100,19 @@ describe('laskeMaksumuistutus', () => {
   });
 
   it('oletuskorko: peruskorko + 7 kuluttajalle, + 8 yritykselle', () => {
-    const o = { viivkorko: undefined, peruskorko: 2.5 };
-    expect(laskeMaksumuistutus(syote(o)).viivkorko).toBe(9.5);
-    expect(laskeMaksumuistutus(syote({ ...o, yritysasiakas: true })).viivkorko).toBe(10.5);
+    const o = { peruskorko: 2.5 };
+    expect(laskeMaksumuistutus(syoteIlmanViivkorkoa(o)).viivkorko).toBe(9.5);
+    expect(laskeMaksumuistutus(syoteIlmanViivkorkoa({ ...o, yritysasiakas: true })).viivkorko).toBe(
+      10.5,
+    );
   });
 
   it('laskun oma viivkorko voittaa oletuksen, dialogin arvo voittaa molemmat', () => {
-    const o = { viivkorko: undefined, peruskorko: 2.5, yritysasiakas: true };
+    const o = { peruskorko: 2.5, yritysasiakas: true };
     expect(
-      laskeMaksumuistutus(syote({ ...o, alkuperainen: { erapvm: '2026-04-30', viivkorko: 16 } }))
-        .viivkorko,
+      laskeMaksumuistutus(
+        syoteIlmanViivkorkoa({ ...o, alkuperainen: { erapvm: '2026-04-30', viivkorko: 16 } }),
+      ).viivkorko,
     ).toBe(16);
     expect(
       laskeMaksumuistutus(

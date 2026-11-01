@@ -9,6 +9,8 @@ import { tallennaMyyntilasku } from './myyntilaskuResource.js';
 import { listaaOstolaskut, tallennaOstolasku } from './ostolaskuResource.js';
 import { listaaMenot, listaaTulot } from './tulotResource.js';
 
+const c = (n: number) => Euro.fromCents(n);
+
 // Chart mirrors the reference book: CL = income, BY = equity/liability (yksityissijoitus),
 // BL = ALV payable, ARP = bank, D = expense, AL = ALV receivable.
 const seed = () =>
@@ -36,9 +38,9 @@ const myynti = {
   sarja: '',
   otsikko: 'Revontuli',
   viennit: [
-    { tili: 1910, debet: 12550, kredit: 0, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-    { tili: 3000, debet: 0, kredit: 10000, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-    { tili: 2939, debet: 0, kredit: 2550, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+    { tili: 1910, debet: c(12550), kredit: c(0), pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+    { tili: 3000, debet: c(0), kredit: c(10000), pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+    { tili: 2939, debet: c(0), kredit: c(2550), pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
   ],
 };
 
@@ -51,8 +53,8 @@ const yksityissijoitus = {
   sarja: '',
   otsikko: 'Yksityissijoitus',
   viennit: [
-    { tili: 1910, debet: 7000, kredit: 0, pvm: '2026-03-02', alvKoodi: 0, alvProsentti: 0 },
-    { tili: 2361, debet: 0, kredit: 7000, pvm: '2026-03-02', alvKoodi: 0, alvProsentti: 0 },
+    { tili: 1910, debet: c(7000), kredit: c(0), pvm: '2026-03-02', alvKoodi: 0, alvProsentti: 0 },
+    { tili: 2361, debet: c(0), kredit: c(7000), pvm: '2026-03-02', alvKoodi: 0, alvProsentti: 0 },
   ],
 };
 
@@ -117,9 +119,9 @@ describe('listaaTulot / listaaMenot — luonnokset ja liitteet', () => {
     sarja: '',
     otsikko: 'Kahvila',
     viennit: [
-      { tili: 4000, debet: 800, kredit: 0, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
-      { tili: 1763, debet: 200, kredit: 0, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
-      { tili: 1910, debet: 0, kredit: 1000, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 4000, debet: c(800), kredit: c(0), pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 1763, debet: c(200), kredit: c(0), pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 1910, debet: c(0), kredit: c(1000), pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
     ],
   };
 
@@ -197,8 +199,22 @@ describe('listaaTulot — erikoistapaukset', () => {
         sarja: '',
         otsikko: 'Hyvitys',
         viennit: [
-          { tili: 3000, debet: 5000, kredit: 0, pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 1910, debet: 0, kredit: 5000, pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 3000,
+            debet: c(5000),
+            kredit: c(0),
+            pvm: '2026-03-10',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 1910,
+            debet: c(0),
+            kredit: c(5000),
+            pvm: '2026-03-10',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -212,8 +228,8 @@ describe('listaaTulot — erikoistapaukset', () => {
   it('hyvityslaskun rivi kantaa alkuperäisen tositteen id:n, muut rivit eivät', async () => {
     const storage = seed();
     const hyvitysViennit = [
-      { tili: 3000, debet: 5000, kredit: 0, pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
-      { tili: 1910, debet: 0, kredit: 5000, pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 3000, debet: c(5000), kredit: c(0), pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 1910, debet: c(0), kredit: c(5000), pvm: '2026-03-10', alvKoodi: 0, alvProsentti: 0 },
     ];
     await storage.saveTosite(
       {
@@ -260,8 +276,22 @@ describe('listaaTulot — erikoistapaukset', () => {
         sarja: '',
         otsikko: 'Oikaisu',
         viennit: [
-          { tili: 3000, debet: 0, kredit: 3000, pvm: '2026-03-12', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 4000, debet: 3000, kredit: 0, pvm: '2026-03-12', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(3000),
+            pvm: '2026-03-12',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 4000,
+            debet: c(3000),
+            kredit: c(0),
+            pvm: '2026-03-12',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -301,9 +331,30 @@ describe('listaaMenot', () => {
         sarja: '',
         otsikko: 'Ostot',
         viennit: [
-          { tili: 4000, debet: 8000, kredit: 0, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 1763, debet: 2040, kredit: 0, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 1910, debet: 0, kredit: 10040, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 4000,
+            debet: c(8000),
+            kredit: c(0),
+            pvm: '2026-03-05',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 1763,
+            debet: c(2040),
+            kredit: c(0),
+            pvm: '2026-03-05',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 1910,
+            debet: c(0),
+            kredit: c(10040),
+            pvm: '2026-03-05',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -339,8 +390,22 @@ describe('listaaMenot', () => {
         sarja: '',
         otsikko: 'Ostolasku',
         viennit: [
-          { tili: 4000, debet: 10040, kredit: 0, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 2870, debet: 0, kredit: 10040, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 4000,
+            debet: c(10040),
+            kredit: c(0),
+            pvm: '2026-03-05',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 2870,
+            debet: c(0),
+            kredit: c(10040),
+            pvm: '2026-03-05',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -413,9 +478,30 @@ describe('listaaMenot — käänteinen alv (reverse charge)', () => {
         sarja: '',
         otsikko: 'Käänteinen osto ilman vähennysoikeutta',
         viennit: [
-          { tili: 4000, debet: 1255, kredit: 0, pvm: '2026-03-06', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 2939, debet: 0, kredit: 255, pvm: '2026-03-06', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 2870, debet: 0, kredit: 1000, pvm: '2026-03-06', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 4000,
+            debet: c(1255),
+            kredit: c(0),
+            pvm: '2026-03-06',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 2939,
+            debet: c(0),
+            kredit: c(255),
+            pvm: '2026-03-06',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 2870,
+            debet: c(0),
+            kredit: c(1000),
+            pvm: '2026-03-06',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -449,9 +535,30 @@ describe('avoin — merkin normalisointi ja eräsuodattimet', () => {
         sarja: '',
         otsikko: 'Lasku',
         viennit: [
-          { tili: 1700, debet: 12550, kredit: 0, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 3000, debet: 0, kredit: 10000, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 2939, debet: 0, kredit: 2550, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1700,
+            debet: c(12550),
+            kredit: c(0),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(10000),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 2939,
+            debet: c(0),
+            kredit: c(2550),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -482,8 +589,22 @@ describe('avoin — merkin normalisointi ja eräsuodattimet', () => {
         sarja: '',
         otsikko: 'Lasku',
         viennit: [
-          { tili: 1700, debet: 10000, kredit: 0, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 3000, debet: 0, kredit: 10000, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1700,
+            debet: c(10000),
+            kredit: c(0),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(10000),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -504,11 +625,18 @@ describe('avoin — merkin normalisointi ja eräsuodattimet', () => {
         sarja: '',
         otsikko: 'Suoritus',
         viennit: [
-          { tili: 1910, debet: 10000, kredit: 0, pvm: '2026-04-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1910,
+            debet: c(10000),
+            kredit: c(0),
+            pvm: '2026-04-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
           {
             tili: 1700,
-            debet: 0,
-            kredit: 10000,
+            debet: c(0),
+            kredit: c(10000),
             pvm: '2026-04-01',
             alvKoodi: 0,
             alvProsentti: 0,
@@ -540,8 +668,22 @@ describe('avoin — merkin normalisointi ja eräsuodattimet', () => {
         otsikko: 'Lasku',
         erapvm: '2026-03-15',
         viennit: [
-          { tili: 1700, debet: 10000, kredit: 0, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 3000, debet: 0, kredit: 10000, pvm: '2026-03-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1700,
+            debet: c(10000),
+            kredit: c(0),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(10000),
+            pvm: '2026-03-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -567,8 +709,8 @@ describe('listaaTulot / listaaMenot — bucket ja alkupera', () => {
     sarja: '',
     otsikko,
     viennit: [
-      { tili: 4000, debet: 1000, kredit: 0, pvm: '2026-03-05', alvKoodi, alvProsentti: 0 },
-      { tili: 1910, debet: 0, kredit: 1000, pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
+      { tili: 4000, debet: c(1000), kredit: c(0), pvm: '2026-03-05', alvKoodi, alvProsentti: 0 },
+      { tili: 1910, debet: c(0), kredit: c(1000), pvm: '2026-03-05', alvKoodi: 0, alvProsentti: 0 },
     ],
   });
 

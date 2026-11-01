@@ -16,6 +16,8 @@ import {
 } from './myyntilaskuResource.js';
 import { ResourceError } from './storage.js';
 
+const c = (n: number) => Euro.fromCents(n);
+
 const env = { aika: '2026-06-01T00:00:00.000Z' };
 
 const seed = () =>
@@ -668,17 +670,31 @@ describe('listaaMyyntilaskut: maksumuistutukset ja erävienti', () => {
         tunniste: 1,
         sarja: '',
         viennit: [
-          { tili: 1910, debet: 20000, kredit: 0, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1910,
+            debet: c(20000),
+            kredit: c(0),
+            pvm: '2026-06-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
           {
             tili: 1701,
-            debet: 80000,
-            kredit: 0,
+            debet: c(80000),
+            kredit: c(0),
             pvm: '2026-06-01',
             alvKoodi: 0,
             alvProsentti: 0,
             tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS,
           },
-          { tili: 3000, debet: 0, kredit: 100000, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(100000),
+            pvm: '2026-06-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,

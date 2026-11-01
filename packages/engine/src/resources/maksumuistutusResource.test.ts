@@ -16,6 +16,8 @@ import {
 import { muistutusKulut, tallennaMyyntilasku, tallennaSuoritus } from './myyntilaskuResource.js';
 import type { Storage } from './storage.js';
 
+const c = (n: number) => Euro.fromCents(n);
+
 const env = { aika: '2026-06-01T00:00:00.000Z' };
 
 const seed = () =>
@@ -93,7 +95,7 @@ describe('luoMaksumuistutukset', () => {
     const l = await lasku(s);
     const [m] = await luoMaksumuistutukset(
       s,
-      { tositteet: [l.id], pvm: '2026-05-30', erapvm: '2026-06-20', maksu: 0, korko: false },
+      { tositteet: [l.id], pvm: '2026-05-30', erapvm: '2026-06-20', maksu: c(0), korko: false },
       env,
     );
     expect(m?.erapvm).toBe('2026-06-20');
@@ -156,25 +158,32 @@ describe('luoMaksumuistutukset', () => {
         alkuperainenTosite: l.id,
         erapvm: '2026-06-13',
         muistutus: {
-          maksu: 500,
-          korko: 100,
+          maksu: c(500),
+          korko: c(100),
           viivkorko: 11.5,
           korkoalkaa: '2026-05-01',
           korkoloppuu: '2026-05-30',
-          aiempiSaldo: 100000,
+          aiempiSaldo: c(100000),
           aiemmat: [l.id],
         },
         viennit: [
           {
             tili: 1701,
-            debet: 600,
-            kredit: 0,
+            debet: c(600),
+            kredit: c(0),
             pvm: '2026-05-30',
             alvKoodi: 0,
             alvProsentti: 0,
             era: l.id,
           },
-          { tili: 3000, debet: 0, kredit: 600, pvm: '2026-05-30', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(600),
+            pvm: '2026-05-30',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -207,12 +216,12 @@ describe('luoMaksumuistutukset', () => {
           alkuperainenTosite: l.id,
           erapvm,
           muistutus: {
-            maksu: 500,
-            korko: 0,
+            maksu: c(500),
+            korko: c(0),
             viivkorko: 11.5,
             korkoalkaa: '2026-05-01',
             korkoloppuu: '2026-05-30',
-            aiempiSaldo: 100000,
+            aiempiSaldo: c(100000),
             aiemmat: [l.id],
           },
           viennit:
@@ -220,8 +229,8 @@ describe('luoMaksumuistutukset', () => {
               ? [
                   {
                     tili: 1701,
-                    debet: 500,
-                    kredit: 0,
+                    debet: c(500),
+                    kredit: c(0),
                     pvm: '2026-05-30',
                     alvKoodi: 0,
                     alvProsentti: 0,
@@ -229,8 +238,8 @@ describe('luoMaksumuistutukset', () => {
                   },
                   {
                     tili: 3000,
-                    debet: 0,
-                    kredit: 500,
+                    debet: c(0),
+                    kredit: c(500),
                     pvm: '2026-05-30',
                     alvKoodi: 0,
                     alvProsentti: 0,
@@ -313,8 +322,22 @@ describe('luoMaksumuistutukset', () => {
         sarja: '',
         erapvm: '2026-04-30',
         viennit: [
-          { tili: 1701, debet: 100, kredit: 0, pvm: '2026-04-01', alvKoodi: 0, alvProsentti: 0 },
-          { tili: 3000, debet: 0, kredit: 100, pvm: '2026-04-01', alvKoodi: 0, alvProsentti: 0 },
+          {
+            tili: 1701,
+            debet: c(100),
+            kredit: c(0),
+            pvm: '2026-04-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+          {
+            tili: 3000,
+            debet: c(0),
+            kredit: c(100),
+            pvm: '2026-04-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
         ],
       },
       env,
@@ -458,8 +481,8 @@ describe('kirjaaMaksumuistutus', () => {
     expect(kirjattu.viennit).toEqual([
       {
         tili: 1701,
-        debet: 1445,
-        kredit: 0,
+        debet: c(1445),
+        kredit: c(0),
         pvm: '2026-05-30',
         alvKoodi: 0,
         alvProsentti: 0,
@@ -469,8 +492,8 @@ describe('kirjaaMaksumuistutus', () => {
       },
       {
         tili: 9170,
-        debet: 0,
-        kredit: 500,
+        debet: c(0),
+        kredit: c(500),
         pvm: '2026-05-30',
         alvKoodi: 0,
         alvProsentti: 0,
@@ -479,8 +502,8 @@ describe('kirjaaMaksumuistutus', () => {
       },
       {
         tili: 9170,
-        debet: 0,
-        kredit: 945,
+        debet: c(0),
+        kredit: c(945),
         pvm: '2026-05-30',
         alvKoodi: 0,
         alvProsentti: 0,
