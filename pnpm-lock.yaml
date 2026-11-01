@@ -651,6 +651,34 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(@types/node@26.0.1)
 
+  packages/palkka-pdf:
+    dependencies:
+      '@penni/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@penni/euro':
+        specifier: workspace:*
+        version: link:../euro
+      '@penni/lasku-pdf':
+        specifier: workspace:*
+        version: link:../lasku-pdf
+      '@penni/palkat':
+        specifier: workspace:*
+        version: link:../palkat
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
+    devDependencies:
+      pdfjs-dist:
+        specifier: ^6.1.200
+        version: 6.1.200
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@26.0.1)(jsdom@25.0.1)(lightningcss@1.32.0)
+
   packages/storage-do:
     dependencies:
       '@penni/engine':
