@@ -163,32 +163,41 @@ describe('laskuluonnos: kirjaus', () => {
     expect(k.numero).toBe('1');
   });
 
-  it('tuotu Kitsas-luonnos (tila 50, vanhat viennit) kirjataan riveistä', async () => {
-    const s = seed();
-    const vanhat = [
-      { tili: 3000, debet: 0, kredit: 99999, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
-      { tili: 1701, debet: 99999, kredit: 0, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
-    ] as never;
-    const tuotu = await s.saveTosite(
+  const tuoKitsasLuonnos = (s: Storage) =>
+    s.saveTosite(
       {
         pvm: '2026-06-01',
         tyyppi: TositeTyyppi.MYYNTILASKU,
         tila: TositeTila.LUONNOS,
         tunniste: 0,
         sarja: '',
-        viennit: vanhat,
+        viennit: [
+          { tili: 3000, debet: 0, kredit: 99999, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+          { tili: 1701, debet: 99999, kredit: 0, pvm: '2026-06-01', alvKoodi: 0, alvProsentti: 0 },
+        ] as never,
         rivit: [rivi],
       },
       env,
     );
+
+  it('tuotu Kitsas-luonnos (tila 50, vanhat viennit) kirjataan riveistä', async () => {
+    const s = seed();
+    const tuotu = await tuoKitsasLuonnos(s);
     expect(onLaskuluonnos(tuotu)).toBe(true);
-    // Päivitys säilyttää tuodun luonnoksen tilan.
-    const paivitetty = await luonnos(s, { id: tuotu.id });
-    expect(paivitetty.tila).toBe(50);
+    // Vanhat viennit ovat tallessa juuri ennen kirjausta.
+    expect((await s.getTosite(tuotu.id))?.viennit).toHaveLength(2);
     const k = await kirjaaLaskuluonnos(s, tuotu.id, env);
     expect(k.tila).toBe(100);
     expect(k.viennit.some((v) => v.debet === 99999 || v.kredit === 99999)).toBe(false);
     expect(k.viennit.find((v) => v.tili === 1701)?.debet).toBe(12550);
+    expect(k.viennit.find((v) => v.tili === 3000)?.kredit).toBe(10000);
+  });
+
+  it('tuodun luonnoksen päivitys säilyttää tilan 50', async () => {
+    const s = seed();
+    const tuotu = await tuoKitsasLuonnos(s);
+    const paivitetty = await luonnos(s, { id: tuotu.id });
+    expect(paivitetty.tila).toBe(50);
   });
 
   it('muistutusluonnos ilman muistutustietoja ei kirjaudu', async () => {
