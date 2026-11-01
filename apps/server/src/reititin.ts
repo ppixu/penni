@@ -1,7 +1,9 @@
 import {
   decodeAlvTilitysSyote,
+  decodeBudjettiRivi,
   decodeHyvityslaskuSyote,
   decodeJaksotuksetSyote,
+  decodeKohdennus,
   decodeKumppani,
   decodeLiite,
   decodeLiitetiedotSyote,
@@ -20,9 +22,13 @@ import {
   encodeAlvErittely,
   encodeAlvIlmoitus,
   encodeAlvLaskelma,
+  encodeBudjettiRivi,
+  encodeBudjettivertailuRivi,
   encodeEuMyynti,
   encodeInit,
   encodeJaksotuslaskelma,
+  encodeKohdennus,
+  encodeKohdennusOsio,
   encodeKumppani,
   encodeLiite,
   encodeLiiteMeta,
@@ -61,9 +67,11 @@ import {
   haeAlvIlmoitus,
   haeAlvLaskelma,
   haeAsetukset,
+  haeBudjetti,
   haeEuMyyntiYhteenveto,
   haeInit,
   haeJaksotukset,
+  haeKohdennukset,
   haeKumppanit,
   haeLiite,
   haeLiitteet,
@@ -73,6 +81,8 @@ import {
   haeTosite,
   haeVerolaskelma,
   kirjaaMarginaalivero,
+  laadiBudjettivertailu,
+  laadiKohdennusRaportti,
   laadiRaportti,
   laadiTilinpaatos,
   lisaaLiite,
@@ -88,6 +98,7 @@ import {
   paivitaAsetukset,
   paivitaInit,
   peruVahvistus,
+  poistaKohdennus,
   poistaKumppani,
   poistaLiite,
   poistaTili,
@@ -96,8 +107,10 @@ import {
   putTili,
   putTilikausi,
   tallennaAlvTilitys,
+  tallennaBudjetti,
   tallennaHyvityslasku,
   tallennaJaksotukset,
+  tallennaKohdennus,
   tallennaKumppani,
   tallennaLiite,
   tallennaLiitetiedot,
@@ -112,7 +125,9 @@ import {
 } from '@penni/engine';
 import {
   alvLaskelmaParametrit,
+  budjettivertailuParametrit,
   jaksotuksetParametrit,
+  kohdennusRaporttiParametrit,
   myyntilaskuSuodatin,
   ostolaskuSuodatin,
   poistotParametrit,
@@ -337,6 +352,7 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
         alkupvm?: string;
         erittelyt?: string;
         kaikkiRivit?: string;
+        kohdennus?: string;
       };
     }) => ({
       status: 200 as const,
@@ -345,6 +361,26 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
           encodeRaporttiRivi,
         ),
       },
+    }),
+
+    laadiKohdennusRaportti: async ({
+      query,
+    }: {
+      query: Parameters<typeof kohdennusRaporttiParametrit>[0];
+    }) => ({
+      status: 200 as const,
+      body: (await laadiKohdennusRaportti(storage, env(), kohdennusRaporttiParametrit(query))).map(
+        encodeKohdennusOsio,
+      ),
+    }),
+
+    laadiBudjettivertailu: async ({
+      query,
+    }: { query: Parameters<typeof budjettivertailuParametrit>[0] }) => ({
+      status: 200 as const,
+      body: (await laadiBudjettivertailu(storage, env(), budjettivertailuParametrit(query))).map(
+        encodeBudjettivertailuRivi,
+      ),
     }),
 
     haeTilinpaatos: async ({
@@ -433,6 +469,37 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
 
     poistaKumppani: async ({ params }: { params: { id: string } }) => {
       await poistaKumppani(storage, Number(params.id));
+      return { status: 200 as const, body: null };
+    },
+
+    haeKohdennukset: async () => ({
+      status: 200 as const,
+      body: (await haeKohdennukset(storage)).map(encodeKohdennus),
+    }),
+
+    tallennaKohdennus: async ({ body }: { body: Record<string, unknown> }) => {
+      const tallennettu = await tallennaKohdennus(storage, decodeKohdennus(body));
+      return { status: 200 as const, body: encodeKohdennus(tallennettu) };
+    },
+
+    poistaKohdennus: async ({ params }: { params: { id: string } }) => {
+      await poistaKohdennus(storage, Number(params.id));
+      return { status: 200 as const, body: null };
+    },
+
+    haeBudjetti: async ({ params }: { params: { tilikausi: string } }) => ({
+      status: 200 as const,
+      body: (await haeBudjetti(storage, params.tilikausi)).map(encodeBudjettiRivi),
+    }),
+
+    tallennaBudjetti: async ({
+      params,
+      body,
+    }: {
+      params: { tilikausi: string };
+      body: Parameters<typeof decodeBudjettiRivi>[0][];
+    }) => {
+      await tallennaBudjetti(storage, params.tilikausi, body.map(decodeBudjettiRivi));
       return { status: 200 as const, body: null };
     },
 

@@ -49,7 +49,14 @@ const RAPORTTITIEDOSTO: Record<string, string> = {
   'tase-erittely': 'taseerittely',
 };
 /** Kuukausiraportit jäävät pois: tilinpäätöksen tase ja tuloslaskelma kattavat koko kauden. */
-const EI_ARKISTOON = new Set(['tase-kk', 'tulos-kk']);
+const EI_ARKISTOON = new Set([
+  'tase-kk',
+  'tulos-kk',
+  // Kitsaksen arkistossa ei ole kohdennus- eikä budjettiraportteja (arkistoija.cpp:126-176).
+  'kustannuspaikat',
+  'projektit',
+  'budjettivertailu',
+]);
 /** Raportit, joihin etusivu linkittää kiinteästi; muut menevät etusivun Raportit-osioon. */
 const ETUSIVUN_KIINTEAT = new Set([
   'paivakirja',

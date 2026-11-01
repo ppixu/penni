@@ -2,6 +2,8 @@ import { ResourceError, lataaKartta, tasoTyypista } from '@penni/engine';
 import type {
   Asetukset,
   AuditEntry,
+  BudjettiRivi,
+  Kohdennus,
   Kumppani,
   LiiteMeta,
   SaldoQuery,
@@ -11,6 +13,7 @@ import type {
   Tilikausi,
   TositeFilter,
   TositeVienti,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
 } from '@penni/engine';
@@ -213,8 +216,10 @@ export function createSqliteCoreStorage(
             JSON.stringify(stored),
           ],
         );
-        // vienti-taulu on saldojen summausta varten (querySaldot).
+        // vienti- ja merkkaus-taulut ovat saldojen summausta varten (querySaldot); merkkaus
+        // avainnetaan vientirivin (tosite, rivi) mukaan, koska vientirivit uusitaan joka tallennuksessa.
         tx.run('DELETE FROM vienti WHERE tosite = ?', [id]);
+        tx.run('DELETE FROM merkkaus WHERE tosite = ?', [id]);
         stored.viennit.forEach((vienti, i) => {
           tx.run(
             'INSERT INTO vienti (tosite, rivi, tili, pvm, debetsnt, kreditsnt, kohdennus, eraid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -229,6 +234,13 @@ export function createSqliteCoreStorage(
               vienti.era ?? null,
             ],
           );
+          // Set: PK (tosite, rivi, kohdennus) ei salli duplikaattia.
+          for (const merkkaus of new Set(vienti.merkkaukset))
+            tx.run('INSERT INTO merkkaus (tosite, rivi, kohdennus) VALUES (?, ?, ?)', [
+              id as number,
+              i + 1,
+              merkkaus,
+            ]);
         });
         tx.run(
           'INSERT INTO loki (tosite, aika, userid, lahde, tila, data) VALUES (?, ?, ?, ?, ?, ?)',
@@ -326,6 +338,20 @@ export function createSqliteCoreStorage(
         ehdot.push('v.kohdennus = ?');
         params.push(q.kohdennus);
       }
+      if (q.kohdennukset !== undefined) {
+        // Tyhjä joukko ei täsmää mihinkään.
+        if (q.kohdennukset.length === 0) ehdot.push('0');
+        else {
+          ehdot.push(`v.kohdennus IN (${q.kohdennukset.map(() => '?').join(',')})`);
+          params.push(...q.kohdennukset);
+        }
+      }
+      if (q.merkkaus !== undefined) {
+        ehdot.push(
+          'EXISTS (SELECT 1 FROM merkkaus m WHERE m.tosite = v.tosite AND m.rivi = v.rivi AND m.kohdennus = ?)',
+        );
+        params.push(q.merkkaus);
+      }
       const rows = ajuri.all(
         `SELECT v.tili AS tili, SUM(v.debetsnt - v.kreditsnt) AS saldo FROM vienti v JOIN tosite t ON v.tosite = t.id WHERE ${ehdot.join(
           ' AND ',
@@ -420,7 +446,7 @@ export function createSqliteCoreStorage(
           .map((r) => JSON.parse(r.json as string) as TiliData),
         tilikaudet: await storage.getTilikaudet(),
         tositesarjat: sarjat,
-        kohdennukset: [],
+        kohdennukset: await storage.getKohdennukset(),
       };
     },
     async putTili(numero, data) {
@@ -518,6 +544,90 @@ export function createSqliteCoreStorage(
     },
     async deleteKumppani(id: number) {
       ajuri.run('DELETE FROM kumppani WHERE id = ?', [id]);
+    },
+
+    // --- kohdennukset ja budjetti ---
+    async getKohdennukset() {
+      const rows = ajuri.all('SELECT id, tyyppi, kuuluu, json FROM kohdennus ORDER BY id');
+      return rows.map(
+        (r): Kohdennus => ({
+          ...(JSON.parse(r.json as string) as Pick<Kohdennus, 'nimi'>),
+          id: Number(r.id),
+          tyyppi: Number(r.tyyppi) as Kohdennus['tyyppi'],
+          ...(r.kuuluu === null ? {} : { kuuluu: Number(r.kuuluu) }),
+        }),
+      );
+    },
+    async saveKohdennus(k: UusiKohdennus) {
+      return ajuri.transaction((tx): Kohdennus => {
+        const { id: _drop, tyyppi, kuuluu, ...muut } = k;
+        const json = JSON.stringify(muut);
+        // Upsert eikä INSERT OR REPLACE: id säilyy, eikä AUTOINCREMENT-sekvenssi pääse taakse.
+        let id = k.id;
+        if (id === undefined) {
+          const info = tx.run('INSERT INTO kohdennus (tyyppi, kuuluu, json) VALUES (?, ?, ?)', [
+            tyyppi,
+            kuuluu ?? null,
+            json,
+          ]);
+          id = Number(info.lastInsertRowid);
+        } else {
+          tx.run(
+            'INSERT INTO kohdennus (id, tyyppi, kuuluu, json) VALUES (?, ?, ?, ?)' +
+              ' ON CONFLICT (id) DO UPDATE SET tyyppi = excluded.tyyppi,' +
+              ' kuuluu = excluded.kuuluu, json = excluded.json',
+            [id, tyyppi, kuuluu ?? null, json],
+          );
+        }
+        return { ...muut, id, tyyppi, ...(kuuluu === undefined ? {} : { kuuluu }) } as Kohdennus;
+      });
+    },
+    async deleteKohdennus(id: number) {
+      ajuri.transaction((tx) => {
+        tx.run('DELETE FROM kohdennus WHERE id = ?', [id]);
+        tx.run('DELETE FROM budjetti WHERE kohdennus = ?', [id]);
+      });
+    },
+    async laskeKohdennustenKaytto() {
+      const rows = ajuri.all(
+        `SELECT kohdennus, SUM(n) AS n FROM (
+           SELECT v.kohdennus AS kohdennus, COUNT(*) AS n FROM vienti v
+             JOIN tosite t ON v.tosite = t.id WHERE t.tila <> 0 AND v.kohdennus > 0
+             GROUP BY v.kohdennus
+           UNION ALL
+           SELECT m.kohdennus AS kohdennus, COUNT(*) AS n FROM merkkaus m
+             JOIN tosite t ON m.tosite = t.id WHERE t.tila <> 0
+             GROUP BY m.kohdennus
+         ) GROUP BY kohdennus`,
+      );
+      return new Map(rows.map((r) => [Number(r.kohdennus), Number(r.n)]));
+    },
+    async getBudjetti(tilikausi: string) {
+      const rows = ajuri.all(
+        'SELECT kohdennus, tili, sentit FROM budjetti WHERE tilikausi = ? ORDER BY kohdennus, tili',
+        [tilikausi],
+      );
+      return rows.map(
+        (r): BudjettiRivi => ({
+          kohdennus: Number(r.kohdennus),
+          tili: Number(r.tili),
+          sentit: Number(r.sentit) as Cents,
+        }),
+      );
+    },
+    async putBudjetti(tilikausi: string, rivit: BudjettiRivi[]) {
+      ajuri.transaction((tx) => {
+        tx.run('DELETE FROM budjetti WHERE tilikausi = ?', [tilikausi]);
+        for (const r of rivit) {
+          if (r.sentit === 0) continue;
+          tx.run('INSERT INTO budjetti (tilikausi, kohdennus, tili, sentit) VALUES (?, ?, ?, ?)', [
+            tilikausi,
+            r.kohdennus,
+            r.tili,
+            r.sentit,
+          ]);
+        }
+      });
     },
 
     // --- liitteet ---

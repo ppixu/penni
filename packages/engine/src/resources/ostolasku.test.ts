@@ -56,6 +56,34 @@ describe('tallennaOstolasku', () => {
     expect(t.viite).toBe('1234567');
   });
 
+  it('kopioi rivin kohdennuksen ja merkkaukset meno- ja ALV-vienneille', async () => {
+    const s = await createMemoryStorage(SEED);
+    const t = await tallennaOstolasku(
+      s,
+      {
+        pvm: '2026-03-01',
+        rivit: [
+          {
+            myyntiKpl: 1,
+            aNetto: 100,
+            alvKoodi: 21,
+            alvProsentti: 25.5,
+            tili: 4000,
+            kohdennus: 4,
+            merkkaukset: [7, 3],
+          },
+        ],
+      },
+      env,
+    );
+    for (const tili of [4000, 1763])
+      expect(t.viennit.find((v) => v.tili === tili)).toMatchObject({
+        kohdennus: 4,
+        merkkaukset: [3, 7],
+      });
+    expect(t.viennit.find((v) => v.tili === 2870)).not.toHaveProperty('merkkaukset');
+  });
+
   it('EIOSTOVELKATILIA kun ostovelkatiliä ei löydy', async () => {
     const s = await createMemoryStorage({
       ...SEED,

@@ -8,6 +8,7 @@ import {
 } from '@penni/engine';
 import { Euro } from '@penni/euro';
 import Database from 'better-sqlite3';
+import { lueKohdennukset } from './kohdennukset.js';
 import {
   KASITELLYT_TOSITE_JSON,
   KASITELLYT_TOSITE_SISAKKAISET,
@@ -48,16 +49,7 @@ export class TuontiVirhe extends Error {
 }
 
 /** Tables Penni's Tier-0 model does not carry over; reported, never silently dropped. */
-const OHITETTAVAT_TAULUT = [
-  'Kohdennus',
-  'Budjetti',
-  'Tuote',
-  'Vakioviite',
-  'Merkkaus',
-  'Ryhma',
-  'KumppaniRyhmassa',
-  'Rivi',
-];
+const OHITETTAVAT_TAULUT = ['Tuote', 'Vakioviite', 'Ryhma', 'KumppaniRyhmassa', 'Rivi'];
 
 /**
  * Kitsas writes `aika` with SQLite's `current_timestamp` ('YYYY-MM-DD HH:MM:SS', UTC). Penni's
@@ -230,6 +222,9 @@ export function lueKitsas(polku: string): KitsasKirja {
         .all() as KitsasKumppaniRivi[]
     ).map((r) => muunnaKumppani(r, ibanit.get(r.id) ?? []));
 
+    // --- kohdennukset, merkkaukset (vientien tagit) ja budjetit ---
+    const { kohdennukset, merkkaukset, budjetit } = lueKohdennukset(db);
+
     // --- tositteet + viennit ---
     const viennitTositteittain = new Map<number, TositeVienti[]>();
     const vientiRivit = db
@@ -258,6 +253,8 @@ export function lueKitsas(polku: string): KitsasKirja {
         viite: lahde?.viite ?? null,
       });
       if (vienti.era !== undefined) vienti.era = eraAvain(vienti.era);
+      const merkit = rivi.id === undefined ? undefined : merkkaukset.get(rivi.id);
+      if (merkit) vienti.merkkaukset = merkit;
       laskeKattamattomat(rivi.json, KASITELLYT_VIENTI_JSON, 'Vienti.json', kattamattomat);
       const lista = viennitTositteittain.get(rivi.tosite) ?? [];
       lista.push(vienti);
@@ -355,6 +352,8 @@ export function lueKitsas(polku: string): KitsasKirja {
       tilikaudet,
       asetukset,
       kumppanit,
+      kohdennukset,
+      budjetit,
       tositteet,
       liitteet,
       kpVersio,

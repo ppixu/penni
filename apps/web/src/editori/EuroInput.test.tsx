@@ -33,6 +33,36 @@ describe('EuroInput', () => {
     expect(onCommit).toHaveBeenCalledWith(5_000);
   });
 
+  it('keeps the sign when etumerkillinen, and re-commits its own "−" display unchanged', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
+    const { rerender } = render(
+      <EuroInput
+        aria-label="Budjetti"
+        etumerkillinen
+        arvo={Euro.fromCents(0)}
+        onCommit={onCommit}
+      />,
+    );
+    const input = screen.getByRole('textbox', { name: 'Budjetti' });
+    await user.type(input, '-200');
+    await user.tab();
+    expect(onCommit).toHaveBeenLastCalledWith(-20_000);
+    rerender(
+      <EuroInput
+        aria-label="Budjetti"
+        etumerkillinen
+        arvo={Euro.fromCents(-20_000)}
+        onCommit={onCommit}
+      />,
+    );
+    expect(input).toHaveValue('−200,00');
+    await user.click(input);
+    await user.tab();
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
   it('marks the field invalid and does not commit on a bad amount', async () => {
     const user = userEvent.setup();
     const onCommit = vi.fn();

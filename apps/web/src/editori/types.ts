@@ -2,10 +2,10 @@ import type { IsoDate, TilioteTiedot } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 
 /** Which column of a grid row a focusable control sits in. */
-export type Solu = 'tili' | 'selite' | 'debet' | 'kredit' | 'alv';
+export type Solu = 'tili' | 'selite' | 'kohdennus' | 'debet' | 'kredit' | 'alv';
 
 /** Tab/focus order across a row's cells. */
-export const SARAKKEET: readonly Solu[] = ['tili', 'selite', 'debet', 'kredit', 'alv'];
+export const SARAKKEET: readonly Solu[] = ['tili', 'selite', 'kohdennus', 'debet', 'kredit', 'alv'];
 
 /**
  * One editable grid row. Money is ALWAYS integer Cents in state; strings live only
@@ -31,6 +31,10 @@ export interface VientiRivi {
   alvTililta?: boolean;
   /** Marks an auto-suggested balancing line. Tier-0 keeps it fully editable. */
   ehdotettu?: boolean;
+  /** Kustannuspaikka tai projekti (id ≥ 1); puuttuu = ei kohdennusta (Yleinen). */
+  kohdennus?: number;
+  /** Merkkausten id:t nousevassa järjestyksessä, uniikit; puuttuu, kun merkkauksia ei ole. */
+  merkkaukset?: number[];
 }
 
 export interface TositeEditoriTila {
@@ -63,6 +67,7 @@ export type EditoriAction =
   | { type: 'setKredit'; avain: string; snt: Cents } // and vice-versa
   | { type: 'setAlvKoodi'; avain: string; alvKoodi: number; alvProsentti: number }
   | { type: 'setBruttoSyotto'; avain: string; brutto: boolean }
+  | { type: 'setKohdennus'; avain: string; kohdennus?: number; merkkaukset?: number[] }
   | { type: 'addRow'; afterAvain?: string }
   | {
       type: 'addBalancingRow'; // Enter: append a row pre-filled with the suggested counter-amount

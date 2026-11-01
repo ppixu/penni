@@ -3,6 +3,7 @@ import { routeTree } from '@/routeTree.gen';
 import { AutotallennusAjat } from '@/tallennus/useAutomaattinenTallennus';
 import { InProcessClient } from '@penni/asiakas';
 import type { KpClient } from '@penni/asiakas';
+import type { Storage } from '@penni/engine';
 import { createMemoryStorage } from '@penni/storage-memory';
 import type { MemorySeed } from '@penni/storage-memory';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -17,9 +18,10 @@ interface RenderRouteOptions {
   /**
    * Optional arrange step run through the real client BEFORE the first render — so any data it
    * creates (e.g. finalized vouchers via client.luoTosite) is present on the first query on mount
-   * (no reliance on refetch; avoids flaky waitFor).
+   * (no reliance on refetch; avoids flaky waitFor). `storage` writes past the engine's checks
+   * (e.g. legacy or imported data the engine would refuse today).
    */
-  arrange?: (client: KpClient) => Promise<void>;
+  arrange?: (client: KpClient, storage: Storage) => Promise<void>;
   /** Valinnainen kääre RouterProviderin ympärille (esim. testikontekstit). */
   wrapper?: (children: ReactNode) => ReactNode;
 }
@@ -27,7 +29,7 @@ interface RenderRouteOptions {
 export async function renderRoute(initialPath: string, opts: RenderRouteOptions = {}) {
   const storage = createMemoryStorage(opts.seed ?? {});
   const client = new InProcessClient(storage, () => '2026-06-01T00:00:00.000Z');
-  if (opts.arrange) await opts.arrange(client);
+  if (opts.arrange) await opts.arrange(client, storage);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
   });

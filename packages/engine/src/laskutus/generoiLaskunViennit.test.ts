@@ -204,3 +204,55 @@ describe('generoiLaskunViennit marginaaliverotus', () => {
     expect(viennit.find((v) => v.debet > 0)?.debet).toBe(Euro.fromCents(10_000));
   });
 });
+
+describe('generoiLaskunViennit: merkkaukset', () => {
+  it('kopioi merkkaukset tulovientiin', () => {
+    const v = generoiLaskunViennit({
+      rivit: [{ ...netto(100), kohdennus: 4, merkkaukset: [7, 3] }],
+      maksutapa: Maksutapa.LASKU,
+      pvm: '2026-06-01',
+      tilit: TILIT,
+    });
+    const tulo = v.find((x) => x.tili === 3000);
+    expect(tulo?.kohdennus).toBe(4);
+    expect(tulo?.merkkaukset).toEqual([3, 7]);
+    expect(v.find((x) => x.tili === 1701)?.merkkaukset).toBeUndefined();
+  });
+
+  it('pelkästään merkkauksiltaan eroavat rivit tuottavat kaksi tulovientiä', () => {
+    const v = generoiLaskunViennit({
+      rivit: [
+        { ...netto(100), merkkaukset: [7] },
+        { ...netto(50) },
+        { ...netto(20), merkkaukset: [7] },
+        { ...netto(10), merkkaukset: [] },
+      ],
+      maksutapa: Maksutapa.LASKU,
+      pvm: '2026-06-01',
+      tilit: TILIT,
+    });
+    const tulot = v.filter((x) => x.tili === 3000);
+    expect(tulot).toHaveLength(2);
+    expect(tulot.find((x) => x.merkkaukset !== undefined)).toMatchObject({
+      kredit: 12000,
+      merkkaukset: [7],
+    });
+    const ilman = tulot.find((x) => x.merkkaukset === undefined);
+    expect(ilman?.kredit).toBe(6000);
+    expect(ilman && 'merkkaukset' in ilman).toBe(false);
+    expect(summa(v, 'debet')).toBe(summa(v, 'kredit'));
+  });
+
+  it('merkkausten järjestys ei erota ryhmiä', () => {
+    const v = generoiLaskunViennit({
+      rivit: [
+        { ...netto(100), merkkaukset: [3, 7] },
+        { ...netto(50), merkkaukset: [7, 3] },
+      ],
+      maksutapa: Maksutapa.LASKU,
+      pvm: '2026-06-01',
+      tilit: TILIT,
+    });
+    expect(v.filter((x) => x.tili === 3000)).toHaveLength(1);
+  });
+});

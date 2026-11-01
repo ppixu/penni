@@ -1,6 +1,7 @@
-import { useInit } from '@/app/kysely';
+import { useInit, useKohdennukset } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
+import { kohdennustenRyhmat } from '@/kohdennukset/kohdennusTeksti';
 import type { Tilirajaus } from '@/raportit/raporttiProps';
 import { RAPORTIT, kaavaAvain } from '@/raportit/raporttiValikko';
 import {
@@ -10,7 +11,14 @@ import {
   ryhmanOtsikko,
 } from '@/tilikartta/tilinakyma';
 import { useValittuTilikausi } from '@/tilikausi/valittuTilikausi';
-import { lataaKartta, nimi } from '@penni/engine';
+import {
+  type KohdennusKaytolla,
+  YLEINEN_ID,
+  kohdennuksenPolku,
+  lataaKartta,
+  nimi,
+  onVoimassaValilla,
+} from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Info } from 'lucide-react';
@@ -52,11 +60,20 @@ function Raportit() {
   const { kausi } = useValittuTilikausi();
   // Tilikohtaiset erittelyt (Kitsas: "Tulosta tilikohtaiset erittelyt").
   const [naytaTilit, setNaytaTilit] = useState(true);
+  const { data: kohdennukset } = useKohdennukset();
+  // Tuloslaskelman kohdennussuodatin; undefined = Kaikki. Säilyy raportin vaihdon yli.
+  const [kohdennus, setKohdennus] = useState<number | undefined>();
 
-  // Kaavaraportti näkyy valikossa vain, jos kirjassa on sen lajin kaava.
+  // Kaavaraportti näkyy valikossa vain, jos kirjassa on sen lajin kaava, ja kohdennusraportti vain,
+  // jos kirjassa on sen tyypin kohdennus.
   const lista = useMemo(
-    () => RAPORTIT.filter((r) => !r.kaava || (init && kaavaAvain(init.asetukset, r.kaava))),
-    [init],
+    () =>
+      RAPORTIT.filter(
+        (r) =>
+          (!r.kaava || (init && kaavaAvain(init.asetukset, r.kaava))) &&
+          (!r.vaatii || kohdennukset?.some((k) => k.tyyppi === r.vaatii)),
+      ),
+    [init, kohdennukset],
   );
   // Oletuksena tase; jos kirjassa ei ole tasekaavaa, ensimmäinen kaavaraportti.
   const raportti = lista.find((r) => r.avain === valittu) ?? lista.find((r) => r.kaava) ?? lista[0];
@@ -79,6 +96,19 @@ function Raportit() {
     const otsikko = e.length === 1 ? ryhmanOtsikko(kartta, Number(e)) : alaryhmanOtsikko(kartta, e);
     return `Tilit ${etuliitteenNumero(e)}–${e.padEnd(4, '9')}${otsikko ? ` ${otsikko}` : ''}`;
   }, [rajaus, init]);
+  // Mitään kohdennuksiin liittyvää ei näytetä, ennen kuin kirjassa on kohdennus.
+  const suodatettava =
+    raportti?.kohdennussuodatin === true && kohdennukset !== undefined && kohdennukset.length > 0;
+  // Poistettu kohdennus putoaa takaisin Kaikkiin.
+  const suodatinKohdennus = kohdennukset?.find((k) => k.id === kohdennus);
+  const suodatin =
+    suodatettava && (kohdennus === YLEINEN_ID || suodatinKohdennus) ? kohdennus : undefined;
+  const suodattimenNimi =
+    suodatin === YLEINEN_ID
+      ? 'Yleinen'
+      : suodatin !== undefined && suodatinKohdennus
+        ? kohdennuksenPolku(suodatinKohdennus, kohdennukset ?? [])
+        : undefined;
 
   return (
     <>
@@ -101,7 +131,16 @@ function Raportit() {
             </select>
           </label>
           {raportti && <RaportinOhje teksti={raportti.selite} />}
-          {raportti?.kaava && (
+          {suodatettava && kausi && (
+            <KohdennusSuodatin
+              kohdennukset={kohdennukset}
+              alkupvm={kausi.alkaa}
+              loppupvm={kausi.loppuu}
+              valittu={suodatin}
+              onValitse={setKohdennus}
+            />
+          )}
+          {raportti?.tiliValinta && (
             <label className="flex items-center gap-2 pb-2 text-[12.5px] text-[var(--text-muted)]">
               <input
                 type="checkbox"
@@ -123,14 +162,15 @@ function Raportit() {
           )}
         </div>
         {/* Tulosteessa valitsimet piilotetaan (ks. TopBar) — yritys, raportin nimi ja kausi (tase:
-            tilanne kauden lopussa) otsikoksi. */}
-        {raportti && kausi && (
+            tilanne kauden lopussa) ja kohdennussuodatin otsikoksi. */}
+        {raportti && kausi && !raportti.omaOtsikko && (
           <h1 className="mb-4 hidden text-[15px] font-semibold print:block">
             {[
               init?.asetukset.Nimi,
               raportti.tilanneLopussa
                 ? `${raportti.nimi} ${muotoilePvm(kausi.loppuu)}`
                 : `${raportti.nimi} ${muotoilePvm(kausi.alkaa)} – ${muotoilePvm(kausi.loppuu)}`,
+              suodattimenNimi,
             ]
               .filter(Boolean)
               .join(' – ')}
@@ -144,6 +184,7 @@ function Raportit() {
             naytaTilit={naytaTilit}
             {...(muoto ? { muoto } : {})}
             {...(rajaus ? { tilirajaus: rajaus } : {})}
+            {...(suodatin !== undefined ? { kohdennus: suodatin } : {})}
           />
         ) : (
           <p className="text-[13px] text-[var(--text-muted)]">Ladataan…</p>
@@ -177,6 +218,60 @@ function RaportinOhje({ teksti }: { teksti: string }) {
         {teksti}
       </span>
     </span>
+  );
+}
+
+/**
+ * Tuloslaskelman Kohdennus-valinta (Kitsas tasetulosraportti.cpp:49-55, KohdennusProxyModel::KAIKKI):
+ * Kaikki, Yleinen (kun kustannuspaikkoja tai projekteja on), kustannuspaikat projekteineen ja
+ * merkkaukset — kaudella voimassa olevat sekä valittu, vaikka se ei olisi voimassa.
+ */
+function KohdennusSuodatin({
+  kohdennukset,
+  alkupvm,
+  loppupvm,
+  valittu,
+  onValitse,
+}: {
+  kohdennukset: readonly KohdennusKaytolla[];
+  alkupvm: string;
+  loppupvm: string;
+  valittu: number | undefined;
+  onValitse: (id: number | undefined) => void;
+}) {
+  const mukana = (k: KohdennusKaytolla) =>
+    k.id === valittu || onVoimassaValilla(k, alkupvm, loppupvm);
+  const ryhmat = kohdennustenRyhmat(kohdennukset);
+  const kohdennuksia = [
+    ...ryhmat.kustannuspaikat.flatMap((r) => [r.kustannuspaikka, ...r.projektit]),
+    ...ryhmat.yleiset,
+  ];
+  const kohdennetut = kohdennuksia.filter(mukana);
+  const merkkaukset = ryhmat.merkkaukset.filter(mukana);
+  const vaihtoehto = (k: KohdennusKaytolla) => (
+    <option key={k.id} value={k.id}>
+      {kohdennuksenPolku(k, kohdennukset)}
+    </option>
+  );
+  return (
+    <label className={VALITSIN_OTSIKKO}>
+      Kohdennus
+      <select
+        aria-label="Kohdennus"
+        value={valittu ?? ''}
+        onChange={(e) => onValitse(e.target.value === '' ? undefined : Number(e.target.value))}
+        className={VALITSIN}
+      >
+        <option value="">Kaikki</option>
+        {kohdennuksia.length > 0 && <option value={YLEINEN_ID}>Yleinen</option>}
+        {kohdennetut.length > 0 && (
+          <optgroup label="Kustannuspaikat ja projektit">{kohdennetut.map(vaihtoehto)}</optgroup>
+        )}
+        {merkkaukset.length > 0 && (
+          <optgroup label="Merkkaukset">{merkkaukset.map(vaihtoehto)}</optgroup>
+        )}
+      </select>
+    </label>
   );
 }
 

@@ -96,4 +96,32 @@ describe('rakennaLaskuSyote', () => {
     const syote = rakennaLaskuSyote(tila);
     expect('erapvm' in syote).toBe(false);
   });
+
+  it('vie rivin kohdennuksen ja normalisoidut merkkaukset syötteeseen', () => {
+    let tila = pohja();
+    const avain = tila.rivit[0]?.avain ?? 0;
+    tila = laskuReducer(tila, {
+      type: 'setRivi',
+      avain,
+      muutos: { aNettoSnt: Euro.fromCents(1000), kohdennus: 4, merkkaukset: [7, 5, 7] },
+    });
+    expect(rakennaLaskuSyote(tila).rivit[0]).toMatchObject({ kohdennus: 4, merkkaukset: [5, 7] });
+  });
+
+  it('jättää Yleisen (0), tyhjän merkkauslistan ja undefined-arvot pois avaimina', () => {
+    let tila = pohja();
+    const avain = tila.rivit[0]?.avain ?? 0;
+    tila = laskuReducer(tila, {
+      type: 'setRivi',
+      avain,
+      muutos: {
+        aNettoSnt: Euro.fromCents(1000),
+        kohdennus: 0,
+        merkkaukset: [],
+      },
+    });
+    const rivi = rakennaLaskuSyote(tila).rivit[0] ?? {};
+    expect('kohdennus' in rivi).toBe(false);
+    expect('merkkaukset' in rivi).toBe(false);
+  });
 });

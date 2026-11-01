@@ -5,9 +5,14 @@ import {
   decodeAlvIlmoitus,
   decodeAlvLaskelma,
   decodeAsetukset,
+  decodeBudjettiRivi,
+  decodeBudjettivertailuRivi,
   decodeEuMyynti,
   decodeInit,
   decodeJaksotuslaskelma,
+  decodeKohdennus,
+  decodeKohdennusKaytolla,
+  decodeKohdennusOsio,
   decodeKumppani,
   decodeLiite,
   decodeLiiteMeta,
@@ -24,9 +29,11 @@ import {
   decodeVerolaskelma,
   decodeVienti,
   encodeAlvTilitysSyote,
+  encodeBudjettiRivi,
   encodeHyvityslaskuSyote,
   encodeInit,
   encodeJaksotuksetSyote,
+  encodeKohdennus,
   encodeKumppani,
   encodeLiite,
   encodeLiitetiedotSyote,
@@ -49,6 +56,9 @@ import {
   type AlvLaskelmaTulos,
   type AlvTilitysSyote,
   type Asetukset,
+  type BudjettiRivi,
+  type BudjettivertailuParams,
+  type BudjettivertailuRivi,
   type EuMyyntiYhteenveto,
   type HyvityslaskuSyote,
   type InitBundle,
@@ -57,6 +67,10 @@ import {
   type JaksotuksetParams,
   type JaksotuksetSyote,
   type Jaksotuslaskelma,
+  type Kohdennus,
+  type KohdennusKaytolla,
+  type KohdennusOsio,
+  type KohdennusRaporttiParams,
   type Kumppani,
   type Liite,
   type LiiteMeta,
@@ -92,6 +106,7 @@ import {
   TositeTila,
   type TositeVienti,
   type TuloveroSyote,
+  type UusiKohdennus,
   type UusiKumppani,
   type UusiLiite,
   type VahvistusSyote,
@@ -498,6 +513,7 @@ export class HttpClient implements KpClient {
     if (params.alkupvm !== undefined) query.alkupvm = params.alkupvm;
     if (params.erittelyt) query.erittelyt = 'true';
     if (params.kaikkiRivit) query.kaikkiRivit = 'true';
+    if (params.kohdennus !== undefined) query.kohdennus = String(params.kohdennus);
     const r = await this.tsr.laadiRaportti({
       query: query as Parameters<Tsr['laadiRaportti']>[0]['query'],
     });
@@ -506,6 +522,32 @@ export class HttpClient implements KpClient {
         decodeRaporttiRivi,
       );
     if (r.status === 404) throw new ResourceError('EIRAPORTTIA', 'Raporttia ei löytynyt');
+    throw virhe(r.status, r.body);
+  }
+
+  async laadiKohdennusRaportti(p: KohdennusRaporttiParams): Promise<KohdennusOsio[]> {
+    const query: Record<string, string> = {
+      muoto: p.muoto,
+      alkupvm: p.alkupvm,
+      pvm: p.pvm,
+      laji: p.laji,
+    };
+    if (p.kustannuspaikka !== undefined) query.kustannuspaikka = String(p.kustannuspaikka);
+    const r = await this.tsr.laadiKohdennusRaportti({
+      query: query as Parameters<Tsr['laadiKohdennusRaportti']>[0]['query'],
+    });
+    if (r.status === 200) return r.body.map(decodeKohdennusOsio);
+    throw virhe(r.status, r.body);
+  }
+
+  async laadiBudjettivertailu(p: BudjettivertailuParams): Promise<BudjettivertailuRivi[]> {
+    const query: Record<string, string> = { muoto: p.muoto, tilikausi: p.tilikausi };
+    if (p.pvm !== undefined) query.pvm = p.pvm;
+    if (p.kohdennus !== undefined) query.kohdennus = String(p.kohdennus);
+    const r = await this.tsr.laadiBudjettivertailu({
+      query: query as Parameters<Tsr['laadiBudjettivertailu']>[0]['query'],
+    });
+    if (r.status === 200) return r.body.map(decodeBudjettivertailuRivi);
     throw virhe(r.status, r.body);
   }
 
@@ -574,6 +616,38 @@ export class HttpClient implements KpClient {
   }
   async poistaKumppani(id: number): Promise<void> {
     const r = await this.tsr.poistaKumppani({ params: { id: String(id) } });
+    if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+
+  async haeKohdennukset(): Promise<KohdennusKaytolla[]> {
+    const r = await this.tsr.haeKohdennukset();
+    if (r.status === 200) return (r.body as Record<string, unknown>[]).map(decodeKohdennusKaytolla);
+    throw virhe(r.status, r.body);
+  }
+  async tallennaKohdennus(k: UusiKohdennus): Promise<Kohdennus> {
+    const r = await this.tsr.tallennaKohdennus({
+      body: encodeKohdennus(k) as Parameters<Tsr['tallennaKohdennus']>[0]['body'],
+    });
+    if (r.status === 200 || r.status === 201)
+      return decodeKohdennus(r.body as Record<string, unknown>);
+    throw virhe(r.status, r.body);
+  }
+  async poistaKohdennus(id: number): Promise<void> {
+    const r = await this.tsr.poistaKohdennus({ params: { id: String(id) } });
+    if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+  async haeBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]> {
+    const r = await this.tsr.haeBudjetti({ params: { tilikausi } });
+    if (r.status === 200) return r.body.map(decodeBudjettiRivi);
+    throw virhe(r.status, r.body);
+  }
+  async tallennaBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void> {
+    const r = await this.tsr.tallennaBudjetti({
+      params: { tilikausi },
+      body: rivit.map(encodeBudjettiRivi),
+    });
     if (r.status === 200) return;
     throw virhe(r.status, r.body);
   }

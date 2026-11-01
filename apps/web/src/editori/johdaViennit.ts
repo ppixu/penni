@@ -15,6 +15,11 @@ export function johdaViennit(
   const kelpo = rows.filter((r) => r.tili !== undefined && (r.debetSnt !== 0 || r.kreditSnt !== 0));
   const out: TositeVienti[] = [];
   for (const r of kelpo) {
+    // Kohdennus ja merkkaukset kulkevat perusviennille ja (generoiVeroviennit) alv-vienneille.
+    const kohdennus = {
+      ...(r.kohdennus ? { kohdennus: r.kohdennus } : {}),
+      ...(r.merkkaukset && r.merkkaukset.length > 0 ? { merkkaukset: r.merkkaukset } : {}),
+    };
     const puoli = r.kreditSnt !== 0 ? 'kredit' : 'debet';
     const maara = puoli === 'kredit' ? r.kreditSnt : r.debetSnt;
     if (r.alvKoodi === AlvKoodi.EIALV) {
@@ -26,6 +31,7 @@ export function johdaViennit(
         alvKoodi: 0,
         alvProsentti: 0,
         ...(r.selite ? { selite: r.selite } : {}),
+        ...kohdennus,
       });
       continue;
     }
@@ -41,6 +47,7 @@ export function johdaViennit(
             puoli,
             pvm,
             ...(r.selite ? { selite: r.selite } : {}),
+            ...kohdennus,
           },
         ],
         chart,

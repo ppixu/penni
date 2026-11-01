@@ -1,10 +1,12 @@
 import type {
   Asetukset,
   AuditEntry,
+  BudjettiRivi,
   IsoDate,
   TiliData,
   Tilikausi,
   Tosite,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
 } from '@penni/engine';
@@ -22,6 +24,10 @@ export interface KitsasKirja {
   tilikaudet: Tilikausi[];
   asetukset: Asetukset;
   kumppanit: UusiKumppani[];
+  /** Kustannuspaikat, projektit ja merkkaukset (Kitsas-id:t säilytetty; Yleinen on implisiittinen). */
+  kohdennukset: UusiKohdennus[];
+  /** Vuosibudjetit tilikausittain (tilikauden `alkaa`). */
+  budjetit: { tilikausi: IsoDate; rivit: BudjettiRivi[] }[];
   tositteet: KitsasTosite[];
   liitteet: KitsasLiite[];
   /** Kitsas KpVersio setting, for the compatibility warning. */

@@ -177,6 +177,53 @@ describe('Uusi myyntilasku -lomake', () => {
   });
 });
 
+describe('Uusi myyntilasku — kohdennukset', () => {
+  it('ei näytä kohdennussaraketta, kun kirjanpidossa ei ole kohdennuksia', async () => {
+    await renderRoute('/myyntilaskut/uusi', { seed: SEED });
+    await screen.findByLabelText('laskulomake');
+    expect(screen.queryByRole('columnheader', { name: 'Kohdennus' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Kohdennus, rivi 1')).not.toBeInTheDocument();
+  });
+
+  it('rivin projekti ja merkkaus päätyvät tallennettuun tuottovientiin; muutos likaa lomakkeen', async () => {
+    const seed = { ...SEED, asetukset: { ...SEED.asetukset, LaskuKorttitili: '1900' } };
+    const { user, client, router } = await renderRoute('/myyntilaskut/uusi', {
+      seed,
+      arrange: async (c) => {
+        await c.tallennaKohdennus({ tyyppi: 2, nimi: { fi: 'Kesäleiri' } });
+        await c.tallennaKohdennus({ tyyppi: 3, nimi: { fi: 'Avustus' } });
+      },
+    });
+    await screen.findByLabelText('laskulomake');
+    expect(await screen.findByRole('columnheader', { name: 'Kohdennus' })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Selite, rivi 1'), 'Leirimaksu');
+    await user.type(screen.getByLabelText('À-hinta, rivi 1'), '10');
+    await user.tab();
+    await user.click(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' }));
+    await user.click(screen.getByRole('option', { name: 'Avustus' }));
+    await user.click(screen.getByRole('option', { name: 'Kesäleiri' }));
+
+    // Poistuminen kysyy vahvistuksen: valinta on muutos.
+    await user.click(screen.getByRole('link', { name: 'Kojelauta' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Tallentamattomia muutoksia' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Jää sivulle' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(router.state.location.pathname).toBe('/myyntilaskut/uusi');
+
+    await user.click(screen.getByRole('radio', { name: 'Korttimaksu' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByLabelText('laskudokumentti')).toBeInTheDocument();
+
+    const tosite = await client.haeTosite(1);
+    const tuotto = tosite?.viennit.find((v) => v.tili === 3000);
+    expect(tuotto).toMatchObject({ kohdennus: 1, merkkaukset: [2] });
+    expect(tosite?.viennit.filter((v) => v.tili !== 3000 && v.kohdennus !== undefined)).toEqual([]);
+  });
+});
+
 describe('Uusi myyntilasku — tallentamattomat muutokset', () => {
   it('tallennus navigoi laskuun ilman varoitusta', async () => {
     // Korttimyynti ei vaadi asiakasta; korttitili asetetaan, ettei moottori estä tallennusta.

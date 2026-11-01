@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { saldotParametrit, tositeSuodatin, viennitSuodatin } from './pyynnot.js';
+import {
+  budjettivertailuParametrit,
+  kohdennusRaporttiParametrit,
+  raporttiParametrit,
+  saldotParametrit,
+  tositeSuodatin,
+  viennitSuodatin,
+} from './pyynnot.js';
 
 /**
  * Numeeriset kyselyparametrit kulkevat kaikki numero()-apurin läpi. Ilman kelpoisuustarkistusta
@@ -82,5 +89,40 @@ describe('saldotParametrit', () => {
         kohdennus: '7',
       }),
     ).toEqual({ pvm: '2026-12-31', tuloslaskelma: true, alkusaldot: true, kohdennus: 7 });
+  });
+});
+
+describe('kohdennusparametrit', () => {
+  it('raportin kohdennus 0 (Yleinen) säilyy, kelvoton pudotetaan', () => {
+    const q = { muoto: 'tulos/yleinen', pvm: '2026-12-31' };
+    expect(raporttiParametrit({ ...q, kohdennus: '0' }).kohdennus).toBe(0);
+    expect(raporttiParametrit({ ...q, kohdennus: '7' }).kohdennus).toBe(7);
+    expect(raporttiParametrit({ ...q, kohdennus: 'abc' })).not.toHaveProperty('kohdennus');
+    expect(raporttiParametrit(q)).not.toHaveProperty('kohdennus');
+  });
+
+  it('kohdennusraportin ja budjettivertailun kyselyt kääntyvät moottorin parametreiksi', () => {
+    expect(
+      kohdennusRaporttiParametrit({
+        muoto: 'tulos/yleinen',
+        alkupvm: '2026-01-01',
+        pvm: '2026-12-31',
+        laji: 'projektit',
+        kustannuspaikka: '0',
+      }),
+    ).toEqual({
+      muoto: 'tulos/yleinen',
+      alkupvm: '2026-01-01',
+      pvm: '2026-12-31',
+      laji: 'projektit',
+      kustannuspaikka: 0,
+    });
+    expect(
+      budjettivertailuParametrit({
+        muoto: 'tulos/yleinen',
+        tilikausi: '2026-01-01',
+        kohdennus: 'x',
+      }),
+    ).toEqual({ muoto: 'tulos/yleinen', tilikausi: '2026-01-01' });
   });
 });

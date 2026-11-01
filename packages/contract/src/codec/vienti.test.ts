@@ -164,4 +164,23 @@ describe('vienti codec — Kitsas-tuonnin rivikohtaiset tiedot', () => {
   it('hyväksyy kumppanin myös pelkkänä numerona', () => {
     expect(decodeVienti({ tili: 1701, pvm: '2026-03-20', kumppani: 7 }).kumppani).toBe(7);
   });
+
+  it('merkkaukset: tyhjä lista jätetään pois, täysi kiertää nousevana ja uniikkina', () => {
+    const pohja: TositeVienti = {
+      tili: 4000,
+      debet: c(100),
+      kredit: c(0),
+      pvm: '2026-03-15',
+      alvKoodi: 0,
+      alvProsentti: 0,
+    };
+    expect(encodeVienti({ ...pohja, merkkaukset: [] })).not.toHaveProperty('merkkaukset');
+    expect(encodeVienti({ ...pohja, merkkaukset: [2, 5] }).merkkaukset).toEqual([2, 5]);
+    expect(
+      decodeVienti({ tili: 4000, pvm: '2026-03-15', merkkaukset: [5, 2, 5] }).merkkaukset,
+    ).toEqual([2, 5]);
+    expect(decodeVienti({ tili: 4000, pvm: '2026-03-15', merkkaukset: [] })).not.toHaveProperty(
+      'merkkaukset',
+    );
+  });
 });

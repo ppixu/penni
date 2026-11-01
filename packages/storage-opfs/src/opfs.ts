@@ -2,9 +2,11 @@ import type {
   Asetukset,
   AuditCtx,
   AuditEntry,
+  BudjettiRivi,
   InitBundle,
   InitPatch,
   IsoDate,
+  Kohdennus,
   Kumppani,
   Liite,
   LiiteMeta,
@@ -17,6 +19,7 @@ import type {
   Tosite,
   TositeFilter,
   TositeVienti,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
 } from '@penni/engine';
@@ -100,6 +103,16 @@ export async function createOpfsStorage(
     getKumppanit: () => kutsu<Kumppani[]>('getKumppanit'),
     saveKumppani: (kumppani: UusiKumppani) => kutsu<Kumppani>('saveKumppani', kumppani),
     deleteKumppani: (id: number) => kutsu<void>('deleteKumppani', id),
+    getKohdennukset: () => kutsu<Kohdennus[]>('getKohdennukset'),
+    saveKohdennus: (k: UusiKohdennus) => kutsu<Kohdennus>('saveKohdennus', k),
+    deleteKohdennus: (id: number) => kutsu<void>('deleteKohdennus', id),
+    laskeKohdennustenKaytto: async () => {
+      const parit = await kutsu<[number, number][]>('laskeKohdennustenKaytto');
+      return new Map<number, number>(parit);
+    },
+    getBudjetti: (tilikausi: IsoDate) => kutsu<BudjettiRivi[]>('getBudjetti', tilikausi),
+    putBudjetti: (tilikausi: IsoDate, rivit: BudjettiRivi[]) =>
+      kutsu<void>('putBudjetti', tilikausi, rivit),
     laskeLiitteet: async () => {
       const parit = await kutsu<[number, number][]>('laskeLiitteet');
       return new Map<number, number>(parit);

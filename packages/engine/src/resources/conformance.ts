@@ -2378,3 +2378,5 @@ export function runResourceConformance(
     });
   });
 }
+
+export { runKohdennusConformance } from './conformanceKohdennukset.js';

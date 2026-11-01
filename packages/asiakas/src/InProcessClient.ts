@@ -5,6 +5,9 @@ import {
   type AlvLaskelmaTulos,
   type AlvTilitysSyote,
   type Asetukset,
+  type BudjettiRivi,
+  type BudjettivertailuParams,
+  type BudjettivertailuRivi,
   type EuMyyntiYhteenveto,
   type HyvityslaskuSyote,
   type InitBundle,
@@ -13,6 +16,10 @@ import {
   type JaksotuksetParams,
   type JaksotuksetSyote,
   type Jaksotuslaskelma,
+  type Kohdennus,
+  type KohdennusKaytolla,
+  type KohdennusOsio,
+  type KohdennusRaporttiParams,
   type Kumppani,
   type Liite,
   type LiiteMeta,
@@ -47,6 +54,7 @@ import {
   type TositeSyote,
   type TositeVienti,
   type TuloveroSyote,
+  type UusiKohdennus,
   type UusiKumppani,
   type UusiLiite,
   type VahvistusSyote,
@@ -58,9 +66,11 @@ import {
   haeAlvIlmoitus,
   haeAlvLaskelma,
   haeAsetukset,
+  haeBudjetti,
   haeEuMyyntiYhteenveto,
   haeInit,
   haeJaksotukset,
+  haeKohdennukset,
   haeKumppanit,
   haeLiite,
   haeLiitteet,
@@ -70,6 +80,8 @@ import {
   haeTosite,
   haeVerolaskelma,
   kirjaaMarginaalivero,
+  laadiBudjettivertailu,
+  laadiKohdennusRaportti,
   laadiRaportti,
   laadiTilinpaatos,
   lisaaLiite,
@@ -85,6 +97,7 @@ import {
   paivitaAsetukset,
   paivitaInit,
   peruVahvistus,
+  poistaKohdennus,
   poistaKumppani,
   poistaLiite,
   poistaTili,
@@ -93,8 +106,10 @@ import {
   putTili,
   putTilikausi,
   tallennaAlvTilitys,
+  tallennaBudjetti,
   tallennaHyvityslasku,
   tallennaJaksotukset,
+  tallennaKohdennus,
   tallennaKumppani,
   tallennaLiite,
   tallennaLiitetiedot,
@@ -251,6 +266,12 @@ export class InProcessClient implements KpClient {
   laadiRaportti(params: RaporttiParams): Promise<RaporttiRivi[]> {
     return laadiRaportti(this.storage, this.env(), params);
   }
+  laadiKohdennusRaportti(p: KohdennusRaporttiParams): Promise<KohdennusOsio[]> {
+    return laadiKohdennusRaportti(this.storage, this.env(), p);
+  }
+  laadiBudjettivertailu(p: BudjettivertailuParams): Promise<BudjettivertailuRivi[]> {
+    return laadiBudjettivertailu(this.storage, this.env(), p);
+  }
 
   paivitaInit(patch: InitPatch): Promise<void> {
     return paivitaInit(this.storage, patch);
@@ -281,6 +302,22 @@ export class InProcessClient implements KpClient {
   }
   poistaKumppani(id: number): Promise<void> {
     return poistaKumppani(this.storage, id);
+  }
+
+  haeKohdennukset(): Promise<KohdennusKaytolla[]> {
+    return haeKohdennukset(this.storage);
+  }
+  tallennaKohdennus(k: UusiKohdennus): Promise<Kohdennus> {
+    return tallennaKohdennus(this.storage, k);
+  }
+  poistaKohdennus(id: number): Promise<void> {
+    return poistaKohdennus(this.storage, id);
+  }
+  haeBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]> {
+    return haeBudjetti(this.storage, tilikausi);
+  }
+  tallennaBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void> {
+    return tallennaBudjetti(this.storage, tilikausi, rivit);
   }
 
   haeLiitteet(tosite: number): Promise<LiiteMeta[]> {

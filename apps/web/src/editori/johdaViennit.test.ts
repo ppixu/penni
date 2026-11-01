@@ -54,4 +54,38 @@ describe('johdaViennit', () => {
     const v = johdaViennit([rivi({ debetSnt: c(0) })], CHART, '2026-03-01');
     expect(v).toHaveLength(0);
   });
+
+  it('kohdennus ja merkkaukset kulkevat tavalliselle viennille', () => {
+    const v = johdaViennit(
+      [rivi({ tili: 4000, debetSnt: c(1000), kohdennus: 1, merkkaukset: [3] })],
+      CHART,
+      '2026-03-01',
+    );
+    expect(v[0]).toMatchObject({ tili: 4000, kohdennus: 1, merkkaukset: [3] });
+  });
+
+  it('ilman kohdennusta vienneillä ei ole kohdennus- eikä merkkausavainta', () => {
+    const [v] = johdaViennit([rivi({ tili: 4000, debetSnt: c(1000) })], CHART, '2026-03-01');
+    expect(v).not.toHaveProperty('kohdennus');
+    expect(v).not.toHaveProperty('merkkaukset');
+  });
+
+  it('verollisen rivin generoidut alv-viennit saavat rivin kohdennuksen ja merkkaukset', () => {
+    const v = johdaViennit(
+      [
+        rivi({
+          tili: 4000,
+          debetSnt: c(12550),
+          alvKoodi: AlvKoodi.OSTOT_NETTO,
+          alvProsentti: 25.5,
+          kohdennus: 1,
+          merkkaukset: [3, 5],
+        }),
+      ],
+      CHART,
+      '2026-03-01',
+    );
+    expect(v).toHaveLength(2);
+    for (const x of v) expect(x).toMatchObject({ kohdennus: 1, merkkaukset: [3, 5] });
+  });
 });

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { tositeTyyppiLabel } from '@/lib/tosite';
 import { cn } from '@/lib/utils';
 import { JAETTU_ASETTELU, JAETTU_PAA } from '@/liitteet/LiitePaneeli';
-import type { Tili, TilioteTiedot } from '@penni/engine';
+import type { Kohdennus, Tili, TilioteTiedot } from '@penni/engine';
 import { TositeTyyppi } from '@penni/engine';
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { KirjausYhteenveto } from './KirjausYhteenveto.js';
@@ -69,6 +69,7 @@ export interface LomakkeenTaytto {
 
 export function TositeEditori({
   chart,
+  kohdennukset,
   alkupaiva,
   initial,
   onTallennettu,
@@ -93,6 +94,8 @@ export function TositeEditori({
   vahvistus = 'Tallennettu',
 }: {
   chart: readonly Tili[];
+  /** Kirjanpidon kohdennukset; puuttuu tai tyhjä = ruudukossa ei Kohdennus-saraketta. */
+  kohdennukset?: readonly Kohdennus[] | undefined;
   /** Kirjanpidon oletuspankkitili: Meno/Tulo-tositteen tasaava rivi esitäytetään sillä. */
   pankkitili?: number | undefined;
   /** Alv-velvollisuus päivälle (tilin alv-oletuksen esitäyttö); puuttuu = velvollinen. */
@@ -434,6 +437,7 @@ export function TositeEditori({
               onkoAlvVelvollinen={onkoAlvVelvollinen}
               tyyppi={tila.tyyppi}
               pankkitili={pankkitili}
+              kohdennukset={kohdennukset}
             />
           </div>
 

@@ -59,6 +59,7 @@ export async function tallennaOstolasku(
       puoli: 'debet',
       pvm: syote.pvm,
       ...(r.kohdennus !== undefined ? { kohdennus: r.kohdennus } : {}),
+      ...(r.merkkaukset !== undefined ? { merkkaukset: r.merkkaukset } : {}),
       ...(r.selite !== undefined ? { selite: r.selite } : {}),
     };
   });

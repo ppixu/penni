@@ -1,5 +1,5 @@
 import { VerokausiMuutokset } from '@/alv/VerokausiMuutokset';
-import { useInit, usePaivitaAsetukset, useTallennaTilikausi } from '@/app/kysely';
+import { useInit, useKohdennukset, usePaivitaAsetukset, useTallennaTilikausi } from '@/app/kysely';
 import { seuraavaKausi } from '@/asetukset/asetukset';
 import { SalasananVaihto } from '@/auth/SalasananVaihto';
 import { useKayttaja } from '@/auth/kayttajaKonteksti';
@@ -71,6 +71,7 @@ export function AsetuksetSivu() {
           <h2 className="text-[15px] font-[650]">Vie kirjanpito</h2>
           <VieKirjanpito />
         </div>
+        <KohdennuksetOsio />
         {/* Kysy tarvitsee paikallisen kielimallin — ei selaindemossa. */}
         {!DEMO && <KysyOsio asetukset={init.asetukset} />}
         {kayttaja ? <SalasananVaihto onVaihda={kayttaja.vaihdaSalasana} /> : null}
@@ -359,13 +360,23 @@ function TilikausiOsio({ tilikaudet }: { tilikaudet: readonly Tilikausi[] }) {
             <li
               key={k.alkaa}
               data-aktiivinen={aktiivinen ? 'true' : 'false'}
-              className={`rounded-[var(--radius-input)] px-[10px] py-2 text-[13px] tabular-nums ${
+              className={`flex items-center justify-between rounded-[var(--radius-input)] px-[10px] py-2 text-[13px] tabular-nums ${
                 aktiivinen
                   ? 'bg-[var(--accent-soft)] font-[600] text-[var(--text)]'
                   : 'text-[var(--text-muted)]'
               }`}
             >
-              {muotoilePvm(k.alkaa)} – {muotoilePvm(k.loppuu)}
+              <span>
+                {muotoilePvm(k.alkaa)} – {muotoilePvm(k.loppuu)}
+              </span>
+              <Link
+                to="/budjetti"
+                search={{ tilikausi: k.alkaa }}
+                aria-label={`Budjetti ${muotoilePvm(k.alkaa)} – ${muotoilePvm(k.loppuu)}`}
+                className="text-[12.5px] font-normal text-[var(--accent)] hover:underline"
+              >
+                Budjetti
+              </Link>
             </li>
           );
         })}
@@ -379,6 +390,31 @@ function TilikausiOsio({ tilikaudet }: { tilikaudet: readonly Tilikausi[] }) {
           onClick={lisaaSeuraava}
         >
           Uusi tilikausi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function KohdennuksetOsio() {
+  const { data: kohdennukset } = useKohdennukset();
+  const lkm = kohdennukset?.length ?? 0;
+
+  return (
+    <div className="flex max-w-md flex-col gap-4">
+      <h2 className="text-[15px] font-[650]">Kohdennukset</h2>
+      <p className="text-[12.5px] text-[var(--text-muted)]">
+        Kustannuspaikoilla, projekteilla ja merkkauksilla seuraat, mihin toimintaan tulot ja menot
+        kuuluvat, ja voit verrata niitä budjettiin.
+      </p>
+      {kohdennukset && (
+        <p className="text-[13px]">
+          {lkm === 0 ? 'Ei vielä kohdennuksia.' : lkm === 1 ? '1 kohdennus' : `${lkm} kohdennusta`}
+        </p>
+      )}
+      <div>
+        <Button asChild variant="sec">
+          <Link to="/kohdennukset">Muokkaa kohdennuksia</Link>
         </Button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { LEHTI_SIEMEN, valitseTili } from '@/editori/testHelpers';
 import { KuitinLukuKonteksti, type KuitinLukuRiippuvuudet } from '@/kuitit/useKuitinLuku';
 import { renderRoute } from '@/test/renderRoute';
 import type { KpClient } from '@penni/asiakas';
+import { Euro } from '@penni/euro';
 import type { MemorySeed } from '@penni/storage-memory';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -313,6 +314,52 @@ describe('Uusi tosite — automaattinen tallennus', () => {
     );
     expect(await client.listaaTositteet({ bucket: 'luonnos' })).toHaveLength(1);
     expect(await storage.getLoki(luonnos?.id ?? 0)).toHaveLength(2);
+  });
+
+  it('jatketun luonnoksen tallennus säilyttää vientien kohdennuksen ja merkkaukset', async () => {
+    const { user, client } = await renderUusi(fakeLuku(), {
+      polku: '/tositteet/uusi?luonnos=1',
+      arrange: async (c) => {
+        const pvm = '2026-05-04';
+        await c.luoTosite({
+          pvm,
+          tyyppi: 100,
+          sarja: '',
+          tila: 50,
+          otsikko: 'Kesken',
+          viennit: [
+            {
+              tili: 4000,
+              debet: Euro.fromCents(5_000),
+              kredit: Euro.fromCents(0),
+              pvm,
+              alvKoodi: 0,
+              alvProsentti: 0,
+              kohdennus: 1,
+              merkkaukset: [3],
+            },
+            {
+              tili: 1900,
+              debet: Euro.fromCents(0),
+              kredit: Euro.fromCents(5_000),
+              pvm,
+              alvKoodi: 0,
+              alvProsentti: 0,
+            },
+          ],
+        });
+      },
+    });
+    const selite = await screen.findByRole('textbox', { name: 'Selite' });
+    expect(selite).toHaveValue('Kesken');
+    await user.type(selite, ' jatkuu');
+    await user.tab();
+    await waitFor(async () => expect((await client.haeTosite(1))?.otsikko).toBe('Kesken jatkuu'));
+    const tallennettu = await client.haeTosite(1);
+    expect(tallennettu?.viennit.find((v) => v.tili === 4000)).toMatchObject({
+      kohdennus: 1,
+      merkkaukset: [3],
+    });
   });
 
   it('osoitteen luonnos jatkuu uudelleenlatauksessa', async () => {

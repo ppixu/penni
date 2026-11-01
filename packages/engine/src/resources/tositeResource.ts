@@ -1,9 +1,10 @@
 import { tositteenAlkupera } from '../alv/alkupera.js';
+import { normalisoiMerkkaukset } from '../kohdennukset/kohdennus.js';
 import type { LiiteMeta, UusiLiite } from '../liitteet/liite.js';
 import { etsiKumppaniNimella } from '../partners/kumppaninTunnistus.js';
 import { tarkasta, voiValmistua } from '../validation/tarkasta.js';
 import { TositeTila, onKirjanpidossa } from '../vouchers/enums.js';
-import type { IsoDate, Tosite, TositeVienti } from '../vouchers/types.js';
+import type { IsoDate, Tosite, TositeRivi, TositeVienti } from '../vouchers/types.js';
 import { rakennaValidointiKonteksti } from './context.js';
 import { pitaakoNumeroUusiksi, tilikausiPaivalle } from './numbering.js';
 import {
@@ -35,6 +36,15 @@ function tarkistaEiLukittu(vanha: StoredTosite | null, lukitusraja: IsoDate | nu
   if (osuuLukkoon) {
     throw new ResourceError('PVMLUKITTU', 'Tosite osuu lukittuun tilikauteen');
   }
+}
+
+/** Merkkauslista kanoniseen muotoon (nouseva, uniikki; tyhjä => avain pois). Ilman avainta palauttaa
+ *  saman olion, muuten kopion — syötettä ei muuteta. */
+function merkkauksetNormalisoitu<T extends TositeVienti | TositeRivi>(x: T): T {
+  if (!('merkkaukset' in x)) return x;
+  const { merkkaukset, ...muut } = x;
+  const m = normalisoiMerkkaukset(merkkaukset);
+  return (m ? { ...muut, merkkaukset: m } : muut) as T;
 }
 
 export async function haeTosite(storage: Storage, id: number): Promise<StoredTosite | null> {
@@ -115,6 +125,8 @@ export async function tallennaTosite(
     ...tositeKentat
   } = syote as TositeSyote & { liitteita?: unknown; alkupera?: unknown };
   const voucher: Tosite & { id?: number } = { ...tositeKentat, tila, tunniste, sarja };
+  voucher.viennit = voucher.viennit.map(merkkauksetNormalisoitu);
+  if (voucher.rivit) voucher.rivit = voucher.rivit.map(merkkauksetNormalisoitu);
   // Kumppaniton tosite (tiliote, kuitti, ruudukko) liitetään samannimiseen kumppaniin, jotta
   // kumppanin tositteet löytyvät myös Pennissä luoduista. Annettu kumppani säilyy aina.
   if (voucher.kumppani === undefined && voucher.otsikko) {

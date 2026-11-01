@@ -23,6 +23,9 @@ describe('ajaMigraatiot', () => {
       'loki',
       'kumppani',
       'liite',
+      'kohdennus',
+      'merkkaus',
+      'budjetti',
       'migraatio',
     ]) {
       expect(taulut).toContain(t);
@@ -35,7 +38,7 @@ describe('ajaMigraatiot', () => {
     ajaMigraatiot(db);
     ajaMigraatiot(db);
     const n = (db.prepare('SELECT COUNT(*) AS n FROM migraatio').get() as { n: number }).n;
-    expect(n).toBe(6); // six append-only migrations applied, each recorded once
+    expect(n).toBe(7); // seven append-only migrations applied, each recorded once
     db.close();
   });
 
@@ -141,6 +144,43 @@ describe('ajaMigraatiot', () => {
     expect(Buffer.from(luettu?.data as Uint8Array).equals(Buffer.from(data))).toBe(true);
     expect({ ...luettu, data: undefined }).toEqual({ ...meta, data: undefined });
     expect(await kirja.getLiitteet(1)).toEqual([meta]);
+    db.close();
+  });
+
+  it('v5 → v6: vanha kirja migroituu, tositteet säilyvät ja uudet taulut toimivat', async () => {
+    const db = new Database(':memory:');
+    db.exec(
+      'CREATE TABLE IF NOT EXISTS migraatio (versio INTEGER PRIMARY KEY NOT NULL, ajettu TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+    );
+    for (const versio of [0, 1, 2, 3, 4, 5]) {
+      db.exec(SCHEMA_VERSIONS[versio] as string);
+      db.prepare('INSERT INTO migraatio (versio) VALUES (?)').run(versio);
+    }
+    const tosite = {
+      id: 1,
+      pvm: '2026-03-01',
+      tyyppi: 0,
+      tila: 100,
+      tunniste: 1,
+      sarja: '',
+      viennit: [{ tili: 3000, pvm: '2026-03-01', debet: 0, kredit: 500 }],
+    };
+    db.prepare(
+      'INSERT INTO tosite (id, pvm, tyyppi, tila, tunniste, sarja, json) VALUES (1, ?, 0, 100, 1, ?, ?)',
+    ).run(tosite.pvm, '', JSON.stringify(tosite));
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'merkkaus'").all()).toHaveLength(
+      0,
+    );
+
+    ajaMigraatiot(db);
+
+    const kirja = createSqliteCoreStorage(luoBetterSqliteAjuriDb(db), {});
+    expect(await kirja.getTosite(1)).toEqual(tosite);
+    expect(await kirja.getKohdennukset()).toEqual([]);
+    expect(await kirja.getBudjetti('2026-01-01')).toEqual([]);
+    expect(await kirja.laskeKohdennustenKaytto()).toEqual(new Map());
+    const k = await kirja.saveKohdennus({ tyyppi: 1, nimi: { fi: 'Nuoriso' } });
+    expect(await kirja.getKohdennukset()).toEqual([k]);
     db.close();
   });
 });

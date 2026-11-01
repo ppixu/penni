@@ -1,6 +1,7 @@
 import { type Cents, roundHalfAway } from '@penni/euro';
 import { Luonne } from '../accounts/luonne.js';
 import { tiliTyypilla } from '../accounts/tili.js';
+import { normalisoiMerkkaukset } from '../kohdennukset/kohdennus.js';
 import { TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
 import type { IsoDate, TositeVienti } from '../vouchers/types.js';
 import { tilikausiPaivalle } from './numbering.js';
@@ -67,6 +68,7 @@ export interface JaksotusRivi {
   maara: Cents; // etumerkillinen: + => päälle debet, − => päälle kredit
   selite: string;
   kohdennus?: number;
+  merkkaukset?: number[];
   jaksoalkaa?: IsoDate; // vain Branch-B-rivit (rullaa eteenpäin)
   jaksoloppuu?: IsoDate;
 }
@@ -133,6 +135,8 @@ async function laskeRivit(storage: Storage, kausi: Tilikausi): Promise<JaksotusR
         selite: `${tositeTunnus(t)} ${v.selite ?? ''}`.trim(),
       };
       if (v.kohdennus) rivi.kohdennus = v.kohdennus;
+      const merkkaukset = normalisoiMerkkaukset(v.merkkaukset);
+      if (merkkaukset) rivi.merkkaukset = merkkaukset;
       if (v.pvm <= kausi.loppuu) {
         rivi.jaksoalkaa = v.jaksoalkaa;
         if (v.jaksoloppuu) rivi.jaksoloppuu = v.jaksoloppuu;
@@ -225,6 +229,11 @@ export async function tallennaJaksotukset(
       paa.kohdennus = r.kohdennus;
       vasta.kohdennus = r.kohdennus;
     }
+    const merkkaukset = normalisoiMerkkaukset(r.merkkaukset);
+    if (merkkaukset) {
+      paa.merkkaukset = merkkaukset;
+      vasta.merkkaukset = [...merkkaukset];
+    }
     if (
       r.jaksoalkaa &&
       (r.jaksoalkaa > paatosPvm || (r.jaksoloppuu != null && r.jaksoloppuu > paatosPvm))
@@ -264,6 +273,8 @@ export async function tallennaJaksotukset(
       };
       if (p.selite !== undefined) uusi.selite = p.selite;
       if (p.kohdennus) uusi.kohdennus = p.kohdennus;
+      const merkkaukset = normalisoiMerkkaukset(p.merkkaukset);
+      if (merkkaukset) uusi.merkkaukset = merkkaukset;
       const onKirjaus = (p.tyyppi ?? 0) % 10 === VientiTyyppi.KIRJAUS;
       if (onKirjaus && p.jaksoloppuu && p.jaksoloppuu > seuraavaKausi.loppuu) {
         uusi.jaksoalkaa = seuraavaPvm;

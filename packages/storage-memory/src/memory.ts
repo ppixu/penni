@@ -11,10 +11,13 @@ import type {
 } from '@penni/engine';
 import { ResourceError, lataaKartta, tasoTyypista } from '@penni/engine';
 import type {
+  BudjettiRivi,
+  Kohdennus,
   Kumppani,
   Liite,
   LiiteMeta,
   TositeVienti,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
 } from '@penni/engine';
@@ -69,6 +72,13 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
 
   const liitteet = new Map<number, Liite>();
   let nextLiiteId = 1;
+
+  const kohdennukset = new Map<number, Kohdennus>();
+  // Kuten SQL:n AUTOINCREMENT: poistettua id:tä ei anneta uudelleen, ja eksplisiittinen id siirtää
+  // laskurin ohitseen.
+  let nextKohdennusId = 1;
+  // Budjetti tilikausittain (avain = tilikauden alkaa).
+  const budjetit = new Map<string, BudjettiRivi[]>();
 
   // Master-data stores, seeded from `seed`. Keyed by (numero, taso): Kitsas lets a heading and
   // an account, or two headings at different levels, share a numero.
@@ -174,6 +184,11 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
           if (q.tiliAsti !== undefined && !(ts < q.tiliAsti)) continue;
           if (q.kohdennus !== undefined && q.kohdennus !== 0 && vienti.kohdennus !== q.kohdennus)
             continue;
+          if (q.kohdennukset !== undefined && !q.kohdennukset.includes(vienti.kohdennus ?? 0))
+            continue;
+          // Merkkaukset luetaan suoraan tallennetusta tosite-JSONista (lähde, ei erillistä taulua).
+          if (q.merkkaus !== undefined && !(vienti.merkkaukset ?? []).includes(q.merkkaus))
+            continue;
           const prev = out.get(vienti.tili) ?? 0;
           out.set(vienti.tili, (prev + vienti.debet - vienti.kredit) as Cents);
         }
@@ -223,7 +238,7 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
         tilit: [...chart.values()].map((c) => clone(c.data)),
         tilikaudet: await storage.getTilikaudet(),
         tositesarjat: [...sarjat].sort(),
-        kohdennukset: [],
+        kohdennukset: await storage.getKohdennukset(),
       };
     },
     async putTili(numero, data) {
@@ -278,6 +293,52 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
     },
     async deleteKumppani(id: number) {
       kumppanit.delete(id);
+    },
+
+    // --- kohdennukset ja budjetti ---
+    async getKohdennukset() {
+      return [...kohdennukset.values()].sort((a, b) => a.id - b.id).map((k) => clone(k));
+    },
+    async saveKohdennus(k: UusiKohdennus) {
+      const id = k.id ?? nextKohdennusId;
+      nextKohdennusId = Math.max(nextKohdennusId, id + 1);
+      const { id: _omit, ...rest } = k;
+      const stored: Kohdennus = { ...clone(rest), id };
+      kohdennukset.set(id, stored);
+      return clone(stored);
+    },
+    async deleteKohdennus(id: number) {
+      kohdennukset.delete(id);
+      for (const [kausi, rivit] of budjetit)
+        budjetit.set(
+          kausi,
+          rivit.filter((r) => r.kohdennus !== id),
+        );
+    },
+    async laskeKohdennustenKaytto() {
+      const maarat = new Map<number, number>();
+      const lisaa = (id: number) => maarat.set(id, (maarat.get(id) ?? 0) + 1);
+      for (const v of vouchers.values()) {
+        if (v.tila === 0) continue;
+        for (const vienti of v.viennit) {
+          if (vienti.kohdennus !== undefined && vienti.kohdennus > 0) lisaa(vienti.kohdennus);
+          for (const m of new Set(vienti.merkkaukset)) lisaa(m); // kuten SQL:n (tosite, rivi, kohdennus)-avain
+        }
+      }
+      return maarat;
+    },
+    async getBudjetti(tilikausi: string) {
+      return (budjetit.get(tilikausi) ?? [])
+        .map((r) => clone(r))
+        .sort((a, b) => a.kohdennus - b.kohdennus || a.tili - b.tili);
+    },
+    async putBudjetti(tilikausi: string, rivit: BudjettiRivi[]) {
+      budjetit.set(
+        tilikausi,
+        rivit
+          .filter((r) => r.sentit !== 0)
+          .map(({ kohdennus, tili, sentit }) => ({ kohdennus, tili, sentit })),
+      );
     },
 
     // --- liitteet ---

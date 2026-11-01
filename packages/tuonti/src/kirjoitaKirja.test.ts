@@ -32,6 +32,8 @@ function kirjaTositteineen(tositteet: KitsasTosite[]): KitsasKirja {
     tilikaudet: [],
     asetukset: {},
     kumppanit: [],
+    kohdennukset: [],
+    budjetit: [],
     tositteet,
     liitteet: [],
     kpVersio: '24',
@@ -136,8 +138,8 @@ describe('kirjoitaKirja', () => {
     expect(raportti.tositteet).toBe(5);
     expect(raportti.viennit).toBe(10);
     expect(raportti.liitteet).toBe(1);
-    // Testikanta siementää yhden Kohdennus-rivin, kuten oikea kirja. Tositeloki tuodaan.
-    expect(raportti.ohitetut.Kohdennus).toBe(1);
+    // Kohdennus (siemenrivi) ja Tositeloki tuodaan, eivätkä ole ohitettuja.
+    expect(raportti.ohitetut.Kohdennus).toBeUndefined();
     expect(raportti.ohitetut.Tositeloki).toBeUndefined();
   });
 
@@ -215,10 +217,10 @@ describe('kirjoitaKirja', () => {
 
   it('selittää ohitetun taulun oletussyyllä', async () => {
     const storage = createMemoryStorage();
-    const kirja = { ...kirjaTositteineen([]), ohitetut: { Kohdennus: 3 } };
+    const kirja = { ...kirjaTositteineen([]), ohitetut: { Tuote: 3 } };
     const raportti = await kirjoitaKirja(kirja, storage, { aika: AIKA });
     expect(raportti.varoitukset).toContain(
-      'Taulua Kohdennus (3 riviä) ei tuotu — Penni ei mallinna sitä.',
+      'Taulua Tuote (3 riviä) ei tuotu — Penni ei mallinna sitä.',
     );
   });
 

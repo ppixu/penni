@@ -12,17 +12,20 @@ function naytaArvo(c: Cents): string {
 
 /**
  * Money cell input. Local string while editing; commits to absolute-value Cents on
- * blur/Enter via Euro.fromString. Invalid input keeps focus + aria-invalid; never commits.
+ * blur/Enter via Euro.fromString (`etumerkillinen`: signed Cents, e.g. budget amounts).
+ * Invalid input keeps focus + aria-invalid; never commits.
  */
 export function EuroInput({
   arvo,
   onCommit,
   inputRef,
+  etumerkillinen = false,
   ...rest
 }: {
   arvo: Cents;
   onCommit: (snt: Cents) => void;
   inputRef?: Ref<HTMLInputElement>;
+  etumerkillinen?: boolean;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
   const [teksti, setTeksti] = useState(() => naytaArvo(arvo));
   const [virhe, setVirhe] = useState(false);
@@ -35,7 +38,9 @@ export function EuroInput({
 
   function commit() {
     try {
-      const snt = Euro.abs(Euro.fromString(teksti)); // unsigned: direction = column
+      // naytaArvo writes a typographic minus; Euro.fromString reads only the ASCII one.
+      const luettu = Euro.fromString(teksti.replace('−', '-'));
+      const snt = etumerkillinen ? luettu : Euro.abs(luettu); // unsigned: direction = column
       setVirhe(false);
       if (snt !== arvo) onCommit(snt);
     } catch (e) {

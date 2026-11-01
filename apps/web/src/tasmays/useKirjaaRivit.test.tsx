@@ -158,4 +158,17 @@ describe('useKirjaaRivit', () => {
     for (const avain of ['tositteet', 'menot', 'tulot'])
       expect(mitatoi).toHaveBeenCalledWith({ queryKey: [avain] });
   });
+
+  it('mitätöi myös kohdennusten käyttömäärät ja kohdennus-/budjettiraportit', async () => {
+    const luoTosite = vi.fn(async (syote: TositeSyote) => ({ ...syote, id: 1 }) as StoredTosite);
+    const client = { luoTosite, tallennaLiite: vi.fn() } as unknown as KpClient;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const mitatoi = vi.spyOn(qc, 'invalidateQueries');
+    const { result } = renderHook(() => useKirjaaRivit(), { wrapper: wrapper(client, qc) });
+    await act(async () => {
+      await result.current.kirjaa([rivi('a', 'Rivi A', -1000)], CHART, ASETUKSET);
+    });
+    for (const avain of ['kohdennukset', 'kohdennusRaportti', 'budjettivertailu'])
+      expect(mitatoi).toHaveBeenCalledWith({ queryKey: [avain] });
+  });
 });

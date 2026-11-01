@@ -214,7 +214,13 @@ function summa(arvot: readonly (Cents | null)[]): Cents | null {
  * oman tuloksena. Tuloslaskelmalla on lisäksi Yhteensä-sarake (KuukaudetYhteensa; taseella ei,
  * laatijankuukausiraportti.cpp:21).
  */
-export function KuukausiRaportti({ alkupvm, loppupvm, muoto, naytaTilit }: RaporttiProps) {
+export function KuukausiRaportti({
+  alkupvm,
+  loppupvm,
+  muoto,
+  naytaTilit,
+  kohdennus,
+}: RaporttiProps) {
   const client = useKpClient();
   const tase = muoto?.startsWith('tase/') ?? false;
   const jakso = useMemo(() => kuukaudet(alkupvm, loppupvm), [alkupvm, loppupvm]);
@@ -226,7 +232,14 @@ export function KuukausiRaportti({ alkupvm, loppupvm, muoto, naytaTilit }: Rapor
           // kaavarivit pyydetään, jotta näkyvyys ratkaistaan kuukausien yli (sovellaNayttosaannot).
           const params: RaporttiParams = tase
             ? { muoto, pvm: k.loppuu, erittelyt: true, kaikkiRivit: true }
-            : { muoto, pvm: k.loppuu, alkupvm: k.alkaa, erittelyt: true, kaikkiRivit: true };
+            : {
+                muoto,
+                pvm: k.loppuu,
+                alkupvm: k.alkaa,
+                erittelyt: true,
+                kaikkiRivit: true,
+                ...(kohdennus !== undefined ? { kohdennus } : {}),
+              };
           return {
             queryKey: avaimet.raportti(params),
             queryFn: () => client.laadiRaportti(params),

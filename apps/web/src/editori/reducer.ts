@@ -1,4 +1,4 @@
-import { TositeTyyppi } from '@penni/engine';
+import { TositeTyyppi, normalisoiMerkkaukset } from '@penni/engine';
 import { type Cents, Euro } from '@penni/euro';
 import { bruttoSyottoKoodille } from './alvOletus.js';
 import type { EditoriAction, TositeEditoriTila, VientiRivi } from './types.js';
@@ -123,6 +123,20 @@ export function reducer(tila: TositeEditoriTila, action: EditoriAction): TositeE
       return {
         ...tila,
         rows: paivitaRivi(tila.rows, action.avain, (r) => ({ ...r, bruttoSyotto: action.brutto })),
+      };
+    case 'setKohdennus':
+      return {
+        ...tila,
+        rows: paivitaRivi(tila.rows, action.avain, (r) => {
+          // Tyhjä valinta (puuttuu, 0 = Yleinen, ei merkkauksia) poistaa avaimen kokonaan.
+          const { kohdennus: _k, merkkaukset: _m, ...muut } = r;
+          const merkkaukset = normalisoiMerkkaukset(action.merkkaukset);
+          return {
+            ...muut,
+            ...(action.kohdennus ? { kohdennus: action.kohdennus } : {}),
+            ...(merkkaukset ? { merkkaukset } : {}),
+          };
+        }),
       };
 
     case 'addRow': {

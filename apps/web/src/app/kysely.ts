@@ -5,10 +5,17 @@ import type {
   AlvErittely,
   AlvLaskelmaParams,
   AlvLaskelmaTulos,
+  BudjettiRivi,
+  BudjettivertailuParams,
+  BudjettivertailuRivi,
   EuMyyntiYhteenveto,
   HyvityslaskuSyote,
   InitBundle,
   IsoDate,
+  Kohdennus,
+  KohdennusKaytolla,
+  KohdennusOsio,
+  KohdennusRaporttiParams,
   Kumppani,
   LiiteMeta,
   LiitetiedotSyote,
@@ -32,12 +39,19 @@ import type {
   TilinpaatosParams,
   TositeFilter,
   TositeVienti,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
   VahvistusSyote,
 } from '@penni/engine';
 import { ResourceError, type TiliData, TositeTyyppi } from '@penni/engine';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useState } from 'react';
 
 /** Stable query keys (one place, so invalidation in 0E-2b matches). */
@@ -53,6 +67,10 @@ export const avaimet = {
   tulot: (suodatin: RahavirtaSuodatin) => ['tulot', suodatin] as const,
   menot: (suodatin: RahavirtaSuodatin) => ['menot', suodatin] as const,
   kumppanit: ['kumppanit'] as const,
+  kohdennukset: ['kohdennukset'] as const,
+  budjetti: (tilikausi: IsoDate) => ['budjetti', tilikausi] as const,
+  kohdennusRaportti: (params: KohdennusRaporttiParams) => ['kohdennusRaportti', params] as const,
+  budjettivertailu: (params: BudjettivertailuParams) => ['budjettivertailu', params] as const,
   alvLaskelma: (params: AlvLaskelmaParams) => ['alvLaskelma', params] as const,
   alvErittely: (params: AlvLaskelmaParams) => ['alvErittely', params] as const,
   euMyynti: (params: AlvLaskelmaParams) => ['euMyynti', params] as const,
@@ -220,7 +238,8 @@ export function useTallennaTili() {
   return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
 }
 
-/** Delete a leaf account. Invalidates the init + saldot caches; surfaces a Finnish error. */
+/** Delete a leaf account (the engine also drops its budget rows). Invalidates the init, saldot
+ *  and budget caches; surfaces a Finnish error. */
 export function usePoistaTili() {
   const client = useKpClient();
   const qc = useQueryClient();
@@ -231,6 +250,8 @@ export function usePoistaTili() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['init'] });
       void qc.invalidateQueries({ queryKey: ['saldot'] });
+      void qc.invalidateQueries({ queryKey: ['budjetti'] });
+      void qc.invalidateQueries({ queryKey: ['budjettivertailu'] });
     },
   });
 
@@ -350,6 +371,104 @@ export function useKumppanit() {
   });
 }
 
+/** Kohdennukset käyttömäärineen (`lkm`). */
+export function useKohdennukset() {
+  const client = useKpClient();
+  return useQuery<KohdennusKaytolla[]>({
+    queryKey: avaimet.kohdennukset,
+    queryFn: () => client.haeKohdennukset(),
+  });
+}
+
+/** Kohdennusten muutos vaikuttaa listaan, tuloslaskelman suodattimeen ja kaikkiin kohdennus-/budjettinäkymiin. */
+function mitatoiKohdennusvaikutukset(qc: ReturnType<typeof useQueryClient>) {
+  for (const avain of [
+    'kohdennukset',
+    'raportti',
+    'kohdennusRaportti',
+    'budjetti',
+    'budjettivertailu',
+  ])
+    void qc.invalidateQueries({ queryKey: [avain] });
+}
+
+/** Luo/päivitä kohdennus. Virhe (ResourceError) jää mutaation `error`-kenttään. */
+export function useTallennaKohdennus() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  return useMutation<Kohdennus, Error, UusiKohdennus>({
+    mutationFn: (k) => client.tallennaKohdennus(k),
+    onSuccess: () => mitatoiKohdennusvaikutukset(qc),
+  });
+}
+
+/** Poista kohdennus (ja sen budjettirivit). Estetty käytössä olevalta ja projekteja sisältävältä. */
+export function usePoistaKohdennus() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  return useMutation<void, Error, number>({
+    mutationFn: (id) => client.poistaKohdennus(id),
+    onSuccess: () => mitatoiKohdennusvaikutukset(qc),
+  });
+}
+
+/** Tilikauden budjettirivit (kaikki kohdennukset); ei kyselyä ennen kuin tilikausi tiedetään. */
+export function useBudjetti(tilikausi: IsoDate | undefined) {
+  const client = useKpClient();
+  return useQuery<BudjettiRivi[]>({
+    queryKey: avaimet.budjetti(tilikausi ?? ''),
+    queryFn: () => client.haeBudjetti(tilikausi as IsoDate),
+    enabled: tilikausi !== undefined,
+  });
+}
+
+/**
+ * Kohdennukset, joilla on budjettia jollakin annetuista tilikausista (moottori estää niiden
+ * tyypin vaihdon). Jakaa välimuistin useBudjetin kanssa; undefined, kunnes kaikki on ladattu.
+ */
+export function useBudjetoidutKohdennukset(kaudet: readonly IsoDate[]): Set<number> | undefined {
+  const client = useKpClient();
+  const tulokset = useQueries({
+    queries: kaudet.map((alkaa) => ({
+      queryKey: avaimet.budjetti(alkaa),
+      queryFn: () => client.haeBudjetti(alkaa),
+    })),
+  });
+  if (tulokset.some((t) => t.data === undefined)) return undefined;
+  return new Set(tulokset.flatMap((t) => (t.data ?? []).map((r) => r.kohdennus)));
+}
+
+/** Korvaa koko tilikauden budjetin. */
+export function useTallennaBudjetti() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  return useMutation<void, Error, { tilikausi: IsoDate; rivit: BudjettiRivi[] }>({
+    mutationFn: ({ tilikausi, rivit }) => client.tallennaBudjetti(tilikausi, rivit),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['budjetti'] });
+      void qc.invalidateQueries({ queryKey: ['budjettivertailu'] });
+    },
+  });
+}
+
+export function useKohdennusRaportti(params: KohdennusRaporttiParams, enabled = true) {
+  const client = useKpClient();
+  return useQuery<KohdennusOsio[]>({
+    queryKey: avaimet.kohdennusRaportti(params),
+    queryFn: () => client.laadiKohdennusRaportti(params),
+    enabled,
+  });
+}
+
+export function useBudjettivertailu(params: BudjettivertailuParams, enabled = true) {
+  const client = useKpClient();
+  return useQuery<BudjettivertailuRivi[]>({
+    queryKey: avaimet.budjettivertailu(params),
+    queryFn: () => client.laadiBudjettivertailu(params),
+    enabled,
+  });
+}
+
 /** Laskutuksen virhekartta (spec §8): ResourceError.code → suomi. Koodi-virhebody-
  *  interluden ansiosta koodit ovat identtiset InProcess- ja HTTP-transporteilla. */
 function laskuVirheViesti(e: unknown): string {
@@ -388,6 +507,13 @@ function laskuVirheViesti(e: unknown): string {
   return 'Tallennus epäonnistui';
 }
 
+/** Laskun kirjaus muuttaa kohdennusten käyttömäärät (lkm) ja kohdennus-/budjettiraporttien
+ *  toteuman. */
+function mitatoiKohdennustenToteuma(qc: ReturnType<typeof useQueryClient>) {
+  for (const avain of ['kohdennukset', 'kohdennusRaportti', 'budjettivertailu'])
+    void qc.invalidateQueries({ queryKey: [avain] });
+}
+
 /** Tallenna myyntilasku. Palauttaa StoredTositen (dokumenttiin navigointia varten)
  *  tai undefined virheessä; invalidoi laskulistan, tositteet ja saldot. */
 export function useTallennaMyyntilasku() {
@@ -403,6 +529,7 @@ export function useTallennaMyyntilasku() {
       void qc.invalidateQueries({ queryKey: ['saldot'] });
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
+      mitatoiKohdennustenToteuma(qc);
     },
   });
 
@@ -434,6 +561,7 @@ export function useTallennaSuoritus() {
       void qc.invalidateQueries({ queryKey: ['saldot'] });
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
+      mitatoiKohdennustenToteuma(qc);
     },
   });
 
@@ -465,6 +593,7 @@ export function useTallennaOstolasku() {
       void qc.invalidateQueries({ queryKey: ['saldot'] });
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
+      mitatoiKohdennustenToteuma(qc);
     },
   });
 
@@ -495,6 +624,7 @@ export function useTallennaHyvityslasku() {
       void qc.invalidateQueries({ queryKey: ['saldot'] });
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
+      mitatoiKohdennustenToteuma(qc);
     },
   });
 

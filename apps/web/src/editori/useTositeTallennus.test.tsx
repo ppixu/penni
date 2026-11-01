@@ -158,6 +158,17 @@ describe('useTositeTallennus', () => {
     expect(mitatoi).toHaveBeenCalledWith({ queryKey: ['tositteet'] });
   });
 
+  it('kirjaus mitätöi kohdennusten käyttömäärät ja kohdennus-/budjettiraportit', async () => {
+    const { qc, wrapper } = ymparisto();
+    const mitatoi = vi.spyOn(qc, 'invalidateQueries');
+    const { result } = renderHook(() => useTositeTallennus(CHART), { wrapper });
+    await act(async () => {
+      await result.current.kirjaa(lomake('Kirjattu'));
+    });
+    for (const avain of ['kohdennukset', 'kohdennusRaportti', 'budjettivertailu'])
+      expect(mitatoi).toHaveBeenCalledWith({ queryKey: [avain] });
+  });
+
   it('este: luonnokselle vain lukittu kausi, kirjatulle myös täsmäys', async () => {
     const { wrapper } = ymparisto({
       ...LEHTI_SIEMEN,

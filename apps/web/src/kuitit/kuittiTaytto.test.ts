@@ -116,6 +116,26 @@ describe('kuittiTaytto', () => {
     expect(t?.kuvaus).toBe('pvm, myyjä');
   });
 
+  it('ei koske riviin, jolle on valittu vain kohdennus ja merkkaus', () => {
+    const nyk = {
+      ...tyhja(),
+      rows: [
+        uusiRivi({
+          debetSnt: Euro.fromCents(0),
+          kreditSnt: Euro.fromCents(0),
+          alvKoodi: 0,
+          alvProsentti: 0,
+          bruttoSyotto: true,
+          kohdennus: 1,
+          merkkaukset: [3],
+        }),
+      ],
+    };
+    const t = kuittiTaytto(kuitti(), nyk, optiot());
+    expect(t?.tila.rows).toBe(nyk.rows);
+    expect(t?.kuvaus).toBe('pvm, myyjä');
+  });
+
   it('ei koske riveihin, kun käyttäjä kirjoittaa niihin parhaillaan', () => {
     const alku = tyhja();
     const t = kuittiTaytto(kuitti(), alku, optiot({ rivitKaytossa: true }));

@@ -1,5 +1,6 @@
 import { type Cents, roundHalfAway } from '@penni/euro';
 import { AlvKoodi, alvKoodilla } from '../alv/koodit.js';
+import { normalisoiMerkkaukset } from '../kohdennukset/kohdennus.js';
 import { Maksutapa, VientiTyyppi } from '../vouchers/enums.js';
 import { nettoYhteensaCents } from '../vouchers/rivi.js';
 import type { IsoDate, TositeRivi, TositeVienti } from '../vouchers/types.js';
@@ -26,6 +27,7 @@ export interface LaskunViennitSyote {
 interface TiliKertyma {
   tili: number;
   kohdennus: number;
+  merkkaukset: number[] | undefined;
   alvKoodi: number;
   alvProsentti: number;
   netto: number; // cents
@@ -38,7 +40,7 @@ interface VeroKertyma {
 
 /**
  * Turn invoice rows into the balanced three-leg posting (RiviVientiGeneroija standard flow):
- * one receivable/cash debit, one revenue credit per (tili,kohdennus,code,rate) bucket, and one
+ * one receivable/cash debit, one revenue credit per (tili,kohdennus,code,rate,tags) bucket, and one
  * VAT credit per (MYYNNIT_NETTO,rate) bucket. Zero-rated codes emit no VAT leg (gross = net).
  * Single rounding boundary: VAT = roundHalfAway(Σnet × rate / 100) per rate bucket.
  */
@@ -53,13 +55,16 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
     if (netto === 0) continue;
     const tili = r.tili ?? tilit.oletusMyynti;
     const kohdennus = r.kohdennus ?? 0;
-    const tiliAvain = `${tili}/${kohdennus}/${r.alvKoodi}/${r.alvProsentti}`;
+    const merkkaukset = normalisoiMerkkaukset(r.merkkaukset);
+    // Merkkaukset ryhmittelyavaimeen (rivivientigeneroija.cpp:162-237); normalisoitu lista, joten järjestys ei erota.
+    const tiliAvain = `${tili}/${kohdennus}/${r.alvKoodi}/${r.alvProsentti}/${(merkkaukset ?? []).join(',')}`;
     const tk = tiliKertymat.get(tiliAvain);
     if (tk) tk.netto += netto;
     else
       tiliKertymat.set(tiliAvain, {
         tili,
         kohdennus,
+        merkkaukset,
         alvKoodi: r.alvKoodi,
         alvProsentti: r.alvProsentti,
         netto,
@@ -89,6 +94,7 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
       tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS,
     };
     if (k.kohdennus) v.kohdennus = k.kohdennus;
+    if (k.merkkaukset) v.merkkaukset = [...k.merkkaukset];
     if (selite) v.selite = selite;
     tuloViennit.push(v);
   }

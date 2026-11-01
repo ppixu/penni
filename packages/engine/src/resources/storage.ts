@@ -1,6 +1,8 @@
 import type { Cents } from '@penni/euro';
 import type { Tili, TiliData } from '../accounts/tili.js';
 import type { Alkupera } from '../alv/alkupera.js';
+import type { BudjettiRivi } from '../kohdennukset/budjetti.js';
+import type { Kohdennus, UusiKohdennus } from '../kohdennukset/kohdennus.js';
 import type { Liite, LiiteMeta, UusiLiite } from '../liitteet/liite.js';
 import type { Kumppani, UusiKumppani } from '../partners/kumppani.js';
 import type { IsoDate, Tosite, TositeVienti } from '../vouchers/types.js';
@@ -52,6 +54,11 @@ export interface SaldoQuery {
   tiliAsti?: string;
   /** Cost-centre id filter; 0/undefined = all. */
   kohdennus?: number;
+  /** Row's kohdennus (absent = 0) is in this set; 0 = unallocated rows. The engine resolves
+   *  rollups (kohdennusSuodatin); adapters only test membership. */
+  kohdennukset?: number[];
+  /** Row is tagged with this merkkaus id (independent of its kohdennus). */
+  merkkaus?: number;
 }
 
 /** Audit/clock context for any mutation (the transport injects `aika`/`userId`). */
@@ -90,7 +97,7 @@ export interface InitBundle {
   tilit: TiliData[];
   tilikaudet: Tilikausi[];
   tositesarjat: string[];
-  kohdennukset: unknown[]; // empty in Tier-0
+  kohdennukset: Kohdennus[]; // = getKohdennukset()
 }
 
 /** What /init PATCH merges (template re-application; user-modified rows are skipped). */
@@ -163,6 +170,22 @@ export interface Storage {
   /** Upsert: assigns an id on insert (like saveTosite); returns the stored partner. */
   saveKumppani(kumppani: UusiKumppani): Promise<Kumppani>;
   deleteKumppani(id: number): Promise<void>;
+
+  // --- kohdennukset ja budjetti (master data; not in the voucher audit log) ---
+  /** Stored kohdennukset (ids ≥ 1; Yleinen 0 is implicit), sorted by id. Unknown json keys round-trip. */
+  getKohdennukset(): Promise<Kohdennus[]>;
+  /** Upsert. An explicit id is kept (update, or the importer preserving Kitsas ids); without an
+   *  id one is assigned (≥ 1, greater than any existing id). Returns the stored kohdennus. */
+  saveKohdennus(k: UusiKohdennus): Promise<Kohdennus>;
+  /** Raw delete (the engine checks usage first); also deletes that kohdennus's budget rows. */
+  deleteKohdennus(id: number): Promise<void>;
+  /** Per kohdennus id ≥ 1: viennit using it as kohdennus + tag rows, over vouchers with tila ≠ 0
+   *  (drafts count). Missing key = 0. */
+  laskeKohdennustenKaytto(): Promise<Map<number, number>>;
+  /** The fiscal year's budget (`tilikausi` = its alkaa), sorted by kohdennus, then tili. */
+  getBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]>;
+  /** Replaces the fiscal year's budget atomically; rows with sentit 0 are not stored. */
+  putBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void>;
 
   // --- liitteet (attachments) ---
   getLiitteet(tosite: number): Promise<LiiteMeta[]>; // metadata only, no blob

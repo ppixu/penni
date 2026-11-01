@@ -51,6 +51,8 @@ export function tositeVertailuun(tila: TositeEditoriTila) {
         alvKoodi: r.alvKoodi,
         alvProsentti: r.alvProsentti,
         bruttoSyotto: r.bruttoSyotto,
+        kohdennus: r.kohdennus,
+        merkkaukset: r.merkkaukset,
       })),
   };
 }

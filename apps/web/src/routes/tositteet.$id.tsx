@@ -3,6 +3,7 @@ import {
   avaimet,
   useAvattavaTosite,
   useInit,
+  useKohdennukset,
   useLiitteet,
   usePoistaLiite,
   useTallennaLiite,
@@ -132,6 +133,7 @@ function TositeMuokkaus({
   onKirjattu: (kirjattu: StoredTosite) => void;
 }) {
   const { data: init } = useInit();
+  const { data: kohdennukset } = useKohdennukset();
   const client = useKpClient();
   const pankkitili = init ? tasmayksenPankkitili(init.asetukset, chart) : undefined;
   const tallennus = useTositeTallennus(chart, tosite);
@@ -167,6 +169,7 @@ function TositeMuokkaus({
       <TositeEditori
         key={editori.avain}
         chart={chart}
+        kohdennukset={kohdennukset}
         alkupaiva={tosite.pvm}
         initial={editori.alku}
         otsikko={`${tositeTyyppiLabel(tosite.tyyppi)} · ${nro}`}
@@ -247,6 +250,10 @@ function TositeNaytto() {
         qc.invalidateQueries({ queryKey: ['saldot'] }),
         qc.invalidateQueries({ queryKey: ['viennit'] }),
         qc.invalidateQueries({ queryKey: ['raportti'] }),
+        // Kohdennusten käyttömäärät ja kohdennus-/budjettiraporttien toteuma.
+        qc.invalidateQueries({ queryKey: ['kohdennukset'] }),
+        qc.invalidateQueries({ queryKey: ['kohdennusRaportti'] }),
+        qc.invalidateQueries({ queryKey: ['budjettivertailu'] }),
       ]);
       // Poisto on jo vahvistettu: keskeneräiset muokkaukset poistetulle tositteelle eivät estä.
       await navigate({ to: '/tositteet', ignoreBlocker: true });

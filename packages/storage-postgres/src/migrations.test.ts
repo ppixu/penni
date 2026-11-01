@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { luoPglite } from './ajuri.js';
 import { ajaMigraatiot } from './migrations.js';
+import { createPostgresStorage } from './postgres.js';
 import { SCHEMA_VERSIONS } from './schema.js';
 
 describe('ajaMigraatiot', () => {
@@ -21,6 +22,9 @@ describe('ajaMigraatiot', () => {
       'loki',
       'kumppani',
       'liite',
+      'kohdennus',
+      'merkkaus',
+      'budjetti',
       'migraatio',
     ]) {
       expect(taulut).toContain(t);
@@ -33,7 +37,7 @@ describe('ajaMigraatiot', () => {
     await ajaMigraatiot(ajuri);
     await ajaMigraatiot(ajuri);
     const { rows } = await ajuri.query('SELECT COUNT(*) AS n FROM migraatio');
-    expect(Number(rows[0]?.n)).toBe(5); // five append-only migrations applied, each recorded once
+    expect(Number(rows[0]?.n)).toBe(6); // six append-only migrations applied, each recorded once
     await ajuri.close();
   });
 
@@ -78,5 +82,42 @@ describe('ajaMigraatiot', () => {
       },
     ).toEqual({ numero: 3, taso: 1, tyyppi: 'H1' });
     await ajuri.close();
+  });
+
+  it('v4 → v5: vanha kirja migroituu, tositteet säilyvät ja uudet taulut toimivat', async () => {
+    const ajuri = await luoPglite();
+    await ajuri.query(
+      'CREATE TABLE IF NOT EXISTS migraatio (versio INTEGER PRIMARY KEY, ajettu TIMESTAMPTZ NOT NULL DEFAULT now())',
+    );
+    for (const versio of [0, 1, 2, 3, 4]) {
+      await ajuri.exec(SCHEMA_VERSIONS[versio] as string);
+      await ajuri.query('INSERT INTO migraatio (versio) VALUES ($1)', [versio]);
+    }
+    const tosite = {
+      id: 1,
+      pvm: '2026-03-01',
+      tyyppi: 0,
+      tila: 100,
+      tunniste: 1,
+      sarja: '',
+      viennit: [{ tili: 3000, pvm: '2026-03-01', debet: 0, kredit: 500 }],
+    };
+    await ajuri.query(
+      'INSERT INTO tosite (id, pvm, tyyppi, tila, tunniste, sarja, json) VALUES (1, $1, 0, 100, 1, $2, $3)',
+      [tosite.pvm, '', JSON.stringify(tosite)],
+    );
+    const ennen = await ajuri.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_name = 'merkkaus'",
+    );
+    expect(ennen.rows).toHaveLength(0);
+
+    const kirja = await createPostgresStorage(ajuri, {});
+    expect(await kirja.getTosite(1)).toEqual(tosite);
+    expect(await kirja.getKohdennukset()).toEqual([]);
+    expect(await kirja.getBudjetti('2026-01-01')).toEqual([]);
+    expect(await kirja.laskeKohdennustenKaytto()).toEqual(new Map());
+    const k = await kirja.saveKohdennus({ tyyppi: 1, nimi: { fi: 'Nuoriso' } });
+    expect(await kirja.getKohdennukset()).toEqual([k]);
+    await kirja.close();
   });
 });

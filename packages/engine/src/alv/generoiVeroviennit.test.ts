@@ -294,3 +294,36 @@ describe('generoiVeroviennit maksuperusteinen', () => {
     expect(legs.some((v) => v.tili === 1764)).toBe(false);
   });
 });
+
+describe('generoiVeroviennit: kohdennus ja merkkaukset', () => {
+  it('kopioi kohdennuksen ja normalisoidut merkkaukset jokaiseen vientiin', () => {
+    const v = generoiVeroviennit(
+      [
+        rivi({
+          tili: 4000,
+          alvKoodi: AlvKoodi.OSTOT_NETTO,
+          puoli: 'debet',
+          kohdennus: 4,
+          merkkaukset: [7, 3, 7],
+        }),
+      ],
+      CHART,
+    );
+    expect(v).toHaveLength(2);
+    for (const x of v) {
+      expect(x.kohdennus).toBe(4);
+      expect(x.merkkaukset).toEqual([3, 7]);
+    }
+  });
+
+  it('tyhjä merkkauslista ei tuota avainta', () => {
+    const v = generoiVeroviennit([rivi({ merkkaukset: [] })], CHART);
+    for (const x of v) expect('merkkaukset' in x).toBe(false);
+  });
+
+  it('vientien merkkauslistat ovat erillisiä kopioita', () => {
+    const v = generoiVeroviennit([rivi({ merkkaukset: [1] })], CHART);
+    v[0]?.merkkaukset?.push(99);
+    expect(v[1]?.merkkaukset).toEqual([1]);
+  });
+});

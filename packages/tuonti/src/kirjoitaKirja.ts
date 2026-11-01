@@ -78,6 +78,12 @@ export async function kirjoitaKirja(
     ilmoita('kumppanit', ++n, kirja.kumppanit.length);
   }
 
+  // 4b. kohdennukset (ennen tositteita: viennit viittaavat niihin); projektit viimeisenä,
+  // jotta vanhempi on tallessa ennen lastaan
+  for (const k of [...kirja.kohdennukset].sort((a, b) => +(a.tyyppi === 2) - +(b.tyyppi === 2))) {
+    await storage.saveKohdennus(k);
+  }
+
   // 5. Kitsaksen muutoshistoria ennen tositteita, jotta lokin järjestys on aikajärjestys
   const lokiTositteittain = new Map<number, typeof kirja.loki>();
   for (const merkinta of kirja.loki) {
@@ -101,6 +107,16 @@ export async function kirjoitaKirja(
     await storage.saveTosite(tosite, audit);
     viennit += tosite.viennit.length;
     ilmoita('tositteet', ++n, kirja.tositteet.length);
+  }
+
+  // 6b. budjetit (tilikaudet ja kohdennukset ovat jo tallessa)
+  const kaudet = new Set(kirja.tilikaudet.map((k) => k.alkaa));
+  for (const { tilikausi, rivit } of kirja.budjetit) {
+    if (kaudet.has(tilikausi)) await storage.putBudjetti(tilikausi, rivit);
+    else
+      varoitukset.push(
+        `Budjettia tilikaudelle ${tilikausi} (${rivit.length} riviä) ei tuotu — tilikautta ei ole.`,
+      );
   }
 
   // 7. liitteet (viimeisenä: viittaavat tositteisiin)

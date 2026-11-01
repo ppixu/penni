@@ -1,4 +1,4 @@
-import type { TositeRivi } from '@penni/engine';
+import { type TositeRivi, normalisoiMerkkaukset } from '@penni/engine';
 
 /** The wire shape of an invoice row (engine subset; numbers stay raw per tositerivi.h). */
 export interface WireRivi {
@@ -12,6 +12,8 @@ export interface WireRivi {
   selite?: string;
   tili?: number;
   kohdennus?: number;
+  /** Merkkaus-id:t nousevana ja uniikkeina; tyhjä lista jätetään pois. */
+  merkkaukset?: number[];
   [key: string]: unknown;
 }
 
@@ -25,6 +27,7 @@ export function encodeRivi(r: TositeRivi): WireRivi {
   if (r.selite) w.selite = r.selite;
   if (r.tili !== undefined) w.tili = r.tili;
   if (r.kohdennus !== undefined) w.kohdennus = r.kohdennus;
+  if (r.merkkaukset?.length) w.merkkaukset = [...r.merkkaukset];
   return w;
 }
 
@@ -42,5 +45,9 @@ export function decodeRivi(w: WireRivi): TositeRivi {
   if (w.selite) r.selite = String(w.selite);
   if (w.tili != null) r.tili = Number(w.tili);
   if (w.kohdennus != null) r.kohdennus = Number(w.kohdennus);
+  const merkkaukset = Array.isArray(w.merkkaukset)
+    ? normalisoiMerkkaukset(w.merkkaukset.map(Number))
+    : undefined;
+  if (merkkaukset) r.merkkaukset = merkkaukset;
   return r;
 }

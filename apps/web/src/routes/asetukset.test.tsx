@@ -95,6 +95,24 @@ describe('Asetukset-näkymä — tilikaudet', () => {
     expect(viimeinen).not.toBeNull();
   });
 
+  it('jokaisella tilikaudella on Budjetti-linkki budjettisivulle', async () => {
+    await renderRoute('/asetukset', {
+      seed: {
+        ...SEED,
+        tilikaudet: [
+          { alkaa: '2025-01-01', loppuu: '2025-12-31' },
+          { alkaa: '2026-01-01', loppuu: '2026-12-31' },
+        ],
+      },
+    });
+    const lista = within(await screen.findByLabelText('asetukset')).getByLabelText('tilikaudet');
+    const linkit = within(lista).getAllByRole('link', { name: /^Budjetti/ });
+    expect(linkit.map((l) => l.getAttribute('href'))).toEqual([
+      '/budjetti?tilikausi=2025-01-01',
+      '/budjetti?tilikausi=2026-01-01',
+    ]);
+  });
+
   it('luo seuraavan tilikauden lisäämällä loppuun', async () => {
     const { user, client } = await renderRoute('/asetukset', {
       seed: { ...SEED, tilikaudet: [{ alkaa: '2026-01-01', loppuu: '2026-12-31' }] },

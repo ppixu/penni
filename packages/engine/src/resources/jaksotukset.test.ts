@@ -248,3 +248,51 @@ describe('tallennaJaksotukset', () => {
     expect(purkuVienti?.jaksoloppuu).toBe('2028-10-31');
   });
 });
+
+describe('jaksotukset: kohdennus ja merkkaukset', () => {
+  it('kulkevat jaksotusriville, päätösvienteihin ja purkuvienteihin', async () => {
+    const s = await createMemoryStorage(SEED);
+    await tallennaTosite(
+      s,
+      {
+        pvm: '2026-11-01',
+        tyyppi: 0,
+        sarja: '',
+        viennit: [
+          {
+            tili: 4000,
+            debet: c(36_500),
+            kredit: c(0),
+            pvm: '2026-11-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+            jaksoalkaa: '2026-11-01',
+            jaksoloppuu: '2027-10-31',
+            kohdennus: 4,
+            merkkaukset: [3, 7],
+          },
+          {
+            tili: 1900,
+            debet: c(0),
+            kredit: c(36_500),
+            pvm: '2026-11-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+          },
+        ],
+      },
+      env,
+    );
+    const l = await haeJaksotukset(s, { loppupvm: '2026-12-31' });
+    expect(l.rivit[0]).toMatchObject({ kohdennus: 4, merkkaukset: [3, 7] });
+
+    const paatos = await tallennaJaksotukset(s, { loppupvm: '2026-12-31' }, env);
+    for (const v of paatos.viennit) expect(v).toMatchObject({ kohdennus: 4, merkkaukset: [3, 7] });
+
+    const purut = await listaaTositteet(s, { alkupvm: '2027-01-01', loppupvm: '2027-01-01' });
+    const purku = purut.find((t) => t.tyyppi === 9920);
+    expect(purku?.viennit).toHaveLength(2);
+    for (const v of purku?.viennit ?? [])
+      expect(v).toMatchObject({ kohdennus: 4, merkkaukset: [3, 7] });
+  });
+});

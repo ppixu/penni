@@ -7,12 +7,16 @@ import {
   WireAlvTilitysSyoteSchema,
   WireAsetuksetPatchSchema,
   WireAsetuksetSchema,
+  WireBudjettiRiviSchema,
+  WireBudjettivertailuRiviSchema,
   WireEuMyyntiSchema,
   WireHyvityslaskuSyoteSchema,
   WireInitPatchSchema,
   WireInitSchema,
   WireJaksotuksetSyoteSchema,
   WireJaksotuslaskelmaSchema,
+  WireKohdennusOsioSchema,
+  WireKohdennusSchema,
   WireKumppaniSchema,
   WireLiiteMetaSchema,
   WireLiiteSchema,
@@ -106,6 +110,23 @@ const RaporttiQuery = z.object({
   alkupvm: z.string().optional(),
   erittelyt: z.string().optional(),
   kaikkiRivit: z.string().optional(),
+  /** Kohdennuksen id (0 = Yleinen); vain tuloslaskelmalle. */
+  kohdennus: z.string().optional(),
+});
+
+const KohdennusRaporttiQuery = z.object({
+  muoto: z.string(),
+  alkupvm: z.string(),
+  pvm: z.string(),
+  laji: z.enum(['kustannuspaikat', 'projektit']),
+  kustannuspaikka: z.string().optional(),
+});
+
+const BudjettivertailuQuery = z.object({
+  muoto: z.string(),
+  tilikausi: z.string(),
+  pvm: z.string().optional(),
+  kohdennus: z.string().optional(),
 });
 
 const AlvLaskelmaQuery = z.object({
@@ -334,6 +355,20 @@ export const contract = c.router({
     },
   },
 
+  // /raportti/kohdennukset ja /raportti/budjettivertailu (Penni-specific)
+  laadiKohdennusRaportti: {
+    method: 'GET',
+    path: '/raportti/kohdennukset',
+    query: KohdennusRaporttiQuery,
+    responses: { 200: z.array(WireKohdennusOsioSchema), 404: WireVirheSchema },
+  },
+  laadiBudjettivertailu: {
+    method: 'GET',
+    path: '/raportti/budjettivertailu',
+    query: BudjettivertailuQuery,
+    responses: { 200: z.array(WireBudjettivertailuRiviSchema), 404: WireVirheSchema },
+  },
+
   // /tilikaudet
   haeTilikaudet: {
     method: 'GET',
@@ -394,6 +429,33 @@ export const contract = c.router({
     responses: { 200: WireKumppaniSchema, 201: WireKumppaniSchema },
   },
   poistaKumppani: { method: 'DELETE', path: '/kumppanit/:id', responses: { 200: z.null() } },
+
+  // /kohdennukset
+  haeKohdennukset: {
+    method: 'GET',
+    path: '/kohdennukset',
+    responses: { 200: z.array(WireKohdennusSchema) },
+  },
+  tallennaKohdennus: {
+    method: 'POST',
+    path: '/kohdennukset',
+    body: WireKohdennusSchema,
+    responses: { 200: WireKohdennusSchema, 201: WireKohdennusSchema },
+  },
+  poistaKohdennus: { method: 'DELETE', path: '/kohdennukset/:id', responses: { 200: z.null() } },
+
+  // /budjetti (tilikausi = tilikauden alkupäivä)
+  haeBudjetti: {
+    method: 'GET',
+    path: '/budjetti/:tilikausi',
+    responses: { 200: z.array(WireBudjettiRiviSchema) },
+  },
+  tallennaBudjetti: {
+    method: 'PUT',
+    path: '/budjetti/:tilikausi',
+    body: z.array(WireBudjettiRiviSchema),
+    responses: { 200: z.null() },
+  },
 
   // /liitteet
   haeLiitteet: {

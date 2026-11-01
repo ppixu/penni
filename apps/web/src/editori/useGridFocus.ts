@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Solu } from './types.js';
+import { SARAKKEET, type Solu } from './types.js';
 
 interface FokusPyynto {
   avain: string;
@@ -15,7 +15,8 @@ function avaa(avain: string, solu: Solu): string {
  * Focus coordination for the grid. All cell inputs are in the natural tab order (no -1
  * roving) so Tab works via the browser. This hook adds PROGRAMMATIC moves (after Enter or
  * a picker accept): register each input's ref, then `pyyda(avain, solu)` to focus it once
- * it exists (a post-commit effect drains the request).
+ * it exists (a post-commit effect drains the request). Solu, jota rivillä ei ole (esim.
+ * kohdennus taseen tilillä), ohitetaan: fokus menee rivin seuraavaan olemassa olevaan soluun.
  */
 export function useGridFocus() {
   const refs = useRef(new Map<string, HTMLElement | null>());
@@ -34,7 +35,14 @@ export function useGridFocus() {
 
   useEffect(() => {
     if (!pyynto) return;
-    refs.current.get(avaa(pyynto.avain, pyynto.solu))?.focus();
+    const solut = SARAKKEET.slice(SARAKKEET.indexOf(pyynto.solu));
+    for (const solu of solut) {
+      const el = refs.current.get(avaa(pyynto.avain, solu));
+      if (el) {
+        el.focus();
+        break;
+      }
+    }
     setPyynto(null);
   }, [pyynto]);
 

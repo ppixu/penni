@@ -83,7 +83,8 @@ describe('lueKitsas — synteettinen kanta', () => {
 
   it('raportoi ohitetut taulut rivimäärineen', () => {
     const kirja = lueKitsas(testiPolku);
-    expect(kirja.ohitetut).toHaveProperty('Kohdennus');
+    // Kohdennus, Merkkaus ja Budjetti tuodaan nykyään; Tuote on yhä ohitettava.
+    expect(kirja.ohitetut).not.toHaveProperty('Kohdennus');
     expect(kirja.ohitetut).not.toHaveProperty('Tositeloki');
   });
 });

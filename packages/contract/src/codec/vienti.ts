@@ -1,4 +1,4 @@
-import type { TositeVienti } from '@penni/engine';
+import { type TositeVienti, normalisoiMerkkaukset } from '@penni/engine';
 import { centsToWire, prosenttiToWire, wireToCents } from '../wire/euro.js';
 
 /** The wire shape of a ledger entry (subset of legacy keys we round-trip in Tier-0). */
@@ -10,6 +10,8 @@ export interface WireVienti {
   alvkoodi?: number;
   alvprosentti?: string;
   kohdennus?: number;
+  /** Merkkaus-id:t nousevana ja uniikkeina; tyhjä lista jätetään pois. */
+  merkkaukset?: number[];
   era?: { id: number };
   selite?: string;
   tyyppi?: number;
@@ -33,6 +35,7 @@ export function encodeVienti(v: TositeVienti): WireVienti {
   if (v.alvKoodi !== 0) w.alvkoodi = v.alvKoodi;
   if (v.alvProsentti !== 0) w.alvprosentti = prosenttiToWire(v.alvProsentti);
   if (v.kohdennus) w.kohdennus = v.kohdennus;
+  if (v.merkkaukset?.length) w.merkkaukset = [...v.merkkaukset];
   if (v.era) w.era = { id: v.era };
   if (v.selite) w.selite = v.selite;
   if (v.tyyppi) w.tyyppi = v.tyyppi;
@@ -57,6 +60,10 @@ export function decodeVienti(w: WireVienti): TositeVienti {
     alvProsentti: w.alvprosentti != null ? Number(w.alvprosentti) : 0,
   };
   if (w.kohdennus != null && Number(w.kohdennus) !== 0) v.kohdennus = Number(w.kohdennus);
+  const merkkaukset = Array.isArray(w.merkkaukset)
+    ? normalisoiMerkkaukset(w.merkkaukset.map(Number))
+    : undefined;
+  if (merkkaukset) v.merkkaukset = merkkaukset;
   if (w.era && typeof w.era === 'object' && (w.era as { id?: unknown }).id) {
     v.era = Number((w.era as { id: unknown }).id);
   }

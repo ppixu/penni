@@ -2,6 +2,8 @@ import { ResourceError, lataaKartta, tasoTyypista } from '@penni/engine';
 import type {
   Asetukset,
   AuditEntry,
+  BudjettiRivi,
+  Kohdennus,
   Kumppani,
   LiiteMeta,
   SaldoQuery,
@@ -11,6 +13,7 @@ import type {
   Tilikausi,
   TositeFilter,
   TositeVienti,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
 } from '@penni/engine';
@@ -181,6 +184,8 @@ export async function createPostgresStorage(
           ],
         );
         await tx.query('DELETE FROM vienti WHERE tosite = $1', [id]);
+        // merkkaus avainnetaan vientirivin (tosite, rivi) mukaan; vientirivit uusitaan joka tallennuksessa.
+        await tx.query('DELETE FROM merkkaus WHERE tosite = $1', [id]);
         let rivi = 0;
         for (const vienti of stored.viennit) {
           rivi += 1;
@@ -197,6 +202,13 @@ export async function createPostgresStorage(
               vienti.era ?? null,
             ],
           );
+          // Set: PK (tosite, rivi, kohdennus) ei salli duplikaattia.
+          for (const merkkaus of new Set(vienti.merkkaukset))
+            await tx.query('INSERT INTO merkkaus (tosite, rivi, kohdennus) VALUES ($1,$2,$3)', [
+              id,
+              rivi,
+              merkkaus,
+            ]);
         }
         await tx.query(
           'INSERT INTO loki (tosite, aika, userid, lahde, tila, data) VALUES ($1,$2,$3,$4,$5,$6)',
@@ -288,6 +300,16 @@ export async function createPostgresStorage(
       if (q.tiliAlkaen !== undefined) lisaa('CAST(v.tili AS TEXT) COLLATE "C" >= $?', q.tiliAlkaen);
       if (q.tiliAsti !== undefined) lisaa('CAST(v.tili AS TEXT) COLLATE "C" < $?', q.tiliAsti);
       if (q.kohdennus !== undefined && q.kohdennus !== 0) lisaa('v.kohdennus = $?', q.kohdennus);
+      if (q.kohdennukset !== undefined) {
+        // Tyhjä joukko ei täsmää mihinkään.
+        if (q.kohdennukset.length === 0) ehdot.push('FALSE');
+        else lisaa('v.kohdennus = ANY($?::int[])', q.kohdennukset);
+      }
+      if (q.merkkaus !== undefined)
+        lisaa(
+          'EXISTS (SELECT 1 FROM merkkaus m WHERE m.tosite = v.tosite AND m.rivi = v.rivi AND m.kohdennus = $?)',
+          q.merkkaus,
+        );
       const { rows } = await ajuri.query(
         `SELECT v.tili AS tili, SUM(v.debetsnt - v.kreditsnt) AS saldo
          FROM vienti v JOIN tosite t ON v.tosite = t.id
@@ -382,7 +404,7 @@ export async function createPostgresStorage(
         tilit: tiliRows.map((r) => JSON.parse(r.json as string) as TiliData),
         tilikaudet: await storage.getTilikaudet(),
         tositesarjat: sarjaRows.map((r) => r.sarja as string),
-        kohdennukset: [],
+        kohdennukset: await storage.getKohdennukset(),
       };
     },
     async putTili(numero, data) {
@@ -480,6 +502,94 @@ export async function createPostgresStorage(
     },
     async deleteKumppani(id: number) {
       await ajuri.query('DELETE FROM kumppani WHERE id = $1', [id]);
+    },
+
+    // --- kohdennukset ja budjetti ---
+    async getKohdennukset() {
+      const { rows } = await ajuri.query(
+        'SELECT id, tyyppi, kuuluu, json FROM kohdennus ORDER BY id',
+      );
+      return rows.map(
+        (r): Kohdennus => ({
+          ...(JSON.parse(r.json as string) as Pick<Kohdennus, 'nimi'>),
+          id: Number(r.id),
+          tyyppi: Number(r.tyyppi) as Kohdennus['tyyppi'],
+          ...(r.kuuluu === null ? {} : { kuuluu: Number(r.kuuluu) }),
+        }),
+      );
+    },
+    async saveKohdennus(k: UusiKohdennus) {
+      return ajuri.transaction(async (tx): Promise<Kohdennus> => {
+        const { id: _drop, tyyppi, kuuluu, ...muut } = k;
+        const json = JSON.stringify(muut);
+        let id = k.id;
+        if (id === undefined) {
+          const { rows } = await tx.query(
+            'INSERT INTO kohdennus (tyyppi, kuuluu, json) VALUES ($1,$2,$3) RETURNING id',
+            [tyyppi, kuuluu ?? null, json],
+          );
+          id = Number(rows[0]?.id);
+        } else {
+          await tx.query(
+            `INSERT INTO kohdennus (id, tyyppi, kuuluu, json) VALUES ($1,$2,$3,$4)
+             ON CONFLICT (id) DO UPDATE SET tyyppi = EXCLUDED.tyyppi, kuuluu = EXCLUDED.kuuluu, json = EXCLUDED.json`,
+            [id, tyyppi, kuuluu ?? null, json],
+          );
+          // Eksplisiittinen id ei etene IDENTITY-sekvenssiä: vie se id:n (ja jo jaettujen) yli,
+          // jotta seuraava automaattinen id on aina suurempi kuin mikään olemassa oleva.
+          await tx.query(
+            `SELECT setval(seq, GREATEST((SELECT MAX(id) FROM kohdennus), COALESCE(pg_sequence_last_value(seq), 0)))
+             FROM (SELECT pg_get_serial_sequence('kohdennus', 'id')::regclass AS seq) s`,
+          );
+        }
+        return { ...muut, id, tyyppi, ...(kuuluu === undefined ? {} : { kuuluu }) } as Kohdennus;
+      });
+    },
+    async deleteKohdennus(id: number) {
+      await ajuri.transaction(async (tx) => {
+        await tx.query('DELETE FROM kohdennus WHERE id = $1', [id]);
+        await tx.query('DELETE FROM budjetti WHERE kohdennus = $1', [id]);
+      });
+    },
+    async laskeKohdennustenKaytto() {
+      const { rows } = await ajuri.query(
+        `SELECT kohdennus, SUM(n) AS n FROM (
+           SELECT v.kohdennus AS kohdennus, COUNT(*) AS n FROM vienti v
+             JOIN tosite t ON v.tosite = t.id WHERE t.tila <> 0 AND v.kohdennus > 0
+             GROUP BY v.kohdennus
+           UNION ALL
+           SELECT m.kohdennus AS kohdennus, COUNT(*) AS n FROM merkkaus m
+             JOIN tosite t ON m.tosite = t.id WHERE t.tila <> 0
+             GROUP BY m.kohdennus
+         ) u GROUP BY kohdennus`,
+      );
+      // COUNT/SUM ovat Postgresissa bigint/numeric → ajuri palauttaa merkkijonon.
+      return new Map(rows.map((r) => [Number(r.kohdennus), Number(r.n)]));
+    },
+    async getBudjetti(tilikausi: string) {
+      const { rows } = await ajuri.query(
+        'SELECT kohdennus, tili, sentit FROM budjetti WHERE tilikausi = $1 ORDER BY kohdennus, tili',
+        [tilikausi],
+      );
+      return rows.map(
+        (r): BudjettiRivi => ({
+          kohdennus: Number(r.kohdennus),
+          tili: Number(r.tili),
+          sentit: Number(r.sentit) as Cents,
+        }),
+      );
+    },
+    async putBudjetti(tilikausi: string, rivit: BudjettiRivi[]) {
+      await ajuri.transaction(async (tx) => {
+        await tx.query('DELETE FROM budjetti WHERE tilikausi = $1', [tilikausi]);
+        for (const r of rivit) {
+          if (r.sentit === 0) continue;
+          await tx.query(
+            'INSERT INTO budjetti (tilikausi, kohdennus, tili, sentit) VALUES ($1,$2,$3,$4)',
+            [tilikausi, r.kohdennus, r.tili, r.sentit],
+          );
+        }
+      });
     },
 
     // --- liitteet ---

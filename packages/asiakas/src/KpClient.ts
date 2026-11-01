@@ -6,6 +6,9 @@ import type {
   AlvLaskelmaTulos,
   AlvTilitysSyote,
   Asetukset,
+  BudjettiRivi,
+  BudjettivertailuParams,
+  BudjettivertailuRivi,
   EuMyyntiYhteenveto,
   HyvityslaskuSyote,
   InitBundle,
@@ -14,6 +17,10 @@ import type {
   JaksotuksetParams,
   JaksotuksetSyote,
   Jaksotuslaskelma,
+  Kohdennus,
+  KohdennusKaytolla,
+  KohdennusOsio,
+  KohdennusRaporttiParams,
   Kumppani,
   Liite,
   LiiteMeta,
@@ -46,6 +53,7 @@ import type {
   TositeSyote,
   TositeVienti,
   TuloveroSyote,
+  UusiKohdennus,
   UusiKumppani,
   UusiLiite,
   VahvistusSyote,
@@ -122,6 +130,10 @@ export interface KpClient {
   // raportit
   /** Render a report (income statement / balance sheet) — rich rows (arvo is Cents | null). */
   laadiRaportti(params: RaporttiParams): Promise<RaporttiRivi[]>;
+  /** Tuloslaskelma kohdennuksittain: osio per kustannuspaikka tai projekti. */
+  laadiKohdennusRaportti(p: KohdennusRaporttiParams): Promise<KohdennusOsio[]>;
+  /** Budjetti vs. toteuma raporttikaavan riveittäin. */
+  laadiBudjettivertailu(p: BudjettivertailuParams): Promise<BudjettivertailuRivi[]>;
 
   // master data (write)
   paivitaInit(patch: InitPatch): Promise<void>;
@@ -135,6 +147,15 @@ export interface KpClient {
   haeKumppanit(): Promise<Kumppani[]>;
   tallennaKumppani(kumppani: UusiKumppani): Promise<Kumppani>;
   poistaKumppani(id: number): Promise<void>;
+
+  // kohdennukset (kustannuspaikat, projektit, merkkaukset) ja budjetti
+  haeKohdennukset(): Promise<KohdennusKaytolla[]>;
+  tallennaKohdennus(k: UusiKohdennus): Promise<Kohdennus>;
+  /** Hylätään koodilla KOHDENNUSKAYTOSSA / KOHDENNUSPROJEKTEJA, kun poisto ei ole sallittu. */
+  poistaKohdennus(id: number): Promise<void>;
+  haeBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]>;
+  /** Korvaa tilikauden (alkupäivä) budjetin kokonaan. */
+  tallennaBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void>;
 
   // liitteet (attachments)
   haeLiitteet(tosite: number): Promise<LiiteMeta[]>;

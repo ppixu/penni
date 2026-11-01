@@ -1,11 +1,14 @@
 import { renderReitittimessa } from '@/test/renderReitittimessa';
+import { type Kohdennus, KohdennusTyyppi, TositeTyyppi } from '@penni/engine';
 import { Euro } from '@penni/euro';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { type ComponentProps, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { type LomakkeenTaytto, TositeEditori } from './TositeEditori.js';
+import { johdaViennit } from './johdaViennit.js';
 import { uusiRivi } from './reducer.js';
 import { CHART, valitseTili } from './testHelpers.js';
+import { tositeEditorille } from './tositeEditorille.js';
 import type { TositeEditoriTila, VientiRivi } from './types.js';
 
 // N1 sketches (1, 2, 3, 6) never trigger a successful save; they assert focus / live täsmää /
@@ -485,5 +488,130 @@ describe('TositeEditori — automaattisen tallennuksen kytkennät', () => {
     });
     expect(await screen.findByText('Toinen sivu')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('TositeEditori — kohdennussarake', () => {
+  const KOHDENNUKSET: Kohdennus[] = [
+    { id: 1, tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA, nimi: { fi: 'Nuorisotoiminta' } },
+    { id: 3, tyyppi: KohdennusTyyppi.MERKKAUS, nimi: { fi: 'Avustus' } },
+  ];
+  const sarakeotsikot = () => screen.getAllByRole('columnheader').map((th) => th.textContent);
+
+  it('kirjanpidossa ei kohdennuksia: ei Kohdennus-saraketta', async () => {
+    await renderReitittimessa(<TositeEditori chart={CHART} alkupaiva="2026-06-01" />);
+    expect(sarakeotsikot()).not.toContain('Kohdennus');
+    await renderReitittimessa(
+      <TositeEditori chart={CHART} alkupaiva="2026-06-01" kohdennukset={[]} />,
+    );
+    expect(sarakeotsikot()).not.toContain('Kohdennus');
+    expect(screen.queryByRole('combobox', { name: /Kohdennus/ })).not.toBeInTheDocument();
+  });
+
+  it('sarake Selitteen jälkeen; Tab ohittaa solun 1900-rivillä ja pysähtyy 4000-rivillä', async () => {
+    const { user } = await renderReitittimessa(
+      <TositeEditori
+        chart={CHART}
+        alkupaiva="2026-06-01"
+        kohdennukset={KOHDENNUKSET}
+        initial={{
+          paiva: '2026-06-01',
+          rows: [
+            uusiRivi({
+              tili: 1900,
+              debetSnt: Euro.fromCents(0),
+              kreditSnt: Euro.fromCents(1000),
+              alvKoodi: 0,
+              alvProsentti: 0,
+              bruttoSyotto: true,
+            }),
+            uusiRivi({
+              tili: 4000,
+              debetSnt: Euro.fromCents(1000),
+              kreditSnt: Euro.fromCents(0),
+              alvKoodi: 0,
+              alvProsentti: 0,
+              bruttoSyotto: true,
+            }),
+          ],
+        }}
+      />,
+    );
+    expect(sarakeotsikot().slice(0, 3)).toEqual(['Tili', 'Selite', 'Kohdennus']);
+    expect(screen.queryByRole('combobox', { name: 'Kohdennus, rivi 1' })).not.toBeInTheDocument();
+    screen.getByRole('textbox', { name: 'Selite, rivi 1' }).focus();
+    await user.tab();
+    expect(screen.getByRole('textbox', { name: 'Debet, rivi 1' })).toHaveFocus();
+    screen.getByRole('textbox', { name: 'Selite, rivi 2' }).focus();
+    await user.tab();
+    expect(screen.getByRole('combobox', { name: 'Kohdennus, rivi 2' })).toHaveFocus();
+  });
+
+  it('kohdennuksen valinta tallentuu riville ja fokus siirtyy summaan', async () => {
+    const onMuutos = vi.fn();
+    const { user } = await renderReitittimessa(
+      <TositeEditori
+        chart={CHART}
+        alkupaiva="2026-06-01"
+        kohdennukset={KOHDENNUKSET}
+        onMuutos={onMuutos}
+      />,
+    );
+    await valitseTili(user, 1, '4000');
+    await user.click(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' }));
+    await user.click(screen.getByRole('option', { name: 'Nuorisotoiminta' }));
+    expect(onMuutos).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rows: [expect.objectContaining({ tili: 4000, kohdennus: 1 })] }),
+    );
+    expect(screen.getByRole('textbox', { name: 'Debet, rivi 1' })).toHaveFocus();
+  });
+
+  it('kohdennus 1 + merkkaus 3 avautuu, näkyy solussa ja tallentuu takaisin muuttumattomana', async () => {
+    const viennit = johdaViennit(
+      [
+        uusiRivi({
+          tili: 4000,
+          debetSnt: Euro.fromCents(1000),
+          kreditSnt: Euro.fromCents(0),
+          alvKoodi: 0,
+          alvProsentti: 0,
+          bruttoSyotto: true,
+          kohdennus: 1,
+          merkkaukset: [3],
+        }),
+        uusiRivi({
+          tili: 1900,
+          debetSnt: Euro.fromCents(0),
+          kreditSnt: Euro.fromCents(1000),
+          alvKoodi: 0,
+          alvProsentti: 0,
+          bruttoSyotto: true,
+        }),
+      ],
+      CHART,
+      '2026-06-01',
+    );
+    const alkutila = tositeEditorille(
+      { pvm: '2026-06-01', viennit, tyyppi: TositeTyyppi.MENO, sarja: '', otsikko: 'Leiri' },
+      CHART,
+    );
+    expect(alkutila).not.toBeNull();
+    const onTallenna = vi.fn(async (_tila: TositeEditoriTila) => ({ id: 1 }));
+    const { user } = await renderReitittimessa(
+      <TositeEditori
+        chart={CHART}
+        alkupaiva="2026-06-01"
+        kohdennukset={KOHDENNUKSET}
+        initial={alkutila ?? {}}
+        onTallenna={onTallenna}
+        tallennaJaUusi={false}
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' })).toHaveValue(
+      'Nuorisotoiminta · Avustus',
+    );
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    const tallennettu = onTallenna.mock.calls[0]?.[0] as TositeEditoriTila;
+    expect(johdaViennit(tallennettu.rows, CHART, tallennettu.paiva)).toEqual(viennit);
   });
 });

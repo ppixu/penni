@@ -128,4 +128,27 @@ export const SCHEMA_VERSIONS: readonly string[] = [
   ALTER TABLE liite ADD COLUMN varasto_avain TEXT;
   ALTER TABLE liite ADD COLUMN koko INTEGER;
   `,
+  // v6: kohdennus, merkkaus (vientien tagit) ja budjetti
+  `
+  CREATE TABLE kohdennus (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    tyyppi INTEGER NOT NULL,
+    kuuluu INTEGER,
+    json   TEXT NOT NULL
+  );
+  CREATE TABLE merkkaus (
+    tosite    INTEGER NOT NULL REFERENCES tosite(id) ON DELETE CASCADE,
+    rivi      INTEGER NOT NULL,
+    kohdennus INTEGER NOT NULL,
+    PRIMARY KEY (tosite, rivi, kohdennus)
+  );
+  CREATE INDEX idx_merkkaus_kohdennus ON merkkaus(kohdennus);
+  CREATE TABLE budjetti (
+    tilikausi TEXT NOT NULL,
+    kohdennus INTEGER NOT NULL DEFAULT 0,
+    tili      INTEGER NOT NULL,
+    sentit    INTEGER NOT NULL,
+    PRIMARY KEY (tilikausi, kohdennus, tili)
+  );
+  `,
 ];

@@ -2,6 +2,7 @@ import type { Cents } from '@penni/euro';
 import { Euro } from '@penni/euro';
 import { Luonne } from '../accounts/luonne.js';
 import { type Tili, tiliTyypilla } from '../accounts/tili.js';
+import { normalisoiMerkkaukset } from '../kohdennukset/kohdennus.js';
 import { ResourceError } from '../resources/storage.js';
 import { VientiTyyppi } from '../vouchers/enums.js';
 import type { IsoDate, TositeVienti } from '../vouchers/types.js';
@@ -23,6 +24,7 @@ export interface VerollinenRivi {
   /** reverse-charge deduction right; default true. */
   alvVahennys?: boolean;
   kohdennus?: number;
+  merkkaukset?: number[];
   selite?: string;
 }
 
@@ -49,6 +51,8 @@ function vienti(
     tyyppi,
   };
   if (rivi.kohdennus !== undefined) v.kohdennus = rivi.kohdennus;
+  const merkkaukset = normalisoiMerkkaukset(rivi.merkkaukset);
+  if (merkkaukset) v.merkkaukset = merkkaukset;
   if (rivi.selite) v.selite = rivi.selite;
   return v;
 }

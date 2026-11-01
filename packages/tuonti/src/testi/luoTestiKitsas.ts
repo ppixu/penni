@@ -151,3 +151,73 @@ export function luoTestiKitsas(polku: string): void {
     db.close();
   }
 }
+
+/** Kitsas row ids of the ledger rows `luoKohdennusKitsas` tags (1–10 in insertion order). */
+export const KOHDENNUS_VIENNIT = { myynti: 2, osto: 4, siirto: 9 } as const;
+
+/**
+ * `luoTestiKitsas` plus the three kohdennus tables: cost centres 1 (Helsinki) and 2 (Tampere,
+ * with dates and an unmodelled json key), project 3 under centre 1, project 4 under Yleinen
+ * with dates, tags 5 and 6; ledger rows 2/4/9 carrying a kohdennus, rows 4 and 2 tagged (row 4
+ * with both tags, inserted in descending order), and budgets for both fiscal years — a NULL
+ * and an explicit Yleinen row, per-centre and per-project rows, and one zero row.
+ */
+export function luoKohdennusKitsas(polku: string): void {
+  luoTestiKitsas(polku);
+  const db = new Database(polku);
+  try {
+    db.exec(`
+CREATE TABLE Merkkaus(vienti INTEGER REFERENCES Vienti(id) ON DELETE CASCADE,
+  kohdennus INTEGER REFERENCES Kohdennus(id) ON DELETE CASCADE, PRIMARY KEY (vienti, kohdennus));
+CREATE TABLE Budjetti(tilikausi DATE REFERENCES Tilikausi(alkaa),
+  kohdennus INTEGER REFERENCES Kohdennus(id) ON DELETE CASCADE,
+  tili INTEGER REFERENCES Tili(numero) ON DELETE CASCADE, sentti BIGINT,
+  PRIMARY KEY (tilikausi, kohdennus, tili));`);
+    const kohdennus = db.prepare(
+      'INSERT INTO Kohdennus (id, tyyppi, kuuluu, json) VALUES (?,?,?,?)',
+    );
+    kohdennus.run(1, 1, null, JSON.stringify({ nimi: { fi: 'Helsinki', sv: 'Helsingfors' } }));
+    kohdennus.run(
+      2,
+      1,
+      null,
+      JSON.stringify({
+        nimi: { fi: 'Tampere' },
+        alkaa: '2025-01-01',
+        paattyy: '2026-12-31',
+        lisatieto: 'x',
+      }),
+    );
+    kohdennus.run(3, 2, 1, JSON.stringify({ nimi: { fi: 'Remontti' } }));
+    kohdennus.run(
+      4,
+      2,
+      0,
+      JSON.stringify({ nimi: { fi: 'Kampanja' }, alkaa: '2025-06-01', paattyy: '2025-12-31' }),
+    );
+    kohdennus.run(5, 3, null, JSON.stringify({ nimi: { fi: 'Edustus' } }));
+    kohdennus.run(6, 3, null, JSON.stringify({ nimi: { fi: 'Matka' } }));
+
+    const kohdenna = db.prepare('UPDATE Vienti SET kohdennus = ? WHERE id = ?');
+    kohdenna.run(1, KOHDENNUS_VIENNIT.myynti);
+    kohdenna.run(3, KOHDENNUS_VIENNIT.osto);
+    kohdenna.run(4, KOHDENNUS_VIENNIT.siirto);
+    const merkkaus = db.prepare('INSERT INTO Merkkaus (vienti, kohdennus) VALUES (?, ?)');
+    merkkaus.run(KOHDENNUS_VIENNIT.osto, 6);
+    merkkaus.run(KOHDENNUS_VIENNIT.osto, 5);
+    merkkaus.run(KOHDENNUS_VIENNIT.myynti, 5);
+
+    const budjetti = db.prepare(
+      'INSERT INTO Budjetti (tilikausi, kohdennus, tili, sentti) VALUES (?,?,?,?)',
+    );
+    budjetti.run('2025-01-01', null, 3000, 500000);
+    budjetti.run('2025-01-01', 1, 3000, 200000);
+    budjetti.run('2025-01-01', 1, 4000, -80000);
+    budjetti.run('2025-01-01', 3, 4000, -30000);
+    budjetti.run('2026-01-01', 0, 3000, 600000);
+    budjetti.run('2026-01-01', 0, 4000, -90000);
+    budjetti.run('2026-01-01', 2, 3000, 0);
+  } finally {
+    db.close();
+  }
+}

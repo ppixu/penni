@@ -2,6 +2,7 @@ import { useKpClient } from '@/app/KpClientProvider';
 import {
   useAvattavaTosite,
   useInit,
+  useKohdennukset,
   useLiitteet,
   usePoistaLiite,
   useTallennaLiite,
@@ -144,6 +145,7 @@ function UusiTositeLomake({
   luonnos: { tosite: StoredTosite; alkutila: Partial<TositeEditoriTila> } | undefined;
 }) {
   const { data: init } = useInit();
+  const { data: kohdennukset } = useKohdennukset();
   const client = useKpClient();
   const navigate = useNavigate();
   const router = useRouter();
@@ -316,6 +318,7 @@ function UusiTositeLomake({
     <>
       <TositeEditori
         chart={chart}
+        kohdennukset={kohdennukset}
         alkupaiva={alkupaiva}
         {...(luonnos ? { initial: luonnos.alkutila } : {})}
         alaotsikko="Luonnos · numero annetaan kirjattaessa"

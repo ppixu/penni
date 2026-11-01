@@ -226,7 +226,7 @@ Encoded verbatim:
 
 **Tier‑0 self-containment:** VAT is Tier‑1, so in Tier‑0 the `ValidationContext` predicates degrade safely — `onkoAlvIlmoitettu(pvm)` always returns `false` and `onkoAlvVelvollinen(pvm)` is a static settings flag. Real period-reporting data is wired in at Tier‑1; Tier‑0 builds and is correct without the VAT engine.
 
-**`kohdennus` in Tier‑0:** entries carry a raw `kohdennus` id, stored and round-tripped, but Tier‑0 ships **no kohdennus lookup/validation model** and the seed charts need no kohdennukset. The `/kohdennukset` resource and referential validation arrive in a later tier.
+**`kohdennus` in Tier‑0:** entries carry a raw `kohdennus` id, stored and round-tripped, but Tier‑0 ships **no kohdennus lookup/validation model** and the seed charts need no kohdennukset. The `/kohdennukset` resource (cost centres, projects, tags/merkkaukset), per-year budgets (`/budjetti/:tilikausi`) and the kohdennus-filtered reports now exist — see `docs/superpowers/specs/2026-10-31-kohdennukset-ja-budjetti-design.md`. **Referential validation of `vienti.kohdennus` on voucher save is still deferred:** the engine stores the id as given.
 
 ### 5.5 `fiscalyear` + computed result-to-equity
 
@@ -357,7 +357,7 @@ One React app for both modes. A `KpClient` interface has two implementations the
 
 - **Tier 0 — irreducible core (this spec):** Euro; chart + lattice + seed charts; Tosite/Vienti + validation; fiscal year + computed equity + lock; numbering + soft-delete + audit; saldot + tuloslaskelma/tase via report DSL; the 7 Tier‑0 endpoints.
 - **Tier 1 — VAT:** AlvKoodi taxonomy + rate-by-date (24→25.5% @2024-09-01, 14→13.5% @2026-01-01); automatic net+tax entry generation (reverse charge, import, margin scheme, cash-basis); VAT return codes 301–337; settlement voucher; period/due-date; lower-limit relief (incl. 2025 abolition); wires the real `onkoAlvIlmoitettu`/`onkoAlvVelvollinen` period data (§5.4).
-- **Tier 2 — Invoicing & payment:** viite/RF/IBAN/Y-tunnus algorithms; sales-invoice → voucher; numbering; era open-item tracking + payment matching (incl. the customer/apartment-era → MYYNTISAATAVA guard, §5.4); `/kohdennukset`; due-date adjustment, reminders, credit notes, recurring/advance; virtual barcode + SEPA QR.
+- **Tier 2 — Invoicing & payment:** viite/RF/IBAN/Y-tunnus algorithms; sales-invoice → voucher; numbering; era open-item tracking + payment matching (incl. the customer/apartment-era → MYYNTISAATAVA guard, §5.4); `/kohdennukset` (resource, merkkaukset and budgets landed early, see §5.4; voucher-save validation still pending); due-date adjustment, reminders, credit notes, recurring/advance; virtual barcode + SEPA QR.
 - **Tier 3 — Year-end & statutory output:** depreciation, accruals, income-tax provision, private-account closing; financial-statement notes engine + tilinpäätös PDF + size classification (incl. the cross-period rule, §5.5); tase-erittely; electronic archive + SHA‑256 seal.
 - **Tier 4 — Authority & external:** OmaVero/Ilmoitin VAT submission; EU sales summary; e-invoice (Finvoice/Maventa) delivery; bank-statement (tiliote, ISO 20022 CAMT.053) import + reference matching.
 - **Tier 5 — Product/SaaS:** multi-book office view, per-book permission bitmask, approval workflow (kierto), subscription plans, and **book-level sync** (§4).

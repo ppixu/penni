@@ -1,4 +1,4 @@
-import { useKumppanit, useTallennaMyyntilasku } from '@/app/kysely';
+import { useKohdennukset, useKumppanit, useTallennaMyyntilasku } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/editori/SegmentedControl';
@@ -51,6 +51,7 @@ export function LaskuLomake({
     alustaLaskuTila,
   );
   const { data: kumppanit } = useKumppanit();
+  const { data: kohdennukset } = useKohdennukset();
   const { tallenna, virheviesti, tallentaa } = useTallennaMyyntilasku();
   const [dialogiAuki, setDialogiAuki] = useState(false);
   const { onkoLikainen, asetaPohja } = useMuutosseuranta(tila, laskuVertailuun);
@@ -134,7 +135,12 @@ export function LaskuLomake({
           </label>
         </div>
 
-        <LaskuriviTaulukko rivit={tila.rivit} pvm={tila.laskupvm} dispatch={dispatch} />
+        <LaskuriviTaulukko
+          rivit={tila.rivit}
+          pvm={tila.laskupvm}
+          dispatch={dispatch}
+          kohdennukset={kohdennukset}
+        />
 
         {virheviesti ? (
           <p role="alert" className="text-[12.5px] text-[var(--danger)]">

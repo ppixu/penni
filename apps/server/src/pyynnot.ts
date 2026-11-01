@@ -1,7 +1,9 @@
 import { wireToCents } from '@penni/contract';
 import type {
   AlvLaskelmaParams,
+  BudjettivertailuParams,
   JaksotuksetParams,
+  KohdennusRaporttiParams,
   MyyntilaskuSuodatin,
   OstolaskuListQuery,
   PoistolaskelmaParams,
@@ -114,13 +116,50 @@ export function raporttiParametrit(q: {
   alkupvm?: string;
   erittelyt?: string;
   kaikkiRivit?: string;
+  kohdennus?: string;
 }): RaporttiParams {
+  const kohdennus = numero(q.kohdennus);
   return {
     muoto: q.muoto,
     pvm: q.pvm,
     ...(q.alkupvm !== undefined ? { alkupvm: q.alkupvm } : {}),
     ...(lippu(q.erittelyt) ? { erittelyt: true } : {}),
     ...(lippu(q.kaikkiRivit) ? { kaikkiRivit: true } : {}),
+    ...(kohdennus !== undefined ? { kohdennus } : {}),
+  };
+}
+
+/** Map the /raportti/kohdennukset query string to engine KohdennusRaporttiParams. */
+export function kohdennusRaporttiParametrit(q: {
+  muoto: string;
+  alkupvm: string;
+  pvm: string;
+  laji: 'kustannuspaikat' | 'projektit';
+  kustannuspaikka?: string;
+}): KohdennusRaporttiParams {
+  const kustannuspaikka = numero(q.kustannuspaikka);
+  return {
+    muoto: q.muoto,
+    alkupvm: q.alkupvm,
+    pvm: q.pvm,
+    laji: q.laji,
+    ...(kustannuspaikka !== undefined ? { kustannuspaikka } : {}),
+  };
+}
+
+/** Map the /raportti/budjettivertailu query string to engine BudjettivertailuParams. */
+export function budjettivertailuParametrit(q: {
+  muoto: string;
+  tilikausi: string;
+  pvm?: string;
+  kohdennus?: string;
+}): BudjettivertailuParams {
+  const kohdennus = numero(q.kohdennus);
+  return {
+    muoto: q.muoto,
+    tilikausi: q.tilikausi,
+    ...(q.pvm ? { pvm: q.pvm } : {}),
+    ...(kohdennus !== undefined ? { kohdennus } : {}),
   };
 }
 

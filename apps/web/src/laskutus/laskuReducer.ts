@@ -10,6 +10,12 @@ export interface LomakeRivi {
   aNettoSnt: Cents;
   alvKoodi: number;
   alvProsentti: number;
+  /** Kustannuspaikka tai projekti (id ≥ 1); puuttuu = Yleinen. `| undefined`, jotta setRivi
+   *  voi tyhjentää valinnan (osittaismuutos ei voi poistaa avainta); vertailu ja
+   *  rakennaLaskuSyote pitävät undefinedia puuttuvana. */
+  kohdennus?: number | undefined;
+  /** Merkkaus-id:t (järjestetty, uniikit); puuttuu tai tyhjä = ei merkkauksia. */
+  merkkaukset?: number[] | undefined;
 }
 
 /** Koko laskulomakkeen tila. alvVelvollinen kiinnitetään alustuksessa, jotta

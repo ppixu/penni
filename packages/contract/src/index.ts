@@ -5,6 +5,8 @@ export * from './codec/rivi.js';
 export * from './codec/tosite.js';
 export * from './codec/masterData.js';
 export * from './codec/kumppani.js';
+export * from './codec/kohdennus.js';
+export * from './codec/kohdennusRaportit.js';
 export * from './codec/liite.js';
 export * from './wire/base64.js';
 export * from './codec/myyntilasku.js';

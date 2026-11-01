@@ -12,6 +12,7 @@ export const WireVientiSchema = z
     alvkoodi: z.number().optional(),
     alvprosentti: Raha.optional(),
     kohdennus: z.number().optional(),
+    merkkaukset: z.array(z.number()).optional(),
     era: z.object({ id: z.number() }).passthrough().optional(),
     selite: z.string().optional(),
     tyyppi: z.number().optional(),
@@ -34,6 +35,7 @@ export const WireRiviSchema = z
     selite: z.string().optional(),
     tili: z.number().optional(),
     kohdennus: z.number().optional(),
+    merkkaukset: z.array(z.number()).optional(),
   })
   .passthrough();
 
@@ -380,6 +382,26 @@ export const WireKumppaniSchema = z
   })
   .passthrough();
 
+/** Kohdennus (kustannuspaikka, projekti tai merkkaus); `lkm` vain GET /kohdennukset -vastauksessa. */
+export const WireKohdennusSchema = z
+  .object({
+    id: z.union([z.number(), z.string()]).optional(),
+    tyyppi: z.number(),
+    kuuluu: z.number().optional(),
+    nimi: z.record(z.string(), z.string()),
+    alkaa: z.string().optional(),
+    paattyy: z.string().optional(),
+    lkm: z.number().optional(),
+  })
+  .passthrough();
+
+/** Budjettirivi: sentit rahamerkkijonona (tulot +, menot −). */
+export const WireBudjettiRiviSchema = z.object({
+  kohdennus: z.number(),
+  tili: z.number(),
+  sentit: z.string(),
+});
+
 export const WireLiiteMetaSchema = z
   .object({
     id: z.union([z.number(), z.string()]).optional(),
@@ -415,6 +437,31 @@ export const WireRaporttiRiviSchema = z.object({
   kaavaLaji: z.enum(['otsikko', 'valisumma', 'ohitettava']).optional(),
 });
 
+/** Kohdennusraportin osio: kohdennus ja sen tuloslaskelmarivit. */
+export const WireKohdennusOsioSchema = z.object({
+  kohdennus: z.object({
+    id: z.number(),
+    nimi: z.string(),
+    polku: z.string(),
+    tuntematon: z.literal(true).optional(),
+  }),
+  rivit: z.array(WireRaporttiRiviSchema),
+});
+
+/** Budjettivertailun rivi: rahat merkkijonoina (tai null), `prosentti` prosentin sadasosina. */
+export const WireBudjettivertailuRiviSchema = z.object({
+  teksti: z.string(),
+  sisennys: z.number(),
+  lihava: z.boolean(),
+  tyhja: z.boolean().optional(),
+  tili: z.number().int().optional(),
+  kaavarivi: z.number().int().optional(),
+  budjetti: z.union([z.string(), z.null()]),
+  toteutunut: z.union([z.string(), z.null()]),
+  ero: z.union([z.string(), z.null()]),
+  prosentti: z.number().int().optional(),
+});
+
 /** Tilinpäätösasiakirja: tuloslaskelma + tase (raporttirivit) sekä liitetiedot/vahvistus. */
 export const WireTilinpaatosDocSchema = z
   .object({
@@ -436,7 +483,7 @@ export const WireInitSchema = z.object({
   tilit: z.array(WireTiliSchema),
   tilikaudet: z.array(WireTilikausiSchema),
   tositesarjat: z.array(z.string()),
-  kohdennukset: z.array(z.unknown()),
+  kohdennukset: z.array(WireKohdennusSchema),
   kierrot: z.array(z.unknown()).optional(),
 });
 

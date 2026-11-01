@@ -263,3 +263,26 @@ describe('reducer — korvaa', () => {
     expect(reducer(lahto, { type: 'korvaa', tila: uusi })).toBe(uusi);
   });
 });
+
+describe('reducer — kohdennus', () => {
+  it('setKohdennus asettaa kohdennuksen ja merkkaukset; tyhjä valinta poistaa avaimet', () => {
+    let t = alku();
+    const a = avain1(t);
+    t = reducer(t, { type: 'setKohdennus', avain: a, kohdennus: 1, merkkaukset: [4, 3] });
+    expect(t.rows[0]).toMatchObject({ kohdennus: 1, merkkaukset: [3, 4] });
+    t = reducer(t, { type: 'setKohdennus', avain: a });
+    expect(t.rows[0]).not.toHaveProperty('kohdennus');
+    expect(t.rows[0]).not.toHaveProperty('merkkaukset');
+    t = reducer(t, { type: 'setKohdennus', avain: a, kohdennus: 0, merkkaukset: [] });
+    expect(t.rows[0]).not.toHaveProperty('kohdennus');
+    expect(t.rows[0]).not.toHaveProperty('merkkaukset');
+  });
+
+  it('tilin vaihto säilyttää rivin kohdennuksen ja merkkaukset (kuten Kitsas)', () => {
+    let t = alku();
+    const a = avain1(t);
+    t = reducer(t, { type: 'setKohdennus', avain: a, kohdennus: 1, merkkaukset: [3] });
+    t = reducer(t, { type: 'setTili', avain: a, tili: 1900 });
+    expect(t.rows[0]).toMatchObject({ tili: 1900, kohdennus: 1, merkkaukset: [3] });
+  });
+});

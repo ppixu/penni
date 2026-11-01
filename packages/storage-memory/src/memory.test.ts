@@ -1,6 +1,10 @@
 import type { StoredTosite, Tosite } from '@penni/engine';
 import { Luonne } from '@penni/engine';
-import { type ConformanceSeed, runResourceConformance } from '@penni/engine/conformance';
+import {
+  type ConformanceSeed,
+  runKohdennusConformance,
+  runResourceConformance,
+} from '@penni/engine/conformance';
 import type { Cents } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import { createMemoryStorage } from './memory.js';
@@ -256,5 +260,8 @@ describe('memory adapter — master data', () => {
 });
 
 runResourceConformance('@penni/storage-memory', (seed: ConformanceSeed) =>
+  createMemoryStorage(seed),
+);
+runKohdennusConformance('@penni/storage-memory', (seed: ConformanceSeed) =>
   createMemoryStorage(seed),
 );

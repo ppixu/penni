@@ -42,4 +42,15 @@ describe('round-trip', () => {
     };
     expect(decodeRivi(encodeRivi(r))).toEqual(r);
   });
+
+  it('merkkaukset: tyhjä lista jätetään pois, täysi kiertää', () => {
+    const pohja: TositeRivi = { myyntiKpl: 1, aNetto: 10, alvKoodi: 0, alvProsentti: 0 };
+    expect(encodeRivi({ ...pohja, merkkaukset: [] })).not.toHaveProperty('merkkaukset');
+    const r = { ...pohja, merkkaukset: [1, 4] };
+    expect(encodeRivi(r).merkkaukset).toEqual([1, 4]);
+    expect(decodeRivi(encodeRivi(r))).toEqual(r);
+    expect(decodeRivi({ myyntikpl: 1, ahinta: 10, merkkaukset: [] })).not.toHaveProperty(
+      'merkkaukset',
+    );
+  });
 });

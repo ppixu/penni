@@ -11,7 +11,8 @@ export interface TositeVienti {
   pvm: IsoDate;
   alvKoodi: number;
   alvProsentti: number;
-  kohdennus?: number; // raw id, round-tripped; no lookup in Tier-0
+  kohdennus?: number; // Kohdennus id (kustannuspaikka/projekti; 0/absent = Yleinen); not validated on save
+  merkkaukset?: number[]; // merkkaus (tag) ids, sorted ascending + unique; absent when none
   era?: number; // simplified era id, round-tripped; richer era model arrives Tier-2
   selite?: string;
   tyyppi?: number; // VientiTyyppi
@@ -41,6 +42,7 @@ export interface TositeRivi {
   selite?: string;
   tili?: number; // sales-revenue account for this row (falls back to OletusMyyntitili)
   kohdennus?: number; // cost centre
+  merkkaukset?: number[]; // merkkaus (tag) ids, sorted ascending + unique; absent when none
 }
 
 /**

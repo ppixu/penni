@@ -28,6 +28,10 @@ export interface SaldotParams {
   tuloslaskelma?: boolean;
   tili?: number;
   kohdennus?: number;
+  /** Tulosblokin kohdennusjoukko (ks. SaldoQuery.kohdennukset; kohdennusSuodatin ratkaisee). */
+  kohdennukset?: number[];
+  /** Tulosblokin merkkaussuodatin (ks. SaldoQuery.merkkaus). */
+  merkkaus?: number;
 }
 
 /** account number -> balance in cents (sign-normalized). */
@@ -112,6 +116,8 @@ export async function haeSaldot(
       loppupvmExclusive: params.alkusaldot === true,
       tiliAlkaen: '3',
       ...(params.kohdennus !== undefined ? { kohdennus: params.kohdennus } : {}),
+      ...(params.kohdennukset !== undefined ? { kohdennukset: params.kohdennukset } : {}),
+      ...(params.merkkaus !== undefined ? { merkkaus: params.merkkaus } : {}),
     });
     for (const [tili, r] of raw) out.set(tili, normalisoiSaldo(tili, r));
   }

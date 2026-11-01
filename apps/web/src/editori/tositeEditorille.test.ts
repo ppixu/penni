@@ -161,7 +161,6 @@ describe('tositeEditorille — kentät, joita ruudukko ei kanna', () => {
 
   it.each<[string, Partial<TositeVienti>]>([
     ['era', { era: 12 }],
-    ['kohdennus', { kohdennus: 3 }],
     ['jakson alku', { jaksoalkaa: '2026-01-01' }],
     ['jakson loppu', { jaksoloppuu: '2026-12-31' }],
     ['jaksotustili', { jaksotustili: 1800 }],
@@ -245,10 +244,9 @@ describe('tositeEditorille — kentät, joita ruudukko ei kirjoita takaisin', ()
     expect(tositeEditorille(t, CHART)).toBeNull();
   });
 
-  it('pelkkä erä, kohdennus, jaksotus tai maksuperusteisen alv:n linkki estää', () => {
+  it('pelkkä erä, jaksotus tai maksuperusteisen alv:n linkki estää', () => {
     for (const lisa of [
       { era: 7 },
-      { kohdennus: 3 },
       { jaksoalkaa: '2026-01-01' },
       { jaksoloppuu: '2026-12-31' },
       { jaksotustili: 1900 },
@@ -293,5 +291,55 @@ describe('tositeEditorille — kentät, joita ruudukko ei kirjoita takaisin', ()
   it('tyhjä ja puuttuva selite rinnastetaan', () => {
     const t = tallennettu([vienti(4000, 5000, 0, { selite: '' }), vienti(1900, 0, 5000)]);
     expect(tositeEditorille(t, CHART)?.rows).toHaveLength(2);
+  });
+});
+
+describe('tositeEditorille — kohdennus ja merkkaukset', () => {
+  const kohdennettu = (r: VientiRivi): VientiRivi => ({ ...r, kohdennus: 1, merkkaukset: [3] });
+
+  it('kohdennus 1 + merkkaus 3 avautuu ruudukkoon ja tallentuu takaisin muuttumattomana', () => {
+    const { tila, viennit, uudet } = edestakaisin([
+      kohdennettu(rivi(4000, 1000, 0)),
+      rivi(1900, 0, 1000),
+    ]);
+    expect(viennit[0]).toMatchObject({ kohdennus: 1, merkkaukset: [3] });
+    expect(tila.rows?.[0]).toMatchObject({ tili: 4000, kohdennus: 1, merkkaukset: [3] });
+    expect(tila.rows?.[1]).not.toHaveProperty('kohdennus');
+    expect(tila.rows?.[1]).not.toHaveProperty('merkkaukset');
+    expect(uudet).toEqual(viennit);
+  });
+
+  it('verollinen kohdennettu rivi: alv-viennit kantavat kohdennuksen, ja tosite palautuu', () => {
+    const { tila, viennit, uudet } = edestakaisin([
+      kohdennettu(rivi(4000, 12550, 0, [21, 25.5])),
+      rivi(1900, 0, 12550),
+    ]);
+    expect(viennit.filter((v) => v.kohdennus === 1)).toHaveLength(2);
+    expect(tila.rows).toHaveLength(2);
+    expect(uudet).toEqual(viennit);
+  });
+
+  it('kohdennus vain perusviennillä (Kitsas-tapa, alv-vienti ilman) ei avaudu: tallennus muuttaisi alv-vientiä', () => {
+    const viennit = johdaViennit(
+      [kohdennettu(rivi(4000, 12550, 0, [21, 25.5])), rivi(1900, 0, 12550)],
+      CHART,
+      PVM,
+    ).map((v) => {
+      if (v.alvKoodi < 100) return v;
+      const { kohdennus: _k, merkkaukset: _m, ...ilman } = v;
+      return ilman;
+    });
+    expect(tositeEditorille(tallennettu(viennit), CHART)).toBeNull();
+  });
+
+  it('eri merkkaukset samalla tilillä ja summalla erottuvat vertailussa', () => {
+    const viennit = johdaViennit(
+      [kohdennettu(rivi(4000, 1000, 0)), rivi(1900, 0, 1000)],
+      CHART,
+      PVM,
+    );
+    const muutettu = viennit.map((v, i) => (i === 0 ? { ...v, merkkaukset: [3, 4] } : v));
+    const tila = tositeEditorille(tallennettu(muutettu), CHART);
+    expect(tila?.rows?.[0]?.merkkaukset).toEqual([3, 4]);
   });
 });

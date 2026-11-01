@@ -1,4 +1,5 @@
 import { renderRoute } from '@/test/renderRoute';
+import { Euro } from '@penni/euro';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -133,6 +134,57 @@ describe('/kumppanit (lista)', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Liitä kumppaneihin' })).not.toBeInTheDocument(),
     );
+  });
+
+  it('kumppaneihin liittäminen säilyttää vientien kohdennuksen ja merkkaukset', async () => {
+    const pvm = '2026-07-16';
+    const { user, client } = await renderRoute('/kumppanit', {
+      seed: {
+        ...SEED,
+        tilit: [
+          { numero: 1910, tyyppi: 'ARP', nimi: { fi: 'Pankkitili' } },
+          { numero: 7661, tyyppi: 'D', nimi: { fi: 'Ohjelmistot' } },
+        ],
+      },
+      arrange: async (c) => {
+        await c.luoTosite({
+          pvm,
+          tyyppi: 100,
+          sarja: '',
+          tila: 100,
+          otsikko: 'GitHub',
+          viennit: [
+            {
+              tili: 7661,
+              debet: Euro.fromCents(564),
+              kredit: Euro.fromCents(0),
+              pvm,
+              alvKoodi: 0,
+              alvProsentti: 0,
+              kohdennus: 1,
+              merkkaukset: [3],
+            },
+            {
+              tili: 1910,
+              debet: Euro.fromCents(0),
+              kredit: Euro.fromCents(564),
+              pvm,
+              alvKoodi: 0,
+              alvProsentti: 0,
+            },
+          ],
+        });
+        await c.tallennaKumppani({ nimi: 'Github' });
+      },
+    });
+    await user.click(await screen.findByRole('button', { name: 'Liitä kumppaneihin' }));
+    expect(await screen.findByText('Liitetty 1 tosite.')).toBeInTheDocument();
+    const tosite = await client.haeTosite(1);
+    expect(tosite?.kumppani).toBeDefined();
+    expect(tosite?.viennit.find((v) => v.tili === 7661)).toMatchObject({
+      kohdennus: 1,
+      merkkaukset: [3],
+    });
   });
 
   it('tyhjää nimeä ei tallenneta', async () => {

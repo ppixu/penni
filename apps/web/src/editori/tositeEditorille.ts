@@ -4,6 +4,7 @@ import {
   type Tili,
   type TositeVienti,
   VientiTyyppi,
+  normalisoiMerkkaukset,
   veroTyyppi,
 } from '@penni/engine';
 import { Euro } from '@penni/euro';
@@ -34,25 +35,29 @@ function vertailtavaTyyppi(tyyppi: number | undefined): number {
 }
 
 /**
- * Vientien vertailuavain: tili, summat, alv, vientityyppi, päivä ja selite. Päivä ja selite
- * mukana, koska ruudukko leimaa tositteen päivän kaikille viennille ja antaa alv-vienneille
- * perusrivin selitteen; puuttuva ja tyhjä selite ovat samat.
+ * Vientien vertailuavain: tili, summat, alv, vientityyppi, päivä, selite, kohdennus ja
+ * merkkaukset. Päivä, selite ja kohdennukset mukana, koska ruudukko leimaa tositteen päivän
+ * kaikille viennille ja antaa alv-vienneille perusrivin selitteen ja kohdennukset (Kitsas jättää
+ * ne vain perusviennille: sellainen tosite ei palaudu muuttumattomana). Puuttuva ja tyhjä
+ * selite, puuttuva ja 0-kohdennus sekä puuttuvat ja tyhjät merkkaukset ovat samat.
  */
 function avain(v: TositeVienti): string {
-  return `${v.tili}|${v.debet}|${v.kredit}|${v.alvKoodi}|${v.alvProsentti}|${vertailtavaTyyppi(v.tyyppi)}|${v.pvm}|${v.selite ?? ''}`;
+  const merkkaukset = normalisoiMerkkaukset(v.merkkaukset)?.join(',') ?? '';
+  return `${v.tili}|${v.debet}|${v.kredit}|${v.alvKoodi}|${v.alvProsentti}|${vertailtavaTyyppi(v.tyyppi)}|${v.pvm}|${v.selite ?? ''}|${v.kohdennus ?? 0}|${merkkaukset}`;
 }
 
 /**
  * Löysä vertailuavain: vain ne kentät, jotka ruudukko itse kirjoittaa. Käytetään, kun tositetta
  * ei ole tallennettu — silloin generaattorin lisäämä vientityyppi tms. ei ole käyttäjän tietoa,
  * jota tallennus voisi hävittää, ja ainoa kysymys on kumpi syöttötapa (brutto/netto) rivit tuottaa.
+ * Kohdennus puuttuu tästäkin syystä: rivi saa sen perusvienniltä kummallakin syöttötavalla.
  */
 function loysaAvain(v: TositeVienti): string {
   return `${v.tili}|${v.debet}|${v.kredit}|${v.alvKoodi}|${v.alvProsentti}`;
 }
 
 /**
- * Vientikenttä, jota ruudukko ei kirjoita takaisin: erä (laskun avoin saldo), kohdennus,
+ * Vientikenttä, jota ruudukko ei kirjoita takaisin: erä (laskun avoin saldo),
  * jaksotus, maksuperusteisen alv:n linkki tai Kitsas-tuonnin rivikohtaiset tiedot (kumppani,
  * arkistotunnus, viite, tasaeräpoisto). Tallennus hävittäisi sen hiljaa. Tarkistetaan
  * vain tiukassa tilassa: esitäytössä ei ole tallennettua tietoa, jota voisi hävitä.
@@ -60,7 +65,6 @@ function loysaAvain(v: TositeVienti): string {
 function sailymatonKentta(v: TositeVienti): boolean {
   return (
     (v.era !== undefined && v.era !== 0) ||
-    (v.kohdennus !== undefined && v.kohdennus !== 0) ||
     v.jaksoalkaa !== undefined ||
     v.jaksoloppuu !== undefined ||
     v.jaksotustili !== undefined ||
@@ -126,6 +130,7 @@ function riveiksi(viennit: readonly TositeVienti[], brutto: boolean): VientiRivi
       } else bruttoSyotto = false;
     }
     if (veroTyyppi(v.alvKoodi) === undefined && v.alvKoodi !== AlvKoodi.EIALV) return null;
+    const merkkaukset = normalisoiMerkkaukset(v.merkkaukset);
     rivit.push(
       uusiRivi({
         tili: v.tili,
@@ -135,6 +140,8 @@ function riveiksi(viennit: readonly TositeVienti[], brutto: boolean): VientiRivi
         alvProsentti: v.alvProsentti,
         bruttoSyotto,
         ...(v.selite ? { selite: v.selite } : {}),
+        ...(v.kohdennus ? { kohdennus: v.kohdennus } : {}),
+        ...(merkkaukset ? { merkkaukset } : {}),
       }),
     );
   }
@@ -147,7 +154,7 @@ function riveiksi(viennit: readonly TositeVienti[], brutto: boolean): VientiRivi
  * rivit tuottavat täsmälleen tallennetut viennit vientityyppeineen, päivineen ja selitteineen (ensin bruttona, sitten
  * nettona syötettynä). Muuten null: tositetta ei voi muokata ruudukossa muuttamatta sen
  * kirjauksia. Null myös, jos jollakin viennillä on kenttä, jota ruudukko ei säilytä (erä,
- * kohdennus, jaksotus) — esim. Kitsas-tuonnin tiedot katoaisivat tallennettaessa. Viennitön
+ * jaksotus) — esim. Kitsas-tuonnin tiedot katoaisivat tallennettaessa. Viennitön
  * tosite (esim. pelkkä tiliote liitteenä) palautuu tyhjäksi ruudukoksi (`rows: []`).
  * Kenttävaatimuksen voi löysätä `optiot.tiukka = false`:lla, kun tositetta ei ole tallennettu
  * (ks. TositeEditorilleOptiot).

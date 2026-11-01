@@ -1,19 +1,23 @@
-import type { MyyntilaskuSyote, TositeRivi } from '@penni/engine';
+import { type MyyntilaskuSyote, type TositeRivi, normalisoiMerkkaukset } from '@penni/engine';
 import type { LaskuTila, LomakeRivi } from './laskuReducer.js';
 
 /**
  * Lomakerivi → moottorin TositeRivi. TÄMÄ on ainoa sentit→eurot-muunnos koko
  * laskutus-UI:ssa: TositeRivi.aNetto on euroja (moottorin oma sopimus, peritty
  * legacystä; ainoa pyöristys tapahtuu rivi.ts:n senttirajalla). Selite liitetään
- * vain ei-tyhjänä (exactOptionalPropertyTypes).
+ * vain ei-tyhjänä (exactOptionalPropertyTypes). Kohdennus 0 (Yleinen) ja tyhjä merkkauslista
+ * jätetään pois; merkkaukset normalisoidaan (järjestys, uniikit) kuten moottorissa.
  */
 export function riviTositeRiviksi(rivi: LomakeRivi): TositeRivi {
+  const merkkaukset = normalisoiMerkkaukset(rivi.merkkaukset);
   return {
     myyntiKpl: rivi.myyntiKpl,
     aNetto: rivi.aNettoSnt / 100,
     alvKoodi: rivi.alvKoodi,
     alvProsentti: rivi.alvProsentti,
     ...(rivi.selite.trim() !== '' ? { selite: rivi.selite.trim() } : {}),
+    ...(rivi.kohdennus ? { kohdennus: rivi.kohdennus } : {}),
+    ...(merkkaukset ? { merkkaukset } : {}),
   };
 }
 

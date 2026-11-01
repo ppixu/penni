@@ -1,6 +1,7 @@
 import { type Cents, Euro } from '@penni/euro';
 import { Luonne, onko } from '../accounts/luonne.js';
 import type { Tili } from '../accounts/tili.js';
+import { kohdennusSuodatin } from '../kohdennukset/kohdennus.js';
 import type { IsoDate } from '../vouchers/types.js';
 import { jasennaKaava, tilitAlueille } from './raporttiKaava.js';
 import { haeSaldot } from './saldot.js';
@@ -181,6 +182,20 @@ export interface RaporttiParams {
   erittelyt?: boolean;
   /** Kaikki kaavarivit mukaan (ks. TulkintaValinnat.kaikkiRivit); oletus pois. */
   kaikkiRivit?: boolean;
+  /** Vain tuloslaskelmalle (taseella ohitetaan): kohdennuksen id, 0 = Yleinen; ks.
+   *  kohdennusSuodatin. Puuttuu = kaikki viennit. */
+  kohdennus?: number;
+}
+
+/** Asetuksiin tallennettu raporttikaava nimellä (esim. 'tulos/yleinen'); EIRAPORTTIA puuttuessa. */
+export async function haeRaporttiMaaritys(
+  storage: Storage,
+  muoto: string,
+): Promise<RaporttiMaaritys> {
+  const asetukset = await storage.getAsetukset();
+  const json = asetukset[muoto];
+  if (!json) throw new ResourceError('EIRAPORTTIA', `Raporttia ${muoto} ei ole määritetty`);
+  return JSON.parse(json) as RaporttiMaaritys;
 }
 
 /** Render a named report layout (stored in settings) for the given period. */
@@ -189,16 +204,18 @@ export async function laadiRaportti(
   env: ResourceEnv,
   params: RaporttiParams,
 ): Promise<RaporttiRivi[]> {
-  const asetukset = await storage.getAsetukset();
-  const json = asetukset[params.muoto];
-  if (!json) throw new ResourceError('EIRAPORTTIA', `Raporttia ${params.muoto} ei ole määritetty`);
-  const maaritys = JSON.parse(json) as RaporttiMaaritys;
+  const maaritys = await haeRaporttiMaaritys(storage, params.muoto);
 
   const onTase = params.muoto.startsWith('tase');
+  const suodatin =
+    !onTase && params.kohdennus !== undefined
+      ? kohdennusSuodatin(await storage.getKohdennukset(), params.kohdennus)
+      : {};
   const saldot = await haeSaldot(storage, env, {
     pvm: params.pvm,
     ...(params.alkupvm !== undefined ? { alkupvm: params.alkupvm } : {}),
     ...(onTase ? { tase: true } : { tuloslaskelma: true }),
+    ...suodatin,
   });
   const chart = await storage.getChart();
   return tulkitseRaportti(maaritys, saldot, chart, 'fi', {

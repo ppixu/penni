@@ -30,6 +30,18 @@ describe('tositeVertailuun', () => {
     expect(samatArvot(tositeVertailuun(pohja), tositeVertailuun(takaisin))).toBe(true);
   });
 
+  it('rivin kohdennus ja merkkaukset likaavat', () => {
+    const tilillinen = reducer(pohja, { type: 'setTili', avain: rivi1(), tili: 4000 });
+    const kohdennettu = reducer(tilillinen, { type: 'setKohdennus', avain: rivi1(), kohdennus: 1 });
+    expect(samatArvot(tositeVertailuun(tilillinen), tositeVertailuun(kohdennettu))).toBe(false);
+    const merkattu = reducer(tilillinen, {
+      type: 'setKohdennus',
+      avain: rivi1(),
+      merkkaukset: [3],
+    });
+    expect(samatArvot(tositeVertailuun(tilillinen), tositeVertailuun(merkattu))).toBe(false);
+  });
+
   it('rivin summa likaa; nollattu summa on taas puhdas', () => {
     const debet = reducer(pohja, { type: 'setDebet', avain: rivi1(), snt: Euro.fromCents(100) });
     expect(samatArvot(tositeVertailuun(pohja), tositeVertailuun(debet))).toBe(false);
@@ -69,6 +81,22 @@ describe('laskuVertailuun / ostolaskuVertailuun', () => {
     expect(samatArvot(laskuVertailuun(pohja), laskuVertailuun(valittu))).toBe(false);
     const poistettu = laskuReducer(valittu, { type: 'setKumppani', kumppani: undefined });
     expect(samatArvot(laskuVertailuun(pohja), laskuVertailuun(poistettu))).toBe(true);
+  });
+
+  it('myyntilasku: rivin kohdennus ja merkkaukset likaavat, tyhjennys (undefined) palauttaa puhtaaksi', () => {
+    const alku = alustaLaskuTila({ laskupvm: '2026-06-01', alvVelvollinen: true });
+    const avain = alku.rivit[0]?.avain ?? 0;
+    const pohja = laskuReducer(alku, { type: 'setRivi', avain, muutos: { selite: 'Työ' } });
+    const kohdennettu = laskuReducer(pohja, { type: 'setRivi', avain, muutos: { kohdennus: 2 } });
+    expect(samatArvot(laskuVertailuun(pohja), laskuVertailuun(kohdennettu))).toBe(false);
+    const merkattu = laskuReducer(pohja, { type: 'setRivi', avain, muutos: { merkkaukset: [3] } });
+    expect(samatArvot(laskuVertailuun(pohja), laskuVertailuun(merkattu))).toBe(false);
+    const tyhjennetty = laskuReducer(kohdennettu, {
+      type: 'setRivi',
+      avain,
+      muutos: { kohdennus: undefined, merkkaukset: undefined },
+    });
+    expect(samatArvot(laskuVertailuun(pohja), laskuVertailuun(tyhjennetty))).toBe(true);
   });
 
   it('ostolasku: rivin hinta likaa, nollaus palauttaa puhtaaksi', () => {

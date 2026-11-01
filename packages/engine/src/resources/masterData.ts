@@ -16,8 +16,20 @@ export async function putTili(storage: Storage, numero: number, data: TiliData):
   await storage.putTili(numero, data);
 }
 
+/** Poista tilikartan rivi. Lehtitilin (taso 0) budjettirivit poistetaan kaikilta tilikausilta
+ *  (Kitsas Budjetti.tili ON DELETE CASCADE, sqlite/luo.sql:49), jottei budjettiin jää riviä,
+ *  jota budjettisivu ei näytä eikä tallennus hyväksy. */
 export async function poistaTili(storage: Storage, numero: number, taso = 0): Promise<void> {
   await storage.deleteTili(numero, taso);
+  if (taso !== 0) return;
+  for (const kausi of await storage.getTilikaudet()) {
+    const rivit = await storage.getBudjetti(kausi.alkaa);
+    if (rivit.some((r) => r.tili === numero))
+      await storage.putBudjetti(
+        kausi.alkaa,
+        rivit.filter((r) => r.tili !== numero),
+      );
+  }
 }
 
 export async function haeTilikaudet(storage: Storage): Promise<Tilikausi[]> {
@@ -32,8 +44,11 @@ export async function putTilikausi(
   await storage.putTilikausi(alkaa, kausi);
 }
 
+/** Poista tilikausi ja sen budjetti (budjetti on tilikauden tietoa; samalle päivälle myöhemmin
+ *  luotu kausi alkaa tyhjällä budjetilla). */
 export async function poistaTilikausi(storage: Storage, alkaa: IsoDate): Promise<void> {
   await storage.deleteTilikausi(alkaa);
+  await storage.putBudjetti(alkaa, []);
 }
 
 export async function haeKumppanit(storage: Storage): Promise<Kumppani[]> {

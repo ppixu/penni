@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { AlvValitsin } from '@/editori/AlvValitsin';
 import { EuroInput } from '@/editori/EuroInput';
-import { type IsoDate, bruttoYhteensa } from '@penni/engine';
+import { KohdennusValitsin } from '@/kohdennukset/KohdennusValitsin';
+import { type IsoDate, type Kohdennus, bruttoYhteensa, normalisoiMerkkaukset } from '@penni/engine';
 import { muotoileEuro } from '@penni/euro';
 import { useState } from 'react';
 import { type LomakeRivi, MYYNTIKOODIT, type RiviAction } from './laskuReducer.js';
@@ -75,24 +76,32 @@ function KplSyote({
  * Laskurivien muokattava taulukko. Tavallinen tab-järjestys riittää lomakkeelle
  * (kevyempi kuin editorin useGridFocus — laskurivejä on vähän). Yhteensä-solu näyttää
  * rivin brutton samalla engine-funktiolla (bruttoYhteensa) kuin dokumentti.
+ * Kohdennus-sarake (valitsin, voimassaolo laskun päivän `pvm` mukaan) näkyy vain, kun
+ * `kohdennukset` annetaan ja siinä on ainakin yksi; ostolaskulomake ei anna sitä.
  */
 export function LaskuriviTaulukko({
   rivit,
   pvm,
   dispatch,
   koodit = MYYNTIKOODIT,
+  kohdennukset = [],
 }: {
   rivit: readonly LomakeRivi[];
   pvm: IsoDate;
   dispatch: (action: RiviAction) => void;
   koodit?: readonly number[];
+  kohdennukset?: readonly Kohdennus[] | undefined;
 }) {
+  const kohdennusSarake = kohdennukset.length > 0;
   return (
     <div>
       <table className="w-full border-collapse text-[12.5px]">
         <thead>
           <tr>
             <th className={`${OTSIKKO_LUOKKA} text-left`}>Selite</th>
+            {kohdennusSarake ? (
+              <th className={`${OTSIKKO_LUOKKA} w-[190px] text-left`}>Kohdennus</th>
+            ) : null}
             <th className={`${OTSIKKO_LUOKKA} w-[70px] text-right`}>Kpl</th>
             <th className={`${OTSIKKO_LUOKKA} w-[110px] text-right`}>À-hinta</th>
             <th className={`${OTSIKKO_LUOKKA} w-[160px] text-right`}>ALV</th>
@@ -117,6 +126,29 @@ export function LaskuriviTaulukko({
                   className="w-full bg-transparent outline-none"
                 />
               </td>
+              {kohdennusSarake ? (
+                <td className="relative px-[10px] py-[6px]">
+                  <KohdennusValitsin
+                    kohdennukset={kohdennukset}
+                    pvm={pvm}
+                    arvo={{
+                      ...(rivi.kohdennus !== undefined ? { kohdennus: rivi.kohdennus } : {}),
+                      ...(rivi.merkkaukset !== undefined ? { merkkaukset: rivi.merkkaukset } : {}),
+                    }}
+                    onMuuta={(arvo) =>
+                      dispatch({
+                        type: 'setRivi',
+                        avain: rivi.avain,
+                        muutos: {
+                          kohdennus: arvo.kohdennus || undefined,
+                          merkkaukset: normalisoiMerkkaukset(arvo.merkkaukset),
+                        },
+                      })
+                    }
+                    ariaLabel={`Kohdennus, rivi ${indeksi + 1}`}
+                  />
+                </td>
+              ) : null}
               <td className="px-[10px] py-[6px] text-right">
                 <KplSyote rivi={rivi} indeksi={indeksi} dispatch={dispatch} />
               </td>

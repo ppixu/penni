@@ -230,7 +230,6 @@ describe('Tositteen muokkaus ja poisto', () => {
 
   it.each<[string, Record<string, unknown>]>([
     ['era', { era: 12 }],
-    ['kohdennus', { kohdennus: 3 }],
     ['jaksotus', { jaksoalkaa: '2026-01-01', jaksoloppuu: '2026-12-31' }],
     ['poikkeava vientipäivä', { pvm: '2026-04-02' }],
   ])('vienti, jolla on %s, avautuu vain luku -tilaan', async (_nimi, lisa) => {
@@ -253,6 +252,66 @@ describe('Tositteen muokkaus ja poisto', () => {
     expect(await screen.findByText(/ei voi muokata ruudukossa/)).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /Tili, rivi 1/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Tallenna' })).not.toBeInTheDocument();
+  });
+
+  it('kohdennettu ja merkattu vienti avautuu ruudukkoon, ja muokkaus säilyttää ne', async () => {
+    const { user, client } = await renderRoute('/tositteet/1', {
+      seed: SEED,
+      arrange: async (c) => {
+        const kp = await c.tallennaKohdennus({ tyyppi: 1, nimi: { fi: 'Nuorisotoiminta' } });
+        const merkkaus = await c.tallennaKohdennus({ tyyppi: 3, nimi: { fi: 'Avustus' } });
+        const [eka, toka] = tasapainoinenViennit('2026-04-01');
+        await c.luoTosite({
+          pvm: '2026-04-01',
+          tyyppi: 200,
+          sarja: '',
+          tila: 100,
+          otsikko: 'Leiriavustus',
+          viennit: [
+            eka as NonNullable<typeof eka>,
+            {
+              ...(toka as NonNullable<typeof toka>),
+              kohdennus: kp.id,
+              merkkaukset: [merkkaus.id],
+            },
+          ],
+        });
+      },
+    });
+    const solu = await screen.findByRole('combobox', { name: 'Kohdennus, rivi 2' });
+    expect(solu).toHaveValue('Nuorisotoiminta · Avustus');
+    const selite = screen.getByRole('textbox', { name: 'Selite' });
+    await user.clear(selite);
+    await user.type(selite, 'Leiriavustus 2026');
+    await user.tab();
+    expect(await screen.findByText('Tallennettu')).toBeInTheDocument();
+    const tallennettu = await client.haeTosite(1);
+    expect(tallennettu?.otsikko).toBe('Leiriavustus 2026');
+    expect(tallennettu?.viennit[1]).toMatchObject({ tili: 3000, kohdennus: 1, merkkaukset: [2] });
+  });
+
+  it('tuntematon kohdennus näkyy ruudukossa, vaikka kirjassa ei ole kohdennuksia', async () => {
+    await renderRoute('/tositteet/1', {
+      seed: SEED,
+      arrange: async (c) => {
+        const [eka, toka] = tasapainoinenViennit('2026-04-01');
+        await c.luoTosite({
+          pvm: '2026-04-01',
+          tyyppi: 200,
+          sarja: '',
+          tila: 100,
+          otsikko: 'Tuotu',
+          viennit: [
+            eka as NonNullable<typeof eka>,
+            { ...(toka as NonNullable<typeof toka>), kohdennus: 7, merkkaukset: [9] },
+          ],
+        });
+      },
+    });
+    expect(await screen.findByRole('columnheader', { name: 'Kohdennus' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Kohdennus, rivi 2' })).toHaveValue(
+      'Tuntematon (7) · Tuntematon (9)',
+    );
   });
 
   it('poistettu tosite avautuu vain luku -tilaan', async () => {
@@ -280,6 +339,22 @@ describe('Tositteen muokkaus ja poisto', () => {
     expect(vahvistus).toHaveBeenCalled();
     await waitFor(() => expect(router.state.location.pathname).toBe('/tositteet'));
     expect(await client.listaaTositteet({ bucket: 'kirjanpidossa' })).toHaveLength(0);
+    vahvistus.mockRestore();
+  });
+
+  it('Poista mitätöi kohdennusten käyttömäärät ja kohdennus-/budjettiraportit', async () => {
+    const { user, router, queryClient } = await renderRoute('/tositteet/1', {
+      seed: SEED,
+      arrange: async (c) => {
+        await luoMyynti(c);
+      },
+    });
+    const mitatoi = vi.spyOn(queryClient, 'invalidateQueries');
+    const vahvistus = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await user.click(await screen.findByRole('button', { name: 'Poista' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/tositteet'));
+    for (const avain of ['kohdennukset', 'kohdennusRaportti', 'budjettivertailu'])
+      expect(mitatoi).toHaveBeenCalledWith({ queryKey: [avain] });
     vahvistus.mockRestore();
   });
 
@@ -1164,6 +1239,34 @@ describe('Tositteen tyypin vaihto', () => {
     expect(loki.at(-1)?.data).toEqual(jalkeen);
     // Vain luku -näkymä pysyy, viennit koskemattomina.
     expect(screen.getByText(/ei voi muokata ruudukossa/)).toBeInTheDocument();
+  });
+
+  it('tyypin vaihto säilyttää vientien kohdennuksen ja merkkaukset', async () => {
+    const { user, client } = await renderRoute('/tositteet/1', {
+      seed: SEED_ALV,
+      arrange: async (c) => {
+        const [myynti, ...muut] = palautumatonViennit('2026-04-01');
+        await c.luoTosite({
+          pvm: '2026-04-01',
+          tyyppi: 100,
+          sarja: '',
+          tila: 100,
+          viennit: [
+            { ...(myynti as NonNullable<typeof myynti>), kohdennus: 1, merkkaukset: [3] },
+            ...muut,
+          ],
+        });
+      },
+    });
+    await screen.findByText(/ei voi muokata ruudukossa/);
+    await user.click(screen.getByRole('radio', { name: 'Tulo' }));
+    expect(await screen.findByText('Tulo · 1')).toBeInTheDocument();
+    const jalkeen = await client.haeTosite(1);
+    expect(jalkeen?.tyyppi).toBe(200);
+    expect(jalkeen?.viennit.find((v) => v.tili === 3000)).toMatchObject({
+      kohdennus: 1,
+      merkkaukset: [3],
+    });
   });
 
   it('tyypin vaihdon virhe näytetään', async () => {

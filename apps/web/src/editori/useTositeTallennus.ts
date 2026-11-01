@@ -56,9 +56,20 @@ export function tyypinVaihtoSyote(vanha: StoredTosite, tyyppi: number): TositeSy
   return { ...sailyva, tyyppi };
 }
 
-/** Tallennuksen jälkeen vanhentuneet kyselyt (kojelauta, selaimet, raportit, tosite itse). */
+/** Tallennuksen jälkeen vanhentuneet kyselyt (kojelauta, selaimet, raportit, kohdennusten
+ *  käyttömäärät ja kohdennus-/budjettiraportit, tosite itse). */
 export function mitatoiTallennuksenKyselyt(qc: QueryClient, tositeId: number): void {
-  for (const avain of ['tositteet', 'saldot', 'tulot', 'menot', 'viennit', 'raportti']) {
+  for (const avain of [
+    'tositteet',
+    'saldot',
+    'tulot',
+    'menot',
+    'viennit',
+    'raportti',
+    'kohdennukset',
+    'kohdennusRaportti',
+    'budjettivertailu',
+  ]) {
     void qc.invalidateQueries({ queryKey: [avain] });
   }
   void qc.invalidateQueries({ queryKey: ['tosite', tositeId] });

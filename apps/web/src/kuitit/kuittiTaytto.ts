@@ -31,7 +31,8 @@ export interface TayttoOptiot {
 
 /**
  * Rivit ovat tyhjät vain, jos käyttäjä ei ole kirjoittanut niihin mitään: ei tiliä, summaa,
- * rivin selitettä eikä alv-koodia. Muuten rivejä ei korvata.
+ * rivin selitettä, alv-koodia, kohdennusta eikä merkkauksia. Muuten rivejä ei korvata (valittu
+ * kohdennus katoaisi hiljaa kuitin riveiltä).
  */
 function rivitTyhjat(tila: TositeEditoriTila): boolean {
   return tila.rows.every(
@@ -40,7 +41,9 @@ function rivitTyhjat(tila: TositeEditoriTila): boolean {
       r.debetSnt === 0 &&
       r.kreditSnt === 0 &&
       (r.selite ?? '').trim() === '' &&
-      r.alvKoodi === 0,
+      r.alvKoodi === 0 &&
+      !r.kohdennus &&
+      !r.merkkaukset?.length,
   );
 }
 

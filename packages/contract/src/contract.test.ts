@@ -32,4 +32,14 @@ describe('ts-rest contract', () => {
     expect(contract.haeAlvErittely.method).toBe('GET');
     expect(contract.haeAlvErittely.path).toBe('/alv/erittely');
   });
+
+  it('declares the kohdennukset / budjetti routes and the two kohdennus reports', () => {
+    expect(contract.haeKohdennukset.path).toBe('/kohdennukset');
+    expect(contract.tallennaKohdennus.method).toBe('POST');
+    expect(contract.poistaKohdennus.path).toBe('/kohdennukset/:id');
+    expect(contract.haeBudjetti.path).toBe('/budjetti/:tilikausi');
+    expect(contract.tallennaBudjetti.method).toBe('PUT');
+    expect(contract.laadiKohdennusRaportti.path).toBe('/raportti/kohdennukset');
+    expect(contract.laadiBudjettivertailu.path).toBe('/raportti/budjettivertailu');
+  });
 });

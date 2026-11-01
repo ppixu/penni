@@ -1,6 +1,10 @@
 import { env, runInDurableObject } from 'cloudflare:test';
 import type { Storage } from '@penni/engine';
-import { type ConformanceSeed, runResourceConformance } from '@penni/engine/conformance';
+import {
+  type ConformanceSeed,
+  runKohdennusConformance,
+  runResourceConformance,
+} from '@penni/engine/conformance';
 
 type Metodit = Record<string, (...args: unknown[]) => unknown>;
 
@@ -21,3 +25,4 @@ async function kirjaDOssa(seed: ConformanceSeed): Promise<Storage> {
 }
 
 runResourceConformance('@penni/storage-do', kirjaDOssa);
+runKohdennusConformance('@penni/storage-do', kirjaDOssa);

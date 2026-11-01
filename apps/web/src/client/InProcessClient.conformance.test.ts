@@ -1,8 +1,9 @@
 import { InProcessClient } from '@penni/asiakas';
 import { createMemoryStorage } from '@penni/storage-memory';
 import { type ClientConformanceSeed, runClientConformance } from './conformance.js';
+import { runKohdennusClientConformance } from './conformanceKohdennukset.js';
 
-runClientConformance('InProcessClient', (seed: ClientConformanceSeed) => {
+const luoAsiakas = (seed: ClientConformanceSeed) => {
   const storage = createMemoryStorage({
     tilit: seed.tilit,
     tilikaudet: seed.tilikaudet,
@@ -10,4 +11,7 @@ runClientConformance('InProcessClient', (seed: ClientConformanceSeed) => {
   });
   // Deterministic clock so audit timestamps are stable across runs.
   return new InProcessClient(storage, () => '2026-06-01T00:00:00.000Z');
-});
+};
+
+runClientConformance('InProcessClient', luoAsiakas);
+runKohdennusClientConformance('InProcessClient', luoAsiakas);

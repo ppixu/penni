@@ -1,5 +1,6 @@
 import { renderRoute } from '@/test/renderRoute';
 import type { KpClient } from '@penni/asiakas';
+import { KohdennusTyyppi } from '@penni/engine';
 import { Euro } from '@penni/euro';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -277,5 +278,100 @@ describe('Raportit: pääkirja rajattuna tilikartasta', () => {
         'Rajauksen tileillä ei ole kirjauksia eikä saldoa tällä tilikaudella.',
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Raportit: kohdennukset', () => {
+  /** Myynti 100,00 kustannuspaikalle ja 40,00 kohdentamatta. */
+  const kirjaa = async (c: KpClient) => {
+    const kp = await c.tallennaKohdennus({
+      tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA,
+      nimi: { fi: 'Nuorisotoiminta' },
+    });
+    await c.tallennaKohdennus({
+      tyyppi: KohdennusTyyppi.PROJEKTI,
+      kuuluu: kp.id,
+      nimi: { fi: 'Kesäleiri' },
+    });
+    // Päättynyt ennen kautta: ei tarjota suodattimessa.
+    await c.tallennaKohdennus({
+      tyyppi: KohdennusTyyppi.PROJEKTI,
+      nimi: { fi: 'Vanha projekti' },
+      alkaa: '2024-01-01',
+      paattyy: '2024-12-31',
+    });
+    await c.tallennaKohdennus({ tyyppi: KohdennusTyyppi.MERKKAUS, nimi: { fi: 'Avustus' } });
+    const vienti = (tili: number, debet: number, kredit: number, kohdennus?: number) => ({
+      tili,
+      debet: Euro.fromCents(debet),
+      kredit: Euro.fromCents(kredit),
+      pvm: '2026-03-01',
+      alvKoodi: 0,
+      alvProsentti: 0,
+      ...(kohdennus !== undefined ? { kohdennus } : {}),
+    });
+    await c.luoTosite({
+      pvm: '2026-03-01',
+      tyyppi: 200,
+      sarja: '',
+      tila: 100,
+      viennit: [vienti(1900, 14_000, 0), vienti(3000, 0, 10_000, kp.id), vienti(3000, 0, 4_000)],
+    });
+  };
+
+  it('ilman kohdennuksia ei kohdennussuodatinta eikä kohdennusraportteja; budjettivertailu on', async () => {
+    await renderRoute('/raportit?raportti=tulos', { seed: SEED });
+    const valitsin = await screen.findByLabelText('Raportti');
+    await within(valitsin).findByRole('option', { name: 'Budjettivertailu' });
+    // Raportti ja kohdennukset ovat latautuneet, kun tuloslaskelman rivit näkyvät.
+    expect(await screen.findByText('Tilikauden tulos')).toBeInTheDocument();
+    expect(within(valitsin).queryByRole('option', { name: 'Kustannuspaikat' })).toBeNull();
+    expect(within(valitsin).queryByRole('option', { name: 'Projektit' })).toBeNull();
+    expect(screen.queryByLabelText('Kohdennus')).not.toBeInTheDocument();
+  });
+
+  it('Kohdennus-suodatin rajaa tuloslaskelman ja lisää kohdennuksen otsikkoon', async () => {
+    const { user } = await renderRoute('/raportit?raportti=tulos', {
+      seed: SEED,
+      arrange: kirjaa,
+    });
+    const suodatin = await screen.findByLabelText('Kohdennus');
+    await within(suodatin).findByRole('option', { name: 'Nuorisotoiminta' });
+    expect(
+      within(suodatin)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Kaikki', 'Yleinen', 'Nuorisotoiminta', 'Nuorisotoiminta/Kesäleiri', 'Avustus']);
+    const liikevaihto = async () => (await screen.findByText('Liikevaihto')).closest('tr');
+    expect(await liikevaihto()).toHaveTextContent('140,00 €');
+    const otsikko = () => screen.getByRole('heading', { level: 1, hidden: true });
+    expect(otsikko()).toHaveTextContent(/^Demo Oy – Tuloslaskelma 1\.1\.2026 – 31\.12\.2026$/);
+
+    await user.selectOptions(suodatin, 'Nuorisotoiminta');
+    await waitFor(async () => expect(await liikevaihto()).toHaveTextContent('100,00 €'));
+    expect(otsikko()).toHaveTextContent(
+      /^Demo Oy – Tuloslaskelma 1\.1\.2026 – 31\.12\.2026 – Nuorisotoiminta$/,
+    );
+    await user.selectOptions(suodatin, 'Yleinen');
+    await waitFor(async () => expect(await liikevaihto()).toHaveTextContent('40,00 €'));
+
+    // Muut raportit eivät ole kohdennettavissa: suodatin ei näy.
+    await user.selectOptions(screen.getByLabelText('Raportti'), 'Pääkirja');
+    expect(screen.queryByLabelText('Kohdennus')).not.toBeInTheDocument();
+  });
+
+  it('Tuloslaskelma kuukausittain rajautuu samalla suodattimella', async () => {
+    const { user } = await renderRoute('/raportit?raportti=tulos-kk', {
+      seed: SEED,
+      arrange: kirjaa,
+    });
+    const suodatin = await screen.findByLabelText('Kohdennus');
+    await within(suodatin).findByRole('option', { name: 'Nuorisotoiminta' });
+    await user.selectOptions(suodatin, 'Nuorisotoiminta');
+    await waitFor(async () =>
+      expect((await screen.findByText('Liikevaihto')).closest('tr')).toHaveTextContent(
+        /100,00 €.*100,00 €$/,
+      ),
+    );
   });
 });

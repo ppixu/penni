@@ -92,8 +92,19 @@ export function useKirjaaRivit() {
       }
     } finally {
       setKaynnissa(false);
-      // Uudet luonnokset näkyviin tositeluetteloon sekä Menoihin ja Tuloihin.
-      for (const avain of ['tositteet', 'menot', 'tulot', 'saldot', 'viennit', 'raportti'])
+      // Uudet luonnokset näkyviin tositeluetteloon sekä Menoihin ja Tuloihin; kohdennusten
+      // käyttömäärät ja kohdennus-/budjettiraportit muuttuvat myös.
+      for (const avain of [
+        'tositteet',
+        'menot',
+        'tulot',
+        'saldot',
+        'viennit',
+        'raportti',
+        'kohdennukset',
+        'kohdennusRaportti',
+        'budjettivertailu',
+      ])
         void qc.invalidateQueries({ queryKey: [avain] });
     }
     return tulokset;
