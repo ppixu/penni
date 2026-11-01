@@ -29,6 +29,13 @@ export type MyyntilaskuSyote = {
   sarja?: string;
   rivit: TositeRivi[]; // required, >= 1
   jakso?: { alkaa: IsoDate; loppuu: IsoDate }; // laskutettava ajanjakso (valinnainen)
+  info?: string; // vapaamuotoiset lisätiedot
+  luonnos?: boolean; // true: tallenna luonnokseksi (ei numeroa, viitettä eikä vientejä)
+  id?: number; // olemassa oleva luonnos, jota päivitetään / kirjataan
+  toisto?: number; // Toisto.id, josta luonnos on luotu
+  toistoPvm?: IsoDate;
+  ryhma?: string; // ryhmälaskun tunniste
+  viivkorko?: number; // viivästyskorko %
 };
 
 /** Hylkää jakson, jolta puuttuu päivä tai jonka loppu on ennen alkua. Puuttuva jakso kelpaa. */
@@ -48,16 +55,24 @@ export function tiliAsetuksesta(asetukset: Asetukset, avain: string): number | u
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
+/** Luonnoksen tilat: 50 (tuotu Kitsas-luonnos) .. 99 (VALMISLASKU 80). */
+function onLuonnosTila(tila: number): boolean {
+  return tila >= TositeTila.LUONNOS && tila < TositeTila.KIRJANPIDOSSA;
+}
+
+/** Hakee päivitettävän/kirjattavan luonnoksen; kirjattu, poistettu tai muuntyyppinen id → EILUONNOS. */
+async function haeMyyntilaskuluonnos(storage: Storage, id: number): Promise<StoredTosite> {
+  const vanha = await storage.getTosite(id);
+  if (!vanha || vanha.tyyppi !== TositeTyyppi.MYYNTILASKU || !onLuonnosTila(vanha.tila))
+    throw new ResourceError('EILUONNOS', `Tosite ${id} ei ole myyntilaskuluonnos`);
+  return vanha;
+}
+
 /**
- * Post a sales invoice: resolve accounts + numbering from settings, generate the three-leg
- * postings, then delegate tunniste-numbering + validation + save to tallennaTosite.
- * Always posts (tila = KIRJANPIDOSSA); drafts are out of 1d scope.
+ * Tarkistaa rivit ja tilit (asetuksista) ja palauttaa kirjaukseen tarvittavat tilit. Sama tarkistus
+ * ajetaan luonnoksille, jotta puuttuva tiliasetus paljastuu jo tallennettaessa eikä vasta kirjatessa.
  */
-export async function tallennaMyyntilasku(
-  storage: Storage,
-  syote: MyyntilaskuSyote,
-  env: ResourceEnv,
-): Promise<StoredTosite> {
+async function ratkaiseLaskunTilit(storage: Storage, syote: MyyntilaskuSyote) {
   if (!syote.rivit || syote.rivit.length === 0)
     throw new ResourceError('EIRIVEJA', 'Myyntilaskulla on oltava vähintään yksi rivi');
 
@@ -114,18 +129,89 @@ export async function tallennaMyyntilasku(
     kohdentamatonAlvVelka = tili.numero;
   }
 
+  return {
+    maksutapa,
+    asetukset,
+    maksuperusteinen,
+    tilit: {
+      saatava: saatava ?? 0,
+      kateinen: kateinen ?? 0,
+      kortti: kortti ?? 0,
+      oletusMyynti: oletusMyynti ?? 0,
+      alvVelka: alvVelka ?? 0,
+      kohdentamatonAlvVelka,
+    },
+  };
+}
+
+/** Kentät, jotka luonnos ja kirjattu lasku jakavat (ei numeroa, viitettä, vientejä eikä tilaa). */
+function laskunYhteisetKentat(syote: MyyntilaskuSyote, maksutapa: number) {
+  return {
+    pvm: syote.pvm,
+    tyyppi: TositeTyyppi.MYYNTILASKU,
+    sarja: syote.sarja ?? '',
+    laskupvm: syote.laskupvm ?? syote.pvm,
+    maksutapa,
+    rivit: syote.rivit,
+    ...(syote.jakso !== undefined ? { jakso: syote.jakso } : {}),
+    ...(syote.kumppani !== undefined ? { kumppani: syote.kumppani } : {}),
+    ...(syote.erapvm !== undefined ? { erapvm: syote.erapvm } : {}),
+    ...(syote.otsikko !== undefined ? { otsikko: syote.otsikko } : {}),
+    ...(syote.info !== undefined ? { info: syote.info } : {}),
+    ...(syote.viivkorko !== undefined ? { viivkorko: syote.viivkorko } : {}),
+    ...(syote.toisto !== undefined ? { toisto: syote.toisto } : {}),
+    ...(syote.toistoPvm !== undefined ? { toistoPvm: syote.toistoPvm } : {}),
+    ...(syote.ryhma !== undefined ? { ryhma: syote.ryhma } : {}),
+  };
+}
+
+/**
+ * Tallentaa myyntilaskun. `luonnos: true` tallentaa luonnoksen (tila 80, ei numeroa, viitettä eikä
+ * vientejä; `id` päivittää olemassa olevaa luonnosta), muuten laskun kirjataan (tila 100).
+ */
+export async function tallennaMyyntilasku(
+  storage: Storage,
+  syote: MyyntilaskuSyote,
+  env: ResourceEnv,
+): Promise<StoredTosite> {
+  if (!syote.luonnos) return kirjaaMyyntilaskuYdin(storage, syote, env, syote.id);
+
+  const { maksutapa } = await ratkaiseLaskunTilit(storage, syote);
+  const vanha = syote.id !== undefined ? await haeMyyntilaskuluonnos(storage, syote.id) : null;
+  return tallennaTosite(
+    storage,
+    {
+      ...laskunYhteisetKentat(syote, maksutapa),
+      ...(vanha ? { id: vanha.id } : {}),
+      tila: vanha?.tila ?? TositeTila.VALMISLASKU,
+      viennit: [],
+    },
+    env,
+  );
+}
+
+/**
+ * Kirjauksen ydin: ratkaisee tilit ja numeroinnin asetuksista, generoi kolmen vientirivin
+ * kirjaukset ja delegoi tunnisteen, validoinnin ja tallennuksen tallennaTositteelle. Annettu `id`
+ * kirjaa olemassa olevan luonnoksen samalla id:llä (saveTosite upsertaa), jolloin eräavain
+ * (tosite.id) pysyy luonnoksen id:nä.
+ */
+export async function kirjaaMyyntilaskuYdin(
+  storage: Storage,
+  syote: MyyntilaskuSyote,
+  env: ResourceEnv,
+  id?: number,
+): Promise<StoredTosite> {
+  const { maksutapa, asetukset, maksuperusteinen, tilit } = await ratkaiseLaskunTilit(
+    storage,
+    syote,
+  );
+  if (id !== undefined) await haeMyyntilaskuluonnos(storage, id);
+
   // Invoice number + reference (mirrors tositeroute.cpp:235-265).
   const numero = lueSeuraavaLaskunumero(asetukset);
   const viite = viiteEralle(ViiteTyyppi.LASKU, Number(numero));
 
-  const tilit = {
-    saatava: saatava ?? 0,
-    kateinen: kateinen ?? 0,
-    kortti: kortti ?? 0,
-    oletusMyynti: oletusMyynti ?? 0,
-    alvVelka: alvVelka ?? 0,
-    kohdentamatonAlvVelka,
-  };
   const viennit = generoiLaskunViennit({
     rivit: syote.rivit,
     maksutapa,
@@ -139,40 +225,29 @@ export async function tallennaMyyntilasku(
   const posted = await tallennaTosite(
     storage,
     {
-      pvm: syote.pvm,
-      tyyppi: TositeTyyppi.MYYNTILASKU,
+      ...laskunYhteisetKentat(syote, maksutapa),
+      ...(id !== undefined ? { id } : {}),
       tila: TositeTila.KIRJANPIDOSSA,
-      sarja: syote.sarja ?? '',
-      laskupvm: syote.laskupvm ?? syote.pvm,
       numero,
       viite,
-      maksutapa,
       viennit,
-      rivit: syote.rivit,
-      ...(syote.jakso !== undefined ? { jakso: syote.jakso } : {}),
-      ...(syote.kumppani !== undefined ? { kumppani: syote.kumppani } : {}),
-      ...(syote.erapvm !== undefined ? { erapvm: syote.erapvm } : {}),
-      ...(syote.otsikko !== undefined ? { otsikko: syote.otsikko } : {}),
     },
     env,
   );
+  // Laskuri etenee heti numeron antaneen tallennuksen jälkeen: hylätty kirjaus ei polta numeroa,
+  // mutta myöhempi erän patch ei voi jättää numeroa käyttöön uudelle laskulle.
+  await kasvataLaskunumeroa(storage, numero);
 
   // Lasku (LASKU): avaa erä myyntisaatavariville käyttäen tosite.id:tä globaalisti
   // uniikkina eräavaimena (sama kaksivaiheinen tallennus kuin ostolaskussa).
   // Käteis-/korttimyynti ei avaa erää.
-  if (maksutapa !== Maksutapa.LASKU) {
-    await kasvataLaskunumeroa(storage, numero);
-    return posted;
-  }
+  if (maksutapa !== Maksutapa.LASKU) return posted;
   const viennitEralla = posted.viennit.map((v) =>
     v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS && v.debet > 0
       ? { ...v, era: posted.id }
       : v,
   );
-  const eralla = await tallennaTosite(storage, { ...posted, viennit: viennitEralla }, env);
-  // Laskuri etenee vasta viimeisen tallennuksen jälkeen, ettei hylätty kirjaus polta numeroa.
-  await kasvataLaskunumeroa(storage, numero);
-  return eralla;
+  return tallennaTosite(storage, { ...posted, viennit: viennitEralla }, env);
 }
 
 export interface MyyntilaskuSuodatin {
