@@ -11,6 +11,8 @@ export * from './vouchers/rivi.js';
 export * from './laskutus/generoiLaskunViennit.js';
 // AlvErittelyRivi jää pois: engine exportaa jo oman AlvErittelyRivi-tyypin (resources/alvErittely.ts).
 export { type LaskuSummat, laskuSummat } from './laskutus/laskuSummat.js';
+export * from './laskutus/maksumuistutus.js';
+export * from './laskutus/paivat.js';
 export * from './validation/tarkasta.js';
 export * from './resources/storage.js';
 export * from './resources/numbering.js';
