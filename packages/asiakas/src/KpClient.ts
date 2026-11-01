@@ -51,14 +51,20 @@ import type {
   TilinavausSyote,
   TilinpaatosDoc,
   TilinpaatosParams,
+  Toisto,
   TositeFilter,
   TositeSyote,
   TositeVienti,
   TuloveroSyote,
+  Tuote,
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiToisto,
+  UusiTuote,
   VahvistusSyote,
+  Vakioviite,
+  VakioviiteSyote,
   VanhennusSyote,
   Verolaskelma,
   VerolaskelmaParams,
@@ -163,6 +169,17 @@ export interface KpClient {
   haeBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]>;
   /** Korvaa tilikauden (alkupäivä) budjetin kokonaan. */
   tallennaBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void>;
+  // tuotteet, vakioviitteet ja toistot (laskutuksen rekisterit)
+  haeTuotteet(): Promise<Tuote[]>;
+  tallennaTuote(tuote: UusiTuote): Promise<Tuote>;
+  poistaTuote(id: number): Promise<void>;
+  haeVakioviitteet(): Promise<Vakioviite[]>;
+  /** Ilman `viite`-kenttää viite numeroidaan automaattisesti; `vanhaViite` nimeää viitteen uudelleen. */
+  tallennaVakioviite(syote: VakioviiteSyote): Promise<Vakioviite>;
+  poistaVakioviite(viite: string): Promise<void>;
+  haeToistot(): Promise<Toisto[]>;
+  tallennaToisto(toisto: UusiToisto): Promise<Toisto>;
+  poistaToisto(id: number): Promise<void>;
 
   // liitteet (attachments)
   haeLiitteet(tosite: number): Promise<LiiteMeta[]>;

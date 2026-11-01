@@ -52,14 +52,20 @@ import {
   type TilinavausSyote,
   type TilinpaatosDoc,
   type TilinpaatosParams,
+  type Toisto,
   type TositeFilter,
   type TositeSyote,
   type TositeVienti,
   type TuloveroSyote,
+  type Tuote,
   type UusiKohdennus,
   type UusiKumppani,
   type UusiLiite,
+  type UusiToisto,
+  type UusiTuote,
   type VahvistusSyote,
+  type Vakioviite,
+  type VakioviiteSyote,
   type VanhennusSyote,
   type Verolaskelma,
   type VerolaskelmaParams,
@@ -79,7 +85,10 @@ import {
   haePoistolaskelma,
   haeSaldot,
   haeTilikaudet,
+  haeToistot,
   haeTosite,
+  haeTuotteet,
+  haeVakioviitteet,
   haeVerolaskelma,
   kirjaaLaskuluonnos,
   kirjaaMarginaalivero,
@@ -107,7 +116,10 @@ import {
   poistaLiite,
   poistaTili,
   poistaTilikausi,
+  poistaToisto,
   poistaTosite,
+  poistaTuote,
+  poistaVakioviite,
   putTili,
   putTilikausi,
   tallennaAlvTilitys,
@@ -122,8 +134,11 @@ import {
   tallennaOstolasku,
   tallennaPoistot,
   tallennaSuoritus,
+  tallennaToisto,
   tallennaTosite,
   tallennaTulovero,
+  tallennaTuote,
+  tallennaVakioviite,
   vahvistaTilinpaatos,
   vanhennaMaksuperusteinenAlv,
 } from '@penni/engine';
@@ -332,6 +347,34 @@ export class InProcessClient implements KpClient {
   }
   tallennaBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void> {
     return tallennaBudjetti(this.storage, tilikausi, rivit);
+  }
+
+  haeTuotteet(): Promise<Tuote[]> {
+    return haeTuotteet(this.storage);
+  }
+  tallennaTuote(tuote: UusiTuote): Promise<Tuote> {
+    return tallennaTuote(this.storage, tuote);
+  }
+  poistaTuote(id: number): Promise<void> {
+    return poistaTuote(this.storage, id);
+  }
+  haeVakioviitteet(): Promise<Vakioviite[]> {
+    return haeVakioviitteet(this.storage);
+  }
+  tallennaVakioviite(syote: VakioviiteSyote): Promise<Vakioviite> {
+    return tallennaVakioviite(this.storage, syote);
+  }
+  poistaVakioviite(viite: string): Promise<void> {
+    return poistaVakioviite(this.storage, viite);
+  }
+  haeToistot(): Promise<Toisto[]> {
+    return haeToistot(this.storage);
+  }
+  tallennaToisto(toisto: UusiToisto): Promise<Toisto> {
+    return tallennaToisto(this.storage, toisto);
+  }
+  poistaToisto(id: number): Promise<void> {
+    return poistaToisto(this.storage, id);
   }
 
   haeLiitteet(tosite: number): Promise<LiiteMeta[]> {

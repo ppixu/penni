@@ -17,9 +17,12 @@ import {
   decodeTili,
   decodeTilikausi,
   decodeTilinavausSyote,
+  decodeToisto,
   decodeTosite,
   decodeTuloveroSyote,
+  decodeTuote,
   decodeVahvistusSyote,
+  decodeVakioviiteSyote,
   decodeVanhennusSyote,
   encodeAlvErittely,
   encodeAlvIlmoitus,
@@ -44,7 +47,10 @@ import {
   encodeSaldot,
   encodeTilikausi,
   encodeTilinpaatosDoc,
+  encodeToisto,
   encodeTosite,
+  encodeTuote,
+  encodeVakioviite,
   encodeVerolaskelma,
   encodeVienti,
 } from '@penni/contract';
@@ -83,7 +89,10 @@ import {
   haePoistolaskelma,
   haeSaldot,
   haeTilikaudet,
+  haeToistot,
   haeTosite,
+  haeTuotteet,
+  haeVakioviitteet,
   haeVerolaskelma,
   kirjaaLaskuluonnos,
   kirjaaMarginaalivero,
@@ -111,7 +120,10 @@ import {
   poistaLiite,
   poistaTili,
   poistaTilikausi,
+  poistaToisto,
   poistaTosite,
+  poistaTuote,
+  poistaVakioviite,
   putTili,
   putTilikausi,
   tallennaAlvTilitys,
@@ -126,8 +138,11 @@ import {
   tallennaOstolasku,
   tallennaPoistot,
   tallennaSuoritus,
+  tallennaToisto,
   tallennaTosite,
   tallennaTulovero,
+  tallennaTuote,
+  tallennaVakioviite,
   vahvistaTilinpaatos,
   vanhennaMaksuperusteinenAlv,
 } from '@penni/engine';
@@ -535,6 +550,51 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
       body: Parameters<typeof decodeBudjettiRivi>[0][];
     }) => {
       await tallennaBudjetti(storage, params.tilikausi, body.map(decodeBudjettiRivi));
+      return { status: 200 as const, body: null };
+    },
+
+    haeTuotteet: async () => ({
+      status: 200 as const,
+      body: (await haeTuotteet(storage)).map(encodeTuote),
+    }),
+
+    tallennaTuote: async ({ body }: { body: Record<string, unknown> }) => {
+      const tallennettu = await tallennaTuote(storage, decodeTuote(body));
+      return { status: 200 as const, body: encodeTuote(tallennettu) };
+    },
+
+    poistaTuote: async ({ params }: { params: { id: string } }) => {
+      await poistaTuote(storage, Number(params.id));
+      return { status: 200 as const, body: null };
+    },
+
+    haeVakioviitteet: async () => ({
+      status: 200 as const,
+      body: (await haeVakioviitteet(storage)).map(encodeVakioviite),
+    }),
+
+    tallennaVakioviite: async ({ body }: { body: Record<string, unknown> }) => {
+      const tallennettu = await tallennaVakioviite(storage, decodeVakioviiteSyote(body));
+      return { status: 200 as const, body: encodeVakioviite(tallennettu) };
+    },
+
+    poistaVakioviite: async ({ params }: { params: { viite: string } }) => {
+      await poistaVakioviite(storage, params.viite);
+      return { status: 200 as const, body: null };
+    },
+
+    haeToistot: async () => ({
+      status: 200 as const,
+      body: (await haeToistot(storage)).map(encodeToisto),
+    }),
+
+    tallennaToisto: async ({ body }: { body: Record<string, unknown> }) => {
+      const tallennettu = await tallennaToisto(storage, decodeToisto(body));
+      return { status: 200 as const, body: encodeToisto(tallennettu) };
+    },
+
+    poistaToisto: async ({ params }: { params: { id: string } }) => {
+      await poistaToisto(storage, Number(params.id));
       return { status: 200 as const, body: null };
     },
 

@@ -446,6 +446,69 @@ export const WireBudjettiRiviSchema = z.object({
   tili: z.number(),
   sentit: z.string(),
 });
+/** Tuote (tuoterekisteri). aNetto on euroa numerona (ei Raha): pyöristys vasta rivisummassa. */
+export const WireTuoteSchema = z
+  .object({
+    id: z.union([z.number(), z.string()]).optional(),
+    nimike: z.string(),
+    unKoodi: z.string().optional(),
+    yksikko: z.string().optional(),
+    aNetto: z.number(),
+    alvKoodi: z.number(),
+    alvProsentti: z.number(),
+    tili: z.number().optional(),
+    kohdennus: z.number().optional(),
+    koodi: z.string().optional(),
+  })
+  .passthrough();
+
+/** Vakioviite (vastaus). */
+export const WireVakioviiteSchema = z
+  .object({
+    viite: z.string(),
+    tili: z.number(),
+    kohdennus: z.number().optional(),
+    otsikko: z.string(),
+  })
+  .passthrough();
+
+/** POST /vakioviitteet body. tili ja viite voivat puuttua: moottori antaa EITILIA / numeroi itse. */
+export const WireVakioviiteSyoteSchema = z
+  .object({
+    viite: z.string().optional(),
+    tili: z.number().optional(),
+    kohdennus: z.number().optional(),
+    otsikko: z.string(),
+    vanhaViite: z.string().optional(),
+  })
+  .passthrough();
+
+/** Toistuvan laskun pohja; rivit ovat laskurivejä (WireRiviSchema). */
+export const WireToistoPohjaSchema = z
+  .object({
+    otsikko: z.string().optional(),
+    maksutapa: z.number(),
+    sarja: z.string().optional(),
+    rivit: z.array(WireRiviSchema),
+    maksuaikaPaivia: z.number(),
+    jakso: z.object({ alkaa: z.string(), loppuu: z.string() }).optional(),
+  })
+  .passthrough();
+
+/** Toisto (toistuva lasku). */
+export const WireToistoSchema = z
+  .object({
+    id: z.union([z.number(), z.string()]).optional(),
+    nimi: z.string().optional(),
+    kumppani: z.number().optional(),
+    kuukausia: z.number(),
+    seuraava: z.string(),
+    loppuu: z.string().optional(),
+    pohja: WireToistoPohjaSchema,
+    lahdeTosite: z.number().optional(),
+    aktiivinen: z.boolean(),
+  })
+  .passthrough();
 
 export const WireLiiteMetaSchema = z
   .object({

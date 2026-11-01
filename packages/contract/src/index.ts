@@ -11,6 +11,7 @@ export * from './codec/liite.js';
 export * from './wire/base64.js';
 export * from './codec/myyntilasku.js';
 export * from './codec/maksumuistutus.js';
+export * from './codec/laskutusRekisterit.js';
 export * from './codec/ostolasku.js';
 export * from './codec/rahavirta.js';
 export * from './codec/hyvityslasku.js';

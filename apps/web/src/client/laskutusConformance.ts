@@ -203,5 +203,148 @@ export function runLaskutusClientConformance(name: string, makeClient: MakeClien
         ).rejects.toMatchObject({ code: 'EIMUISTUTUSARVO' });
       });
     });
+
+    describe('rekisterit', () => {
+      it('tuote: tallennus, päivitys ja poisto; hinta säilyy euroina', async () => {
+        const c = await fresh();
+        const t = await c.tallennaTuote({
+          nimike: 'Asiantuntijatyö',
+          unKoodi: 'HUR',
+          aNetto: 80.5,
+          alvKoodi: 1,
+          alvProsentti: 25.5,
+          tili: 3000,
+          koodi: 'TYO',
+        });
+        expect(t.id).toBeGreaterThan(0);
+        expect(t).toMatchObject({ nimike: 'Asiantuntijatyö', aNetto: 80.5, unKoodi: 'HUR' });
+        expect(await c.haeTuotteet()).toEqual([t]);
+
+        const paivitetty = await c.tallennaTuote({ ...t, aNetto: 90 });
+        expect(paivitetty).toMatchObject({ id: t.id, aNetto: 90 });
+        expect(await c.haeTuotteet()).toHaveLength(1);
+
+        await c.poistaTuote(t.id);
+        expect(await c.haeTuotteet()).toEqual([]);
+      });
+
+      it('vakioviite: automaattinen numerointi, käsinvalinta, uudelleennimeäminen ja poisto', async () => {
+        const c = await fresh();
+        const a = await c.tallennaVakioviite({ tili: 3000, otsikko: 'Jäsenmaksu' });
+        const b = await c.tallennaVakioviite({ tili: 3000, kohdennus: 2, otsikko: 'Lahjoitus' });
+        const d = await c.tallennaVakioviite({ tili: 3000, otsikko: 'Muu' });
+        expect([a.viite, b.viite, d.viite]).toEqual(['1009', '1012', '1025']);
+        expect(b).toMatchObject({ tili: 3000, kohdennus: 2, otsikko: 'Lahjoitus' });
+        expect((await c.haeVakioviitteet()).map((v) => v.viite)).toEqual(['1009', '1012', '1025']);
+
+        // Muokkaus samalla viitteellä ei ole VIITEKAYTOSSA; viitteen vaihto poistaa vanhan.
+        await c.tallennaVakioviite({
+          viite: '1009',
+          vanhaViite: '1009',
+          tili: 3000,
+          otsikko: 'Jäsenmaksu 2026',
+        });
+        const siirretty = await c.tallennaVakioviite({
+          viite: '2008',
+          vanhaViite: '1009',
+          tili: 3000,
+          otsikko: 'Jäsenmaksu 2026',
+        });
+        expect(siirretty.viite).toBe('2008');
+        expect((await c.haeVakioviitteet()).map((v) => v.viite)).toEqual(['1012', '1025', '2008']);
+
+        await c.poistaVakioviite('2008');
+        expect((await c.haeVakioviitteet()).map((v) => v.viite)).toEqual(['1012', '1025']);
+      });
+
+      it('vakioviite: virhekoodit EIVIITE, VIITEKAYTOSSA, EITILIA ja EIOTSIKKOA', async () => {
+        const c = await fresh();
+        await c.tallennaVakioviite({ tili: 3000, otsikko: 'Ensimmäinen' });
+        await expect(
+          c.tallennaVakioviite({ viite: '1009', tili: 3000, otsikko: 'Kaksi' }),
+        ).rejects.toMatchObject({ code: 'VIITEKAYTOSSA' });
+        for (const viite of ['1234', '0123', '12345672']) {
+          await expect(
+            c.tallennaVakioviite({ viite, tili: 3000, otsikko: 'Väärä' }),
+          ).rejects.toMatchObject({ code: 'EIVIITE' });
+        }
+        await expect(c.tallennaVakioviite({ tili: 3000, otsikko: '' })).rejects.toMatchObject({
+          code: 'EIOTSIKKOA',
+        });
+        await expect(
+          c.tallennaVakioviite({ otsikko: 'Ei tiliä' } as unknown as Parameters<
+            KpClient['tallennaVakioviite']
+          >[0]),
+        ).rejects.toMatchObject({ code: 'EITILIA' });
+      });
+
+      it('toisto: tallennus pohjariveineen, päivitys ja poisto', async () => {
+        const c = await fresh();
+        const asiakas = await c.tallennaKumppani({ nimi: 'Toistoasiakas Oy' });
+        const t = await c.tallennaToisto({
+          nimi: 'Kuukausilaskutus',
+          kumppani: asiakas.id,
+          kuukausia: 1,
+          seuraava: '2026-07-01',
+          loppuu: '2026-12-31',
+          aktiivinen: true,
+          pohja: {
+            otsikko: 'Ylläpito',
+            maksutapa: 1,
+            maksuaikaPaivia: 14,
+            jakso: { alkaa: '2026-07-01', loppuu: '2026-07-31' },
+            rivit: [
+              {
+                myyntiKpl: 2,
+                aNetto: 49.9,
+                alvKoodi: 1,
+                alvProsentti: 25.5,
+                selite: 'Palvelu',
+                tili: 3000,
+              },
+              { myyntiKpl: 1, aNetto: 10, alvKoodi: 0, alvProsentti: 0, tuote: 5 },
+            ],
+          },
+        });
+        expect(t.id).toBeGreaterThan(0);
+        expect(t).toMatchObject({
+          nimi: 'Kuukausilaskutus',
+          kumppani: asiakas.id,
+          kuukausia: 1,
+          seuraava: '2026-07-01',
+          loppuu: '2026-12-31',
+          aktiivinen: true,
+        });
+        expect(t.pohja).toMatchObject({
+          otsikko: 'Ylläpito',
+          maksutapa: 1,
+          maksuaikaPaivia: 14,
+          jakso: { alkaa: '2026-07-01', loppuu: '2026-07-31' },
+        });
+        expect(t.pohja.rivit).toEqual([
+          {
+            myyntiKpl: 2,
+            aNetto: 49.9,
+            alvKoodi: 1,
+            alvProsentti: 25.5,
+            selite: 'Palvelu',
+            tili: 3000,
+          },
+          { myyntiKpl: 1, aNetto: 10, alvKoodi: 0, alvProsentti: 0, tuote: 5 },
+        ]);
+        expect(await c.haeToistot()).toEqual([t]);
+
+        const paivitetty = await c.tallennaToisto({
+          ...t,
+          seuraava: '2026-08-01',
+          aktiivinen: false,
+        });
+        expect(paivitetty).toMatchObject({ id: t.id, seuraava: '2026-08-01', aktiivinen: false });
+        expect(await c.haeToistot()).toHaveLength(1);
+
+        await c.poistaToisto(t.id);
+        expect(await c.haeToistot()).toEqual([]);
+      });
+    });
   });
 }

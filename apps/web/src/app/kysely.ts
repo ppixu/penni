@@ -39,12 +39,18 @@ import type {
   Tilikausi,
   TilinpaatosDoc,
   TilinpaatosParams,
+  Toisto,
   TositeFilter,
   TositeVienti,
+  Tuote,
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiToisto,
+  UusiTuote,
   VahvistusSyote,
+  Vakioviite,
+  VakioviiteSyote,
 } from '@penni/engine';
 import { ResourceError, type TiliData, TositeTyyppi } from '@penni/engine';
 import {
@@ -73,6 +79,9 @@ export const avaimet = {
   budjetti: (tilikausi: IsoDate) => ['budjetti', tilikausi] as const,
   kohdennusRaportti: (params: KohdennusRaporttiParams) => ['kohdennusRaportti', params] as const,
   budjettivertailu: (params: BudjettivertailuParams) => ['budjettivertailu', params] as const,
+  tuotteet: ['tuotteet'] as const,
+  vakioviitteet: ['vakioviitteet'] as const,
+  toistot: ['toistot'] as const,
   laskuluonnokset: ['laskuluonnokset'] as const,
   alvLaskelma: (params: AlvLaskelmaParams) => ['alvLaskelma', params] as const,
   alvErittely: (params: AlvLaskelmaParams) => ['alvErittely', params] as const,
@@ -515,6 +524,14 @@ function laskuVirheViesti(e: unknown): string {
         return 'Muistutusmaksun tai viivästyskoron arvo on virheellinen';
       case 'EIERAPVM':
         return 'Eräpäivä ei voi olla ennen muistutuksen päivää';
+      case 'EIVIITE':
+        return 'Viite on virheellinen (4-7 numeroa, ei alkunollaa, oikea tarkistenumero)';
+      case 'VIITEKAYTOSSA':
+        return 'Viite on jo käytössä';
+      case 'EITILIA':
+        return 'Tili puuttuu';
+      case 'EIOTSIKKOA':
+        return 'Otsikko puuttuu';
       default:
         return `Tallennus epäonnistui (${e.code})`;
     }
@@ -819,6 +836,183 @@ export function usePoistaKumppani() {
       return true;
     } catch (e) {
       setVirheviesti(asetusVirheViesti(e));
+      return false;
+    }
+  }
+
+  return { poista, virheviesti, poistaa: mutaatio.isPending };
+}
+
+export function useTuotteet() {
+  const client = useKpClient();
+  return useQuery<Tuote[]>({ queryKey: avaimet.tuotteet, queryFn: () => client.haeTuotteet() });
+}
+
+/** Tallenna (luo/päivitä) tuote. Palauttaa Tuotteen tai undefined virheessä. */
+export function useTallennaTuote() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<Tuote, unknown, UusiTuote>({
+    mutationFn: (tuote) => client.tallennaTuote(tuote),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.tuotteet });
+    },
+  });
+
+  async function tallenna(tuote: UusiTuote): Promise<Tuote | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(tuote);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
+}
+
+/** Poista tuote. Palauttaa true onnistuessa, false virheessä. */
+export function usePoistaTuote() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<void, unknown, number>({
+    mutationFn: (id) => client.poistaTuote(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.tuotteet });
+    },
+  });
+
+  async function poista(id: number): Promise<boolean> {
+    setVirheviesti(null);
+    try {
+      await mutaatio.mutateAsync(id);
+      return true;
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return false;
+    }
+  }
+
+  return { poista, virheviesti, poistaa: mutaatio.isPending };
+}
+
+export function useVakioviitteet() {
+  const client = useKpClient();
+  return useQuery<Vakioviite[]>({
+    queryKey: avaimet.vakioviitteet,
+    queryFn: () => client.haeVakioviitteet(),
+  });
+}
+
+/** Tallenna (luo/päivitä/nimeä uudelleen) vakioviite. Palauttaa Vakioviitteen tai undefined virheessä. */
+export function useTallennaVakioviite() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<Vakioviite, unknown, VakioviiteSyote>({
+    mutationFn: (syote) => client.tallennaVakioviite(syote),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.vakioviitteet });
+    },
+  });
+
+  async function tallenna(syote: VakioviiteSyote): Promise<Vakioviite | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(syote);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
+}
+
+/** Poista vakioviite. Palauttaa true onnistuessa, false virheessä. */
+export function usePoistaVakioviite() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<void, unknown, string>({
+    mutationFn: (viite) => client.poistaVakioviite(viite),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.vakioviitteet });
+    },
+  });
+
+  async function poista(viite: string): Promise<boolean> {
+    setVirheviesti(null);
+    try {
+      await mutaatio.mutateAsync(viite);
+      return true;
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return false;
+    }
+  }
+
+  return { poista, virheviesti, poistaa: mutaatio.isPending };
+}
+
+export function useToistot() {
+  const client = useKpClient();
+  return useQuery<Toisto[]>({ queryKey: avaimet.toistot, queryFn: () => client.haeToistot() });
+}
+
+/** Tallenna (luo/päivitä) toisto. Palauttaa Toiston tai undefined virheessä. */
+export function useTallennaToisto() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<Toisto, unknown, UusiToisto>({
+    mutationFn: (toisto) => client.tallennaToisto(toisto),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.toistot });
+    },
+  });
+
+  async function tallenna(toisto: UusiToisto): Promise<Toisto | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(toisto);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
+}
+
+/** Poista toisto. Palauttaa true onnistuessa, false virheessä. */
+export function usePoistaToisto() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<void, unknown, number>({
+    mutationFn: (id) => client.poistaToisto(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.toistot });
+    },
+  });
+
+  async function poista(id: number): Promise<boolean> {
+    setVirheviesti(null);
+    try {
+      await mutaatio.mutateAsync(id);
+      return true;
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
       return false;
     }
   }

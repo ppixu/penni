@@ -39,10 +39,14 @@ import {
   WireTilikausiSchema,
   WireTilinavausSyoteSchema,
   WireTilinpaatosDocSchema,
+  WireToistoSchema,
   WireTositeSchema,
   WireTositeSyoteSchema,
   WireTuloveroSyoteSchema,
+  WireTuoteSchema,
   WireVahvistusSyoteSchema,
+  WireVakioviiteSchema,
+  WireVakioviiteSyoteSchema,
   WireVanhennusSyoteSchema,
   WireVerolaskelmaSchema,
   WireVientiSchema,
@@ -476,6 +480,39 @@ export const contract = c.router({
     body: z.array(WireBudjettiRiviSchema),
     responses: { 200: z.null() },
   },
+  // /tuotteet, /vakioviitteet, /toistot (laskutuksen rekisterit)
+  haeTuotteet: { method: 'GET', path: '/tuotteet', responses: { 200: z.array(WireTuoteSchema) } },
+  tallennaTuote: {
+    method: 'POST',
+    path: '/tuotteet',
+    body: WireTuoteSchema,
+    responses: { 200: WireTuoteSchema, 201: WireTuoteSchema },
+  },
+  poistaTuote: { method: 'DELETE', path: '/tuotteet/:id', responses: { 200: z.null() } },
+  haeVakioviitteet: {
+    method: 'GET',
+    path: '/vakioviitteet',
+    responses: { 200: z.array(WireVakioviiteSchema) },
+  },
+  tallennaVakioviite: {
+    method: 'POST',
+    path: '/vakioviitteet',
+    body: WireVakioviiteSyoteSchema,
+    responses: { 200: WireVakioviiteSchema, 201: WireVakioviiteSchema },
+  },
+  poistaVakioviite: {
+    method: 'DELETE',
+    path: '/vakioviitteet/:viite',
+    responses: { 200: z.null() },
+  },
+  haeToistot: { method: 'GET', path: '/toistot', responses: { 200: z.array(WireToistoSchema) } },
+  tallennaToisto: {
+    method: 'POST',
+    path: '/toistot',
+    body: WireToistoSchema,
+    responses: { 200: WireToistoSchema, 201: WireToistoSchema },
+  },
+  poistaToisto: { method: 'DELETE', path: '/toistot/:id', responses: { 200: z.null() } },
 
   // /liitteet
   haeLiitteet: {

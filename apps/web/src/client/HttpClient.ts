@@ -26,7 +26,10 @@ import {
   decodeSaldot,
   decodeTilikausi,
   decodeTilinpaatosDoc,
+  decodeToisto,
   decodeTosite,
+  decodeTuote,
+  decodeVakioviite,
   decodeVerolaskelma,
   decodeVienti,
   encodeAlvTilitysSyote,
@@ -47,9 +50,12 @@ import {
   encodeSuoritusSyote,
   encodeTilikausi,
   encodeTilinavausSyote,
+  encodeToisto,
   encodeTosite,
   encodeTuloveroSyote,
+  encodeTuote,
   encodeVahvistusSyote,
+  encodeVakioviiteSyote,
   encodeVanhennusSyote,
 } from '@penni/contract';
 import {
@@ -105,16 +111,22 @@ import {
   type TilinavausSyote,
   type TilinpaatosDoc,
   type TilinpaatosParams,
+  type Toisto,
   type Tosite,
   type TositeFilter,
   type TositeSyote,
   TositeTila,
   type TositeVienti,
   type TuloveroSyote,
+  type Tuote,
   type UusiKohdennus,
   type UusiKumppani,
   type UusiLiite,
+  type UusiToisto,
+  type UusiTuote,
   type VahvistusSyote,
+  type Vakioviite,
+  type VakioviiteSyote,
   type VanhennusSyote,
   type Verolaskelma,
   type VerolaskelmaParams,
@@ -683,6 +695,62 @@ export class HttpClient implements KpClient {
       params: { tilikausi },
       body: rivit.map(encodeBudjettiRivi),
     });
+    if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+
+  async haeTuotteet(): Promise<Tuote[]> {
+    const r = await this.tsr.haeTuotteet();
+    if (r.status === 200) return (r.body as Record<string, unknown>[]).map(decodeTuote);
+    throw virhe(r.status, r.body);
+  }
+  async tallennaTuote(tuote: UusiTuote): Promise<Tuote> {
+    const r = await this.tsr.tallennaTuote({
+      body: encodeTuote(tuote) as Parameters<Tsr['tallennaTuote']>[0]['body'],
+    });
+    if (r.status === 200 || r.status === 201) return decodeTuote(r.body as Record<string, unknown>);
+    throw virhe(r.status, r.body);
+  }
+  async poistaTuote(id: number): Promise<void> {
+    const r = await this.tsr.poistaTuote({ params: { id: String(id) } });
+    if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+
+  async haeVakioviitteet(): Promise<Vakioviite[]> {
+    const r = await this.tsr.haeVakioviitteet();
+    if (r.status === 200) return (r.body as Record<string, unknown>[]).map(decodeVakioviite);
+    throw virhe(r.status, r.body);
+  }
+  async tallennaVakioviite(syote: VakioviiteSyote): Promise<Vakioviite> {
+    const r = await this.tsr.tallennaVakioviite({
+      body: encodeVakioviiteSyote(syote) as Parameters<Tsr['tallennaVakioviite']>[0]['body'],
+    });
+    if (r.status === 200 || r.status === 201)
+      return decodeVakioviite(r.body as Record<string, unknown>);
+    throw virhe(r.status, r.body);
+  }
+  async poistaVakioviite(viite: string): Promise<void> {
+    const r = await this.tsr.poistaVakioviite({ params: { viite } });
+    if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+
+  async haeToistot(): Promise<Toisto[]> {
+    const r = await this.tsr.haeToistot();
+    if (r.status === 200) return (r.body as Record<string, unknown>[]).map(decodeToisto);
+    throw virhe(r.status, r.body);
+  }
+  async tallennaToisto(toisto: UusiToisto): Promise<Toisto> {
+    const r = await this.tsr.tallennaToisto({
+      body: encodeToisto(toisto) as Parameters<Tsr['tallennaToisto']>[0]['body'],
+    });
+    if (r.status === 200 || r.status === 201)
+      return decodeToisto(r.body as Record<string, unknown>);
+    throw virhe(r.status, r.body);
+  }
+  async poistaToisto(id: number): Promise<void> {
+    const r = await this.tsr.poistaToisto({ params: { id: String(id) } });
     if (r.status === 200) return;
     throw virhe(r.status, r.body);
   }
