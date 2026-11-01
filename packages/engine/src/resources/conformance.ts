@@ -11,6 +11,7 @@ import { haeAlvLaskelma, tallennaAlvTilitys } from './alvLaskelma.js';
 import { haeEuMyyntiYhteenveto } from './euMyynti.js';
 import { tallennaHyvityslasku } from './hyvityslaskuResource.js';
 import { haeJaksotukset, tallennaJaksotukset } from './jaksotukset.js';
+import { runLaskutusConformance } from './laskutusConformance.js';
 import { vanhennaMaksuperusteinenAlv } from './maksuperusteinenVanhennus.js';
 import { kirjaaMarginaalivero } from './marginaalivero.js';
 import { haeInit, paivitaAsetukset, paivitaInit, putTili } from './masterData.js';
@@ -2377,6 +2378,8 @@ export function runResourceConformance(
       expect((await s.listTositteet({ bucket: 'kirjanpidossa' })).map((t) => t.id)).toEqual([77]);
     });
   });
+
+  runLaskutusConformance(name, makeStorage);
 }
 
 export { runKohdennusConformance } from './conformanceKohdennukset.js';

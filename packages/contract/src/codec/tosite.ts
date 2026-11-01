@@ -1,4 +1,11 @@
-import type { Alkupera, ListattuTosite, StoredTosite, TilioteTiedot, Tosite } from '@penni/engine';
+import type {
+  Alkupera,
+  ListattuTosite,
+  Muistutus,
+  StoredTosite,
+  TilioteTiedot,
+  Tosite,
+} from '@penni/engine';
 import { centsToWire, wireToCents } from '../wire/euro.js';
 import { pudotaTyhjat } from '../wire/omit.js';
 import { onAlkupera } from './rahavirta.js';
@@ -26,6 +33,14 @@ export interface WireTosite {
   tiliote?: WireTiliote;
   /** Vapaamuotoiset lisätiedot (Kitsaksen avain `info`). */
   info?: string;
+  /** Laskutettava ajanjakso. */
+  jakso?: { alkaa: string; loppuu: string };
+  /** Maksumuistutuksen tiedot; rahasummat euroina kuten viennit. */
+  muistutus?: WireMuistutus;
+  viivkorko?: number;
+  toisto?: number;
+  toistoPvm?: string;
+  ryhma?: string;
   /** Vain listavastauksessa (ks. encodeListattuTosite). */
   liitteita?: number;
   alkupera?: Alkupera;
@@ -42,6 +57,44 @@ export interface WireTiliote {
   alkusaldo?: string;
   loppusaldo?: string;
   [key: string]: unknown;
+}
+
+export interface WireMuistutus {
+  maksu: string;
+  korko: string;
+  viivkorko: number;
+  korkoalkaa: string;
+  korkoloppuu: string;
+  aiempiSaldo: string;
+  aiemmat: number[];
+  [key: string]: unknown;
+}
+
+function encodeMuistutus(m: Muistutus): WireMuistutus {
+  return {
+    maksu: centsToWire(m.maksu),
+    korko: centsToWire(m.korko),
+    viivkorko: m.viivkorko,
+    korkoalkaa: m.korkoalkaa,
+    korkoloppuu: m.korkoloppuu,
+    aiempiSaldo: centsToWire(m.aiempiSaldo),
+    aiemmat: m.aiemmat,
+  };
+}
+
+function decodeMuistutus(w: unknown): Muistutus | undefined {
+  if (typeof w !== 'object' || w === null) return undefined;
+  const r = w as Record<string, unknown>;
+  if (typeof r.korkoalkaa !== 'string' || typeof r.korkoloppuu !== 'string') return undefined;
+  return {
+    maksu: wireToCents(r.maksu as string | number | null | undefined),
+    korko: wireToCents(r.korko as string | number | null | undefined),
+    viivkorko: Number(r.viivkorko ?? 0),
+    korkoalkaa: r.korkoalkaa,
+    korkoloppuu: r.korkoloppuu,
+    aiempiSaldo: wireToCents(r.aiempiSaldo as string | number | null | undefined),
+    aiemmat: Array.isArray(r.aiemmat) ? r.aiemmat.map(Number) : [],
+  };
 }
 
 function encodeTiliote(t: TilioteTiedot): WireTiliote {
@@ -92,6 +145,12 @@ export function encodeTosite(t: Tosite & { id?: number }): WireTosite {
   if (t.marginaalialijaama) w.marginaalialijaama = t.marginaalialijaama;
   if (t.tiliote) w.tiliote = encodeTiliote(t.tiliote);
   if (t.info) w.info = t.info;
+  if (t.jakso) w.jakso = { alkaa: t.jakso.alkaa, loppuu: t.jakso.loppuu };
+  if (t.muistutus) w.muistutus = encodeMuistutus(t.muistutus);
+  if (t.viivkorko !== undefined) w.viivkorko = t.viivkorko;
+  if (t.toisto !== undefined) w.toisto = t.toisto;
+  if (t.toistoPvm) w.toistoPvm = t.toistoPvm;
+  if (t.ryhma) w.ryhma = t.ryhma;
   return w;
 }
 
@@ -122,6 +181,15 @@ export function decodeTosite(w: WireTosite): Tosite & { id?: number } {
   const tiliote = decodeTiliote(w.tiliote);
   if (tiliote) t.tiliote = tiliote;
   if (typeof w.info === 'string' && w.info !== '') t.info = w.info;
+  if (w.jakso && typeof w.jakso.alkaa === 'string' && typeof w.jakso.loppuu === 'string') {
+    t.jakso = { alkaa: w.jakso.alkaa, loppuu: w.jakso.loppuu };
+  }
+  const muistutus = decodeMuistutus(w.muistutus);
+  if (muistutus) t.muistutus = muistutus;
+  if (w.viivkorko != null) t.viivkorko = Number(w.viivkorko);
+  if (w.toisto != null) t.toisto = Number(w.toisto);
+  if (typeof w.toistoPvm === 'string' && w.toistoPvm !== '') t.toistoPvm = w.toistoPvm;
+  if (typeof w.ryhma === 'string' && w.ryhma !== '') t.ryhma = w.ryhma;
   return t;
 }
 

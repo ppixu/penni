@@ -43,6 +43,22 @@ export interface TositeRivi {
   tili?: number; // sales-revenue account for this row (falls back to OletusMyyntitili)
   kohdennus?: number; // cost centre
   merkkaukset?: number[]; // merkkaus (tag) ids, sorted ascending + unique; absent when none
+  tuote?: number; // Tuote.id, josta rivi on poimittu (vain viittaus; hinta ja alv kopioidaan riville)
+  ennakkoTosite?: number; // ennakkolaskun vähennysrivi: vähennettävän ennakkolaskun tosite-id
+}
+
+/**
+ * Maksumuistutus (Kitsaksen tositteen json `muistutus`). Muistutus on oma luonnos/lasku-tosite;
+ * alkuperäistä laskua ei muuteta. Rahasummat ovat senttejä.
+ */
+export interface Muistutus {
+  maksu: Cents; // muistutusmaksu
+  korko: Cents; // laskettu viivästyskorko
+  viivkorko: number; // korkoprosentti (%)
+  korkoalkaa: IsoDate;
+  korkoloppuu: IsoDate;
+  aiempiSaldo: Cents; // aiemman laskun/laskujen avoin saldo muistutushetkellä
+  aiemmat: number[]; // muistutettujen aiempien tositteiden id:t
 }
 
 /**
@@ -77,6 +93,12 @@ export interface Tosite {
   marginaalialijaama?: Record<string, number>; // MARGINAALILASKELMA: rate-key -> carried deficit cents
   tiliote?: TilioteTiedot; // TILIOTE: kausi, pankkitili ja pankin saldot
   info?: string; // vapaamuotoiset lisätiedot (Kitsaksen tositteen json `info`, model/tosite.cpp:668)
+  jakso?: { alkaa: IsoDate; loppuu: IsoDate }; // laskutettava ajanjakso
+  muistutus?: Muistutus; // maksumuistutuksen tiedot
+  viivkorko?: number; // viivästyskorko % (enintään 2 desimaalia), tuoduilta Kitsaksen laskuilta
+  toisto?: number; // Toisto.id, josta tämä luonnos on luotu
+  toistoPvm?: IsoDate; // ajankohta, jolle luonnos luotiin
+  ryhma?: string; // ryhmälaskun tunniste (uuid)
   viennit: TositeVienti[];
   rivit?: TositeRivi[];
 }

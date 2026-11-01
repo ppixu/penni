@@ -14,6 +14,8 @@ export interface WireRivi {
   kohdennus?: number;
   /** Merkkaus-id:t nousevana ja uniikkeina; tyhjä lista jätetään pois. */
   merkkaukset?: number[];
+  tuote?: number;
+  ennakkotosite?: number;
   [key: string]: unknown;
 }
 
@@ -28,6 +30,8 @@ export function encodeRivi(r: TositeRivi): WireRivi {
   if (r.tili !== undefined) w.tili = r.tili;
   if (r.kohdennus !== undefined) w.kohdennus = r.kohdennus;
   if (r.merkkaukset?.length) w.merkkaukset = [...r.merkkaukset];
+  if (r.tuote !== undefined) w.tuote = r.tuote;
+  if (r.ennakkoTosite !== undefined) w.ennakkotosite = r.ennakkoTosite;
   return w;
 }
 
@@ -49,5 +53,7 @@ export function decodeRivi(w: WireRivi): TositeRivi {
     ? normalisoiMerkkaukset(w.merkkaukset.map(Number))
     : undefined;
   if (merkkaukset) r.merkkaukset = merkkaukset;
+  if (w.tuote != null) r.tuote = Number(w.tuote);
+  if (w.ennakkotosite != null) r.ennakkoTosite = Number(w.ennakkotosite);
   return r;
 }

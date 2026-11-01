@@ -184,3 +184,58 @@ describe('listattu tosite (liitteita)', () => {
     expect('liitteita' in encodeTosite(voucher)).toBe(false);
   });
 });
+
+describe('laskutuksen lisäkentät', () => {
+  const laskutus: Tosite & { id: number } = {
+    ...voucher,
+    jakso: { alkaa: '2026-05-01', loppuu: '2026-05-31' },
+    muistutus: {
+      maksu: c(500),
+      korko: c(945),
+      viivkorko: 11.5,
+      korkoalkaa: '2026-05-01',
+      korkoloppuu: '2026-05-30',
+      aiempiSaldo: c(100000),
+      aiemmat: [7],
+    },
+    viivkorko: 11.5,
+    toisto: 3,
+    toistoPvm: '2026-05-01',
+    ryhma: 'r-1',
+    rivit: [
+      {
+        selite: 'Ylläpito',
+        myyntiKpl: 1,
+        aNetto: 100,
+        alvKoodi: 11,
+        alvProsentti: 25.5,
+        tuote: 4,
+        ennakkoTosite: 9,
+      },
+    ],
+  };
+
+  it('jakso, muistutus, toisto, ryhmä, viivkorko sekä rivin tuote ja ennakkotosite säilyvät', () => {
+    const t = decodeTosite(encodeTosite(laskutus));
+    expect(t.jakso).toEqual({ alkaa: '2026-05-01', loppuu: '2026-05-31' });
+    expect(t.muistutus).toEqual(laskutus.muistutus);
+    expect(t.viivkorko).toBe(11.5);
+    expect(t.toisto).toBe(3);
+    expect(t.toistoPvm).toBe('2026-05-01');
+    expect(t.ryhma).toBe('r-1');
+    expect(t.rivit?.[0]).toMatchObject({ tuote: 4, ennakkoTosite: 9 });
+  });
+
+  it('muistutuksen rahasummat palaavat senttinä (langalla euroina)', () => {
+    const w = encodeTosite(laskutus);
+    expect(w.muistutus).toMatchObject({ maksu: '5.00', korko: '9.45', aiempiSaldo: '1000.00' });
+    const m = decodeTosite(w).muistutus;
+    expect([m?.maksu, m?.korko, m?.aiempiSaldo]).toEqual([500, 945, 100000]);
+  });
+
+  it('puuttuvat lisäkentät eivät tule langalle', () => {
+    const w = encodeTosite(voucher);
+    for (const k of ['jakso', 'muistutus', 'viivkorko', 'toisto', 'toistoPvm', 'ryhma'])
+      expect(k in w).toBe(false);
+  });
+});
