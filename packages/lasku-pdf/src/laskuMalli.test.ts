@@ -79,6 +79,13 @@ const malli = (osa: Partial<StoredTosite> = {}, asetukset: Asetukset = ASETUKSET
   laskuMalli({ tosite: lasku(osa), kumppanit: KUMPPANIT, asetukset });
 
 describe('laskuMalli', () => {
+  it('laskutusjakso inforivinä heti laskun numeron jälkeen', () => {
+    const m = malli({ jakso: { alkaa: '2026-11-01', loppuu: '2026-11-30' } });
+    const i = m.info.findIndex((r) => r.nimike === 'Laskun numero');
+    expect(m.info[i + 1]).toEqual({ nimike: 'Laskutusjakso', arvo: '1.11.2026\u201330.11.2026' });
+    expect(malli().info.some((r) => r.nimike === 'Laskutusjakso')).toBe(false);
+  });
+
   it('summat vastaavat laskuSummat-arvoja ja kirjattua saamista', () => {
     const m = malli();
     const s = laskuSummat(RIVIT);

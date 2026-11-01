@@ -9,6 +9,7 @@ import {
   listaaMyyntilaskut,
   tallennaMyyntilasku,
   tallennaSuoritus,
+  validoiJakso,
 } from './myyntilaskuResource.js';
 import { ResourceError } from './storage.js';
 
@@ -478,5 +479,96 @@ describe('erä = tosite.id (nimiavaruuskorjaus)', () => {
     );
     const lista = await listaaMyyntilaskut(s, {});
     expect(lista.find((r) => r.tosite === lasku.id)?.avoin).toBe(0);
+  });
+});
+
+describe('laskunumero ei pala hylätyssä kirjauksessa', () => {
+  // 2030-01-01 ei kuulu mihinkään tilikauteen -> tallennaTosite hylkää kirjauksen.
+  it('hylätty kirjaus ei kuluta laskunumeroa', async () => {
+    const s = seed();
+    await s.patchAsetukset({ LaskuSeuraavaId: '5' });
+    await expect(
+      tallennaMyyntilasku(s, { pvm: '2030-01-01', rivit: [yksiRivi] }, env),
+    ).rejects.toBeInstanceOf(ResourceError);
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('5');
+    const lasku = await tallennaMyyntilasku(s, { pvm: '2026-06-01', rivit: [yksiRivi] }, env);
+    expect(lasku.numero).toBe('5');
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('6');
+  });
+
+  it('hylätty hyvityslasku ei kuluta laskunumeroa', async () => {
+    const s = seed();
+    const lasku = await tallennaMyyntilasku(s, { pvm: '2026-06-01', rivit: [yksiRivi] }, env);
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('2');
+    await expect(
+      tallennaHyvityslasku(s, { alkuperainenTosite: lasku.id, pvm: '2030-01-01' }, env),
+    ).rejects.toBeInstanceOf(ResourceError);
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('2');
+    const hyvitys = await tallennaHyvityslasku(
+      s,
+      { alkuperainenTosite: lasku.id, pvm: '2026-06-02' },
+      env,
+    );
+    expect(hyvitys.numero).toBe('2');
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('3');
+  });
+});
+
+describe('laskutusjakso', () => {
+  const jakso = { alkaa: '2026-12-15', loppuu: '2027-01-14' };
+
+  it('jakso kirjoittuu vain tulovienteihin ja tallentuu tositteelle', async () => {
+    const s = createMemoryStorage({
+      tilit: [
+        { numero: 1701, tyyppi: 'AS', nimi: { fi: 'Myyntisaamiset' } },
+        { numero: 3000, tyyppi: 'CL', nimi: { fi: 'Myynti' } },
+        { numero: 2939, tyyppi: 'BL', nimi: { fi: 'Suoritettava alv' } },
+      ],
+      tilikaudet: [{ alkaa: '2026-01-01', loppuu: '2027-12-31' }],
+      asetukset: {
+        AlvVelvollinen: 'true',
+        LaskuSaatavaTili: '1701',
+        OletusMyyntitili: '3000',
+        AlvVelkaTili: '2939',
+      },
+    });
+    const lasku = await tallennaMyyntilasku(
+      s,
+      { pvm: '2026-12-15', rivit: [{ ...yksiRivi, tili: 3000 }], jakso },
+      env,
+    );
+    expect(lasku.jakso).toEqual(jakso);
+    const tulo = lasku.viennit.find((v) => v.tili === 3000);
+    expect(tulo?.jaksoalkaa).toBe('2026-12-15');
+    expect(tulo?.jaksoloppuu).toBe('2027-01-14');
+    for (const tili of [1701, 2939]) {
+      const v = lasku.viennit.find((x) => x.tili === tili);
+      expect(v).toBeDefined();
+      expect(v?.jaksoalkaa).toBeUndefined();
+      expect(v?.jaksoloppuu).toBeUndefined();
+    }
+  });
+
+  it('virheellinen jakso hylätään', async () => {
+    const s = seed();
+    await expect(
+      tallennaMyyntilasku(
+        s,
+        {
+          pvm: '2026-06-01',
+          rivit: [yksiRivi],
+          jakso: { alkaa: '2026-07-01', loppuu: '2026-06-30' },
+        },
+        env,
+      ),
+    ).rejects.toMatchObject({ code: 'EIJAKSO' });
+    expect((await s.getAsetukset()).LaskuSeuraavaId ?? '1').toBe('1');
+  });
+
+  it('validoiJakso hylkää puuttuvan päivän mutta sallii puuttuvan jakson ja yhden päivän jakson', () => {
+    expect(() => validoiJakso(undefined)).not.toThrow();
+    expect(() => validoiJakso({ alkaa: '2026-06-01', loppuu: '2026-06-01' })).not.toThrow();
+    expect(() => validoiJakso({ alkaa: '', loppuu: '2026-06-01' })).toThrow(ResourceError);
+    expect(() => validoiJakso({ alkaa: '2026-06-01', loppuu: '' })).toThrow(ResourceError);
   });
 });

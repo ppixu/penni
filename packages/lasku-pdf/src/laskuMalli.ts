@@ -144,6 +144,12 @@ export function laskuMalli(p: {
     { nimike: 'Laskun numero', arvo: numero ?? '—' },
     { nimike: 'Laskupäivä', arvo: muotoilePvm(laskupvm) },
   ];
+  if (tosite.jakso) {
+    info.splice(1, 0, {
+      nimike: 'Laskutusjakso',
+      arvo: `${muotoilePvm(tosite.jakso.alkaa)}\u2013${muotoilePvm(tosite.jakso.loppuu)}`,
+    });
+  }
   if (laji === 'lasku') {
     if (erapvm) {
       const ero = paivienEro(laskupvm, erapvm);

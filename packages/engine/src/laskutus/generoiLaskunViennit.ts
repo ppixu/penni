@@ -22,6 +22,7 @@ export interface LaskunViennitSyote {
   otsikko?: string; // becomes each vienti.selite
   tilit: LaskuTilit;
   maksuperusteinen?: boolean; // defer VAT to the holding account (cash-basis)
+  jakso?: { alkaa: IsoDate; loppuu: IsoDate }; // laskutusjakso: kirjoitetaan vain tulovienteihin
 }
 
 interface TiliKertyma {
@@ -45,7 +46,7 @@ interface VeroKertyma {
  * Single rounding boundary: VAT = roundHalfAway(Σnet × rate / 100) per rate bucket.
  */
 export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
-  const { rivit, maksutapa, pvm, otsikko, tilit, maksuperusteinen } = s;
+  const { rivit, maksutapa, pvm, otsikko, tilit, maksuperusteinen, jakso } = s;
 
   const tiliKertymat = new Map<string, TiliKertyma>();
   const veroKertymat = new Map<string, VeroKertyma>();
@@ -95,6 +96,10 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
     };
     if (k.kohdennus) v.kohdennus = k.kohdennus;
     if (k.merkkaukset) v.merkkaukset = [...k.merkkaukset];
+    if (jakso) {
+      v.jaksoalkaa = jakso.alkaa;
+      v.jaksoloppuu = jakso.loppuu;
+    }
     if (selite) v.selite = selite;
     tuloViennit.push(v);
   }

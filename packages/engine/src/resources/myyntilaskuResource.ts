@@ -4,10 +4,10 @@ import { Luonne } from '../accounts/luonne.js';
 import { tiliTyypilla } from '../accounts/tili.js';
 import { AlvKoodi } from '../alv/koodit.js';
 import { generoiLaskunViennit } from '../laskutus/generoiLaskunViennit.js';
-import { seuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
+import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
 import type { Kumppani } from '../partners/kumppani.js';
 import { Maksutapa, TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
-import type { IsoDate, TositeRivi, TositeVienti } from '../vouchers/types.js';
+import type { IsoDate, Tosite, TositeRivi, TositeVienti } from '../vouchers/types.js';
 import { onkoMaksuperusteinenAlv } from './context.js';
 import { tunnistaVeroVienti } from './maksuperusteinenTunnistus.js';
 import {
@@ -28,7 +28,17 @@ export type MyyntilaskuSyote = {
   maksutapa?: number; // defaults to Maksutapa.LASKU
   sarja?: string;
   rivit: TositeRivi[]; // required, >= 1
+  jakso?: { alkaa: IsoDate; loppuu: IsoDate }; // laskutettava ajanjakso (valinnainen)
 };
+
+/** Hylkää jakson, jolta puuttuu päivä tai jonka loppu on ennen alkua. Puuttuva jakso kelpaa. */
+export function validoiJakso(jakso: Tosite['jakso']): void {
+  if (jakso === undefined) return;
+  if (!jakso.alkaa || !jakso.loppuu)
+    throw new ResourceError('EIJAKSO', 'Laskutusjaksolta puuttuu alku- tai loppupäivä');
+  if (jakso.loppuu < jakso.alkaa)
+    throw new ResourceError('EIJAKSO', 'Laskutusjakson loppu on ennen alkua');
+}
 
 /** Parse a positive account number from a settings key; undefined if missing/blank/invalid. */
 export function tiliAsetuksesta(asetukset: Asetukset, avain: string): number | undefined {
@@ -50,6 +60,8 @@ export async function tallennaMyyntilasku(
 ): Promise<StoredTosite> {
   if (!syote.rivit || syote.rivit.length === 0)
     throw new ResourceError('EIRIVEJA', 'Myyntilaskulla on oltava vähintään yksi rivi');
+
+  validoiJakso(syote.jakso);
 
   const maksutapa = syote.maksutapa ?? Maksutapa.LASKU;
   const asetukset = await storage.getAsetukset();
@@ -103,7 +115,7 @@ export async function tallennaMyyntilasku(
   }
 
   // Invoice number + reference (mirrors tositeroute.cpp:235-265).
-  const numero = await seuraavaLaskunumero(storage, asetukset);
+  const numero = lueSeuraavaLaskunumero(asetukset);
   const viite = viiteEralle(ViiteTyyppi.LASKU, Number(numero));
 
   const tilit = {
@@ -121,6 +133,7 @@ export async function tallennaMyyntilasku(
     tilit,
     maksuperusteinen,
     ...(syote.otsikko !== undefined ? { otsikko: syote.otsikko } : {}),
+    ...(syote.jakso !== undefined ? { jakso: syote.jakso } : {}),
   });
 
   const posted = await tallennaTosite(
@@ -136,6 +149,7 @@ export async function tallennaMyyntilasku(
       maksutapa,
       viennit,
       rivit: syote.rivit,
+      ...(syote.jakso !== undefined ? { jakso: syote.jakso } : {}),
       ...(syote.kumppani !== undefined ? { kumppani: syote.kumppani } : {}),
       ...(syote.erapvm !== undefined ? { erapvm: syote.erapvm } : {}),
       ...(syote.otsikko !== undefined ? { otsikko: syote.otsikko } : {}),
@@ -146,13 +160,19 @@ export async function tallennaMyyntilasku(
   // Lasku (LASKU): avaa erä myyntisaatavariville käyttäen tosite.id:tä globaalisti
   // uniikkina eräavaimena (sama kaksivaiheinen tallennus kuin ostolaskussa).
   // Käteis-/korttimyynti ei avaa erää.
-  if (maksutapa !== Maksutapa.LASKU) return posted;
+  if (maksutapa !== Maksutapa.LASKU) {
+    await kasvataLaskunumeroa(storage, numero);
+    return posted;
+  }
   const viennitEralla = posted.viennit.map((v) =>
     v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS && v.debet > 0
       ? { ...v, era: posted.id }
       : v,
   );
-  return tallennaTosite(storage, { ...posted, viennit: viennitEralla }, env);
+  const eralla = await tallennaTosite(storage, { ...posted, viennit: viennitEralla }, env);
+  // Laskuri etenee vasta viimeisen tallennuksen jälkeen, ettei hylätty kirjaus polta numeroa.
+  await kasvataLaskunumeroa(storage, numero);
+  return eralla;
 }
 
 export interface MyyntilaskuSuodatin {

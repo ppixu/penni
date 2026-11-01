@@ -203,6 +203,35 @@ describe('generoiLaskunViennit marginaaliverotus', () => {
     expect(viennit.filter((v) => v.debet > 0 || v.kredit > 0)).toHaveLength(2); // AR + revenue only
     expect(viennit.find((v) => v.debet > 0)?.debet).toBe(Euro.fromCents(10_000));
   });
+
+  it('jakso kirjoittuu vain tulovienteihin', () => {
+    const v = generoiLaskunViennit({
+      rivit: [netto(100)],
+      maksutapa: Maksutapa.LASKU,
+      pvm: '2026-12-15',
+      tilit: TILIT,
+      jakso: { alkaa: '2026-12-15', loppuu: '2027-01-14' },
+    });
+    const tulo = v.find((x) => x.tili === 3000);
+    expect(tulo?.jaksoalkaa).toBe('2026-12-15');
+    expect(tulo?.jaksoloppuu).toBe('2027-01-14');
+    for (const tili of [1701, 2939]) {
+      const muu = v.find((x) => x.tili === tili);
+      expect(muu).toBeDefined();
+      expect(muu).not.toHaveProperty('jaksoalkaa');
+      expect(muu).not.toHaveProperty('jaksoloppuu');
+    }
+  });
+
+  it('ilman jaksoa vienneille ei tule jaksokenttiä', () => {
+    const v = generoiLaskunViennit({
+      rivit: [netto(100)],
+      maksutapa: Maksutapa.LASKU,
+      pvm: '2026-12-15',
+      tilit: TILIT,
+    });
+    for (const x of v) expect(x).not.toHaveProperty('jaksoalkaa');
+  });
 });
 
 describe('generoiLaskunViennit: merkkaukset', () => {

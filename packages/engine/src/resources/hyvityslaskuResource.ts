@@ -1,4 +1,4 @@
-import { seuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
+import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { IsoDate, TositeVienti } from '../vouchers/types.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
@@ -39,11 +39,9 @@ export async function tallennaHyvityslasku(
 
   // Myynnin hyvityslasku jatkaa myyntilaskujen numerosarjaa ja perii alkuperäisen viitteen
   // (tositeroute.cpp:236-265, laskudialogitehdas.cpp:141-177).
-  const numero = myynti
-    ? await seuraavaLaskunumero(storage, await storage.getAsetukset())
-    : undefined;
+  const numero = myynti ? lueSeuraavaLaskunumero(await storage.getAsetukset()) : undefined;
 
-  return tallennaTosite(
+  const tallennettu = await tallennaTosite(
     storage,
     {
       pvm: syote.pvm,
@@ -59,4 +57,7 @@ export async function tallennaHyvityslasku(
     },
     env,
   );
+  // Laskuri etenee vasta onnistuneen kirjauksen jälkeen, ettei hylätty kirjaus polta numeroa.
+  if (numero !== undefined) await kasvataLaskunumeroa(storage, numero);
+  return tallennettu;
 }
