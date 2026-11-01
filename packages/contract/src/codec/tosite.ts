@@ -1,4 +1,11 @@
-import type { Alkupera, ListattuTosite, StoredTosite, TilioteTiedot, Tosite } from '@penni/engine';
+import type {
+  Alkupera,
+  ListattuTosite,
+  PalkkaAjo,
+  StoredTosite,
+  TilioteTiedot,
+  Tosite,
+} from '@penni/engine';
 import { centsToWire, wireToCents } from '../wire/euro.js';
 import { pudotaTyhjat } from '../wire/omit.js';
 import { onAlkupera } from './rahavirta.js';
@@ -24,6 +31,9 @@ export interface WireTosite {
   marginaalialijaama?: Record<string, number>;
   /** Tiliotteen tiedot; saldot euroina kuten viennit (Kitsaksen kartan avaimet + saldot). */
   tiliote?: WireTiliote;
+  /** Palkka-ajon tilannekuva. Penni-laajennus (ei Kitsaksen avain): rahamäärät kokonaislukusentteinä
+   *  sellaisenaan, ei euromerkkijonoina kuten viennit. */
+  palkka?: PalkkaAjo;
   /** Vapaamuotoiset lisätiedot (Kitsaksen avain `info`). */
   info?: string;
   /** Vain listavastauksessa (ks. encodeListattuTosite). */
@@ -91,6 +101,7 @@ export function encodeTosite(t: Tosite & { id?: number }): WireTosite {
   if (t.alkuperainenTosite) w.alkuperainenTosite = t.alkuperainenTosite;
   if (t.marginaalialijaama) w.marginaalialijaama = t.marginaalialijaama;
   if (t.tiliote) w.tiliote = encodeTiliote(t.tiliote);
+  if (t.palkka) w.palkka = t.palkka;
   if (t.info) w.info = t.info;
   return w;
 }
@@ -121,6 +132,16 @@ export function decodeTosite(w: WireTosite): Tosite & { id?: number } {
   }
   const tiliote = decodeTiliote(w.tiliote);
   if (tiliote) t.tiliote = tiliote;
+  // Palkka-snapshot säilytetään vain tunnetussa versiossa; muuten pudotetaan.
+  const palkka = w.palkka as Partial<PalkkaAjo> | undefined;
+  if (
+    palkka &&
+    typeof palkka === 'object' &&
+    palkka.versio === 1 &&
+    Array.isArray(palkka.henkilot)
+  ) {
+    t.palkka = palkka as PalkkaAjo;
+  }
   if (typeof w.info === 'string' && w.info !== '') t.info = w.info;
   return t;
 }

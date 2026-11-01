@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { generoiVeroviennit } from '../alv/generoiVeroviennit.js';
 import { AlvKoodi, alvKoodilla } from '../alv/koodit.js';
 import { Maksutapa, TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
+import type { PalkkaAjo } from '../vouchers/palkka.js';
 import type { Tosite } from '../vouchers/types.js';
 import { haeAlvErittely, ryhmitteleAlvErittely } from './alvErittely.js';
 import { haeAlvIlmoitus } from './alvIlmoitus.js';
@@ -564,6 +565,55 @@ export function runResourceConformance(
         env,
       );
       expect((await s.getTosite(saved.id))?.tiliote).toEqual(tiliote);
+    });
+
+    it('palkka-kenttä säilyy tallennuksessa', async () => {
+      const s = await fresh();
+      const palkka: PalkkaAjo = {
+        versio: 1,
+        kausiAlkaa: '2026-10-01',
+        kausiLoppuu: '2026-10-31',
+        laskettu: '2026-10-31T12:00:00.000Z',
+        henkilot: [
+          {
+            tyontekijaId: 'tyontekija-1',
+            nimi: 'Testi Työntekijä',
+            vakuutusperuste: 'tyontekija',
+            verokortti: null,
+            prosentit: {
+              tyelTyontekijaBp: 715,
+              tyelKokonaisBp: 2490,
+              tvrTyontekijaBp: 31,
+              tvrTyonantajaBp: 52,
+              savaBp: 0,
+            },
+            rivit: [{ laji: 'kuukausipalkka', selite: 'Lokakuun palkka', summa: 300_000 as Cents }],
+            tulos: {
+              rahapalkka: 300_000 as Cents,
+              luontoisedut: 0 as Cents,
+              verovapaat: 0 as Cents,
+              pidatysperuste: 300_000 as Cents,
+              pidatysOsat: [{ bp: 6000, peruste: 300_000 as Cents }],
+              ennakonpidatys: 180_000 as Cents,
+              tyelTyontekija: 21_450 as Cents,
+              tyelTyonantaja: 53_250 as Cents,
+              tvrTyontekija: 930 as Cents,
+              tvrTyonantaja: 1_560 as Cents,
+              sava: 0 as Cents,
+              nettopalkka: 97_620 as Cents,
+              kertymaJalkeen: 300_000 as Cents,
+              varoitukset: ['Verokortti puuttuu'],
+            },
+          },
+        ],
+        ilmoitus: { lahetetty: '2026-11-03', deliveryId: 'abc-123', sha256: 'f'.repeat(64) },
+      };
+      const saved = await tallennaTosite(
+        s,
+        { pvm: '2026-10-31', tyyppi: TositeTyyppi.PALKKA, sarja: '', viennit: [], palkka },
+        env,
+      );
+      expect((await s.getTosite(saved.id))?.palkka).toEqual(palkka);
     });
 
     it('getChart returns isolated copies (mutating the result does not corrupt the store)', async () => {

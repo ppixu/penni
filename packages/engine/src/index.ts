@@ -7,6 +7,7 @@ export * from './kohdennukset/kohdennus.js';
 export * from './kohdennukset/budjetti.js';
 export * from './vouchers/enums.js';
 export * from './vouchers/types.js';
+export * from './vouchers/palkka.js';
 export * from './vouchers/rivi.js';
 export * from './laskutus/generoiLaskunViennit.js';
 // AlvErittelyRivi jää pois: engine exportaa jo oman AlvErittelyRivi-tyypin (resources/alvErittely.ts).
