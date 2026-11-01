@@ -17,4 +17,10 @@ describe('@penni/charts — yritys-malli', () => {
     expect(yritysAsetukset.OletusMyyntitili).toBe('3000');
     expect(yritysAsetukset.OletusMenotili).toBe('4000');
   });
+
+  it('palkkatilit sisältävät TyEL- ja työttömyysvakuutusvelan tilit', () => {
+    const palkkatilit = yritysAsetukset.palkkatilit as Record<string, number>;
+    expect(palkkatilit.TL).toBe(2931);
+    expect(palkkatilit.TT).toBe(2965);
+  });
 });
