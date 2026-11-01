@@ -109,6 +109,8 @@ export interface WireMyyntilaskuRivi {
   sarja: string;
   tila: number;
   maksutapa?: number;
+  muistutus?: true;
+  muistutettu?: number;
   [key: string]: unknown;
 }
 
@@ -131,6 +133,8 @@ export function encodeMyyntilaskuRivi(r: MyyntilaskuRivi): WireMyyntilaskuRivi {
   if (r.era !== undefined) w.era = r.era;
   if (r.tili !== undefined) w.tili = r.tili;
   if (r.maksutapa !== undefined) w.maksutapa = r.maksutapa;
+  if (r.muistutus !== undefined) w.muistutus = r.muistutus;
+  if (r.muistutettu !== undefined) w.muistutettu = r.muistutettu;
   return w;
 }
 
@@ -153,6 +157,8 @@ export function decodeMyyntilaskuRivi(w: WireMyyntilaskuRivi): MyyntilaskuRivi {
   if (w.era != null) r.era = Number(w.era);
   if (w.tili != null) r.tili = Number(w.tili);
   if (w.maksutapa != null) r.maksutapa = Number(w.maksutapa);
+  if (w.muistutus === true) r.muistutus = true;
+  if (w.muistutettu != null) r.muistutettu = Number(w.muistutettu);
   return r;
 }
 

@@ -102,4 +102,19 @@ describe('rahavirta-koodekki', () => {
     const { liitteita: _pois, ...w } = encodeRahavirtaRivi(riviKaikkiKentat);
     expect(decodeRahavirtaRivi(w).liitteita).toBe(0);
   });
+
+  it('kuljettaa muistutus- ja muistutettu-kentät', () => {
+    const muistutus: RahavirtaRivi = { ...rivi, tyyppi: 216, muistutus: true };
+    const w = encodeRahavirtaRivi(muistutus);
+    expect(w.muistutus).toBe(true);
+    expect(decodeRahavirtaRivi(w)).toEqual(muistutus);
+
+    const muistutettu: RahavirtaRivi = { ...rivi, muistutettu: 2 };
+    expect(encodeRahavirtaRivi(muistutettu).muistutettu).toBe(2);
+    expect(decodeRahavirtaRivi(encodeRahavirtaRivi(muistutettu))).toEqual(muistutettu);
+
+    const ei = encodeRahavirtaRivi(rivi);
+    expect('muistutus' in ei).toBe(false);
+    expect('muistutettu' in ei).toBe(false);
+  });
 });

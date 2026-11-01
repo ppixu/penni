@@ -1,6 +1,12 @@
-import type { MyyntilaskuRivi, MyyntilaskuSyote, SuoritusSyote } from '@penni/engine';
-import { Euro } from '@penni/euro';
+import type {
+  MaksumuistutusSyote,
+  MyyntilaskuRivi,
+  MyyntilaskuSyote,
+  SuoritusSyote,
+} from '@penni/engine';
+import { type Cents, Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
+import { decodeMaksumuistutusSyote, encodeMaksumuistutusSyote } from './maksumuistutus.js';
 import {
   decodeMyyntilaskuRivi,
   decodeMyyntilaskuSyote,
@@ -123,5 +129,64 @@ describe('suoritusSyote codec', () => {
   it('accepts a raw number amount on decode (legacy double)', () => {
     const back = decodeSuoritusSyote({ tosite: 1, pvm: '2026-06-15', summa: 25.5 });
     expect(back.summa).toBe(Euro.fromCents(2_550));
+  });
+});
+
+describe('muistutus- ja muistutettu-kentät myyntilaskurivillä', () => {
+  const pohja: MyyntilaskuRivi = {
+    tosite: 5,
+    summa: Euro.fromCents(500),
+    avoin: Euro.fromCents(0),
+    tyyppi: 216,
+    tunniste: 3,
+    sarja: '',
+    tila: 100,
+  };
+
+  it('kuljettaa muistutus-lipun', () => {
+    const rivi: MyyntilaskuRivi = { ...pohja, muistutus: true };
+    const w = encodeMyyntilaskuRivi(rivi);
+    expect(w.muistutus).toBe(true);
+    expect(decodeMyyntilaskuRivi(w)).toEqual(rivi);
+  });
+
+  it('kuljettaa muistutettu-määrän', () => {
+    const rivi: MyyntilaskuRivi = { ...pohja, tyyppi: 210, muistutettu: 2 };
+    const w = encodeMyyntilaskuRivi(rivi);
+    expect(w.muistutettu).toBe(2);
+    expect(decodeMyyntilaskuRivi(w)).toEqual(rivi);
+  });
+
+  it('ei lisää kenttiä, joita ei ollut', () => {
+    const w = encodeMyyntilaskuRivi(pohja);
+    expect('muistutus' in w).toBe(false);
+    expect('muistutettu' in w).toBe(false);
+    expect(decodeMyyntilaskuRivi(w)).toEqual(pohja);
+  });
+});
+
+describe('maksumuistutuksen syöte', () => {
+  it('pyörii ympäri: maksu kanonisena rahana', () => {
+    const syote: MaksumuistutusSyote = {
+      tositteet: [3, 4],
+      pvm: '2026-05-30',
+      erapvm: '2026-06-15',
+      maksu: 500 as Cents,
+      korko: true,
+      viivkorko: 11.5,
+    };
+    const w = encodeMaksumuistutusSyote(syote);
+    expect(w.maksu).toBe('5.00');
+    expect(decodeMaksumuistutusSyote(w)).toEqual(syote);
+  });
+
+  it('pelkät pakolliset kentät eivät saa lisäavaimia, ja maksu 0 säilyy', () => {
+    const vahva: MaksumuistutusSyote = { tositteet: [1], pvm: '2026-05-30', korko: false };
+    const w = encodeMaksumuistutusSyote(vahva);
+    expect(Object.keys(w).sort()).toEqual(['korko', 'pvm', 'tositteet']);
+    expect(decodeMaksumuistutusSyote(w)).toEqual(vahva);
+
+    const nolla: MaksumuistutusSyote = { ...vahva, maksu: 0 as Cents };
+    expect(decodeMaksumuistutusSyote(encodeMaksumuistutusSyote(nolla))).toEqual(nolla);
   });
 });

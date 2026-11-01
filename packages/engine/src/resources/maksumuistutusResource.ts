@@ -107,6 +107,28 @@ function tarkistaEiMaksuperusteinen(asetukset: Asetukset, pvm: IsoDate): void {
     );
 }
 
+/** Muistutuksen käsin annetut arvot: maksu kokonaisina sentteinä ≥ 0, korkoprosentti ≥ 0. */
+function tarkistaMuistutusarvot(maksu: Cents | undefined, viivkorko: number | undefined): void {
+  if (maksu !== undefined && (!Number.isInteger(maksu) || maksu < 0))
+    throw new ResourceError(
+      'EIMUISTUTUSARVO',
+      'Muistutusmaksun on oltava kokonaisluku senttejä, vähintään 0',
+    );
+  if (viivkorko !== undefined && (!Number.isFinite(viivkorko) || viivkorko < 0))
+    throw new ResourceError('EIMUISTUTUSARVO', 'Viivästyskorko ei voi olla negatiivinen');
+}
+
+/** Eräpäivä ei saa olla ennen muistutuksen päivää. */
+function tarkistaErapaiva(erapvm: IsoDate | undefined, pvm: IsoDate): void {
+  if (erapvm !== undefined && erapvm < pvm)
+    throw new ResourceError('EIERAPVM', `Eräpäivä ${erapvm} on ennen muistutuksen päivää ${pvm}`);
+}
+
+/** Oletuseräpäivä: `pvm` + `LaskuMaksuaika` päivää (oletus 14), oikaistuna pankkipäivään. */
+function oletusErapaiva(asetukset: Asetukset, pvm: IsoDate): IsoDate {
+  return oikaiseErapaiva(lisaaPaivia(pvm, Number(asetukset.LaskuMaksuaika ?? '14')));
+}
+
 /** Laskee muistutuksen ketjun tiedoista; `aiemmat` = laskun id + aiemmat muistutukset, vanhin ensin. */
 function laskeKetjulle(
   t: MuistutettavanTiedot,
@@ -144,12 +166,12 @@ export async function luoMaksumuistutukset(
   syote: MaksumuistutusSyote,
   env: ResourceEnv,
 ): Promise<StoredTosite[]> {
+  tarkistaMuistutusarvot(syote.maksu, syote.viivkorko);
+  tarkistaErapaiva(syote.erapvm, syote.pvm);
   const asetukset = await storage.getAsetukset();
   tarkistaEiMaksuperusteinen(asetukset, syote.pvm);
 
-  const erapvm =
-    syote.erapvm ??
-    oikaiseErapaiva(lisaaPaivia(syote.pvm, Number(asetukset.LaskuMaksuaika ?? '14')));
+  const erapvm = syote.erapvm ?? oletusErapaiva(asetukset, syote.pvm);
   const peruskorko = Number(asetukset.LaskuPeruskorko ?? '0');
   const kumppanit = await storage.getKumppanit();
 
@@ -210,7 +232,9 @@ function suomeksi(pvm: IsoDate): string {
  * alkuperäisen erävientin tilille `maksu + korko` samalle erälle (202), kredit
  * `LaskuMaksumuistutustili` (201, "Huomautuskulut") ja `LaskuViivastyskorkotili` (201,
  * "Viivästyskorko d.m.yyyy–d.m.yyyy"). Nollamuistutus kirjataan ilman vientejä. Alkuperäistä
- * laskua ei muuteta.
+ * laskua ei muuteta. Muu kuin muistutusluonnos (tyyppi ≠ 216 tai tila ei 50–99) → EILUONNOS, jottei
+ * kirjattua tositetta numeroida tai kirjoiteta uudelleen. Jos `pvm` muuttuu eikä `erapvm`:ää
+ * anneta, oletuseräpäivä lasketaan uudelleen uudesta päivästä; eräpäivä ennen päivää → EIERAPVM.
  */
 export async function kirjaaMaksumuistutus(
   storage: Storage,
@@ -218,6 +242,14 @@ export async function kirjaaMaksumuistutus(
   env: ResourceEnv,
   muutokset: MaksumuistutusMuutokset = {},
 ): Promise<StoredTosite> {
+  if (
+    luonnos.tyyppi !== TositeTyyppi.MAKSUMUISTUTUS ||
+    luonnos.tila < TositeTila.LUONNOS ||
+    luonnos.tila >= TositeTila.KIRJANPIDOSSA
+  )
+    throw new ResourceError('EILUONNOS', `Tosite ${luonnos.id} ei ole maksumuistutusluonnos`);
+  tarkistaMuistutusarvot(muutokset.muistutus?.maksu, muutokset.muistutus?.viivkorko);
+
   const alkuperainenId = luonnos.alkuperainenTosite;
   if (!luonnos.muistutus || alkuperainenId === undefined)
     throw new ResourceError(
@@ -251,7 +283,13 @@ export async function kirjaaMaksumuistutus(
     throw new ResourceError('EIMUISTUTETTAVA', `Tositteella ${alkuperainenId} ei ole erää`);
 
   const otsikko = muutokset.otsikko ?? luonnos.otsikko;
-  const erapvm = muutokset.erapvm ?? luonnos.erapvm;
+  // Päivän vaihtuessa luonnoksen oletuseräpäivä ei enää pidä; käsin annettu erapvm voittaa aina.
+  const erapvm =
+    muutokset.erapvm ??
+    (muutokset.pvm !== undefined && muutokset.pvm !== luonnos.pvm
+      ? oletusErapaiva(asetukset, pvm)
+      : luonnos.erapvm);
+  tarkistaErapaiva(erapvm, pvm);
   const nolla = 0 as Cents;
   const vienti = (tili: number, debet: Cents, kredit: Cents, tyyppi: number): TositeVienti => ({
     tili,

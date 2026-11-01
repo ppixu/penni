@@ -7,6 +7,7 @@ import {
   decodeKumppani,
   decodeLiite,
   decodeLiitetiedotSyote,
+  decodeMaksumuistutusSyote,
   decodeMarginaaliveroSyote,
   decodeMyyntilaskuMuutokset,
   decodeMyyntilaskuSyote,
@@ -50,6 +51,7 @@ import {
 import type {
   WireAlvTilitysSyote,
   WireHyvityslaskuSyote,
+  WireMaksumuistutusSyote,
   WireMarginaaliveroSyote,
   WireMyyntilaskuMuutokset,
   WireMyyntilaskuSyote,
@@ -97,6 +99,7 @@ import {
   listaaTositteet,
   listaaTulot,
   listaaViennit,
+  luoMaksumuistutukset,
   luoTilinavaus,
   muutaTositteenTila,
   paataTilikausi,
@@ -241,6 +244,13 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
           env(),
           decodeMyyntilaskuMuutokset(body),
         ),
+      ),
+    }),
+
+    luoMaksumuistutukset: async ({ body }: { body: WireMaksumuistutusSyote }) => ({
+      status: 200 as const,
+      body: (await luoMaksumuistutukset(storage, decodeMaksumuistutusSyote(body), env())).map(
+        encodeTosite,
       ),
     }),
 

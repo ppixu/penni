@@ -381,3 +381,51 @@ describe('Asetukset-näkymä — Kysy', () => {
     expect(init.asetukset.KysyMalli).toBe('qwen3.5:7b');
   });
 });
+
+describe('Asetukset-näkymä — peruskorko', () => {
+  it('näyttää vihjeen ja tallentaa LaskuPeruskoron (pilkku → piste)', async () => {
+    const { user, client } = await renderRoute('/asetukset', { seed: SEED });
+    const sivu = await screen.findByLabelText('asetukset');
+
+    expect(
+      within(sivu).getByText('Suomen Pankin viitekorko, päivittyy 1.1. ja 1.7.'),
+    ).toBeInTheDocument();
+    await user.type(within(sivu).getByLabelText('Peruskorko'), '2,5');
+    await user.click(within(sivu).getByRole('button', { name: 'Tallenna' }));
+
+    expect(await screen.findByText('Tallennettu')).toBeInTheDocument();
+    const init = await client.haeInit();
+    expect(init.asetukset.LaskuPeruskorko).toBe('2.5');
+    // Harva PATCH: koskematon avain säilyy ennallaan.
+    expect(init.asetukset.Kotipaikka).toBe('Helsinki');
+  });
+
+  it('estää virheellisen peruskoron viestillä "Tarkista peruskorko"', async () => {
+    const { user, client } = await renderRoute('/asetukset', { seed: SEED });
+    const sivu = await screen.findByLabelText('asetukset');
+
+    await user.type(within(sivu).getByLabelText('Peruskorko'), '-1');
+    await user.click(within(sivu).getByRole('button', { name: 'Tallenna' }));
+
+    expect(await screen.findByText('Tarkista peruskorko')).toBeInTheDocument();
+    expect(screen.queryByText('Tallennettu')).not.toBeInTheDocument();
+    expect((await client.haeInit()).asetukset.LaskuPeruskorko).toBeUndefined();
+  });
+
+  it('tyhjennetty peruskorko poistaa avaimen null-patchilla', async () => {
+    const { user, client } = await renderRoute('/asetukset', {
+      seed: { ...SEED, asetukset: { ...SEED.asetukset, LaskuPeruskorko: '2.5' } },
+    });
+    const sivu = await screen.findByLabelText('asetukset');
+
+    const kentta = within(sivu).getByLabelText('Peruskorko');
+    expect(kentta).toHaveValue('2.5');
+    await user.clear(kentta);
+    await user.click(within(sivu).getByRole('button', { name: 'Tallenna' }));
+
+    expect(await screen.findByText('Tallennettu')).toBeInTheDocument();
+    await waitFor(async () => {
+      expect((await client.haeInit()).asetukset.LaskuPeruskorko).toBeUndefined();
+    });
+  });
+});

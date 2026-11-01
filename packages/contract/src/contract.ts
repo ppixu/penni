@@ -22,6 +22,7 @@ import {
   WireLiiteMetaSchema,
   WireLiiteSchema,
   WireLiitetiedotSyoteSchema,
+  WireMaksumuistutusSyoteSchema,
   WireMarginaaliveroSyoteSchema,
   WireMyyntilaskuMuutoksetSchema,
   WireMyyntilaskuRiviSchema,
@@ -216,6 +217,12 @@ export const contract = c.router({
     path: '/myyntilaskut/:id/kirjaa',
     body: WireMyyntilaskuMuutoksetSchema,
     responses: { 200: WireTositeSchema },
+  },
+  luoMaksumuistutukset: {
+    method: 'POST',
+    path: '/maksumuistutukset',
+    body: WireMaksumuistutusSyoteSchema,
+    responses: { 200: z.array(WireTositeSchema) },
   },
 
   // Penni-laajennus (ei Kitsas-vastinetta): kaikki tulot/menot tilin luonteen perusteella.

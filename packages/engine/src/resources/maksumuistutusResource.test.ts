@@ -375,6 +375,35 @@ describe('luoMaksumuistutukset', () => {
   });
 });
 
+describe('luoMaksumuistutukset: syötteen arvot', () => {
+  it('negatiivinen tai epäkokonainen maksu ja negatiivinen viivkorko → EIMUISTUTUSARVO', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    for (const extra of [{ maksu: -100 as Cents }, { maksu: 2.5 as Cents }, { viivkorko: -1 }]) {
+      await expect(
+        luoMaksumuistutukset(
+          s,
+          { tositteet: [l.id], pvm: '2026-05-30', korko: true, ...extra },
+          env,
+        ),
+      ).rejects.toMatchObject({ code: 'EIMUISTUTUSARVO' });
+    }
+    expect(await s.listTositteet({ bucket: 'luonnos' })).toHaveLength(0);
+  });
+
+  it('erapvm ennen pvm:ää → EIERAPVM', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    await expect(
+      luoMaksumuistutukset(
+        s,
+        { tositteet: [l.id], pvm: '2026-05-30', erapvm: '2026-05-29', korko: false },
+        env,
+      ),
+    ).rejects.toMatchObject({ code: 'EIERAPVM' });
+  });
+});
+
 describe('muistutettavanTiedot ja onMuistutettava', () => {
   it('palauttaa laskun, aiemmat muistutukset ja saldon annettuna päivänä', async () => {
     const s = seed();
@@ -399,7 +428,7 @@ describe('muistutettavanTiedot ja onMuistutettava', () => {
 const muistutusluonnos = async (
   s: Storage,
   laskuId: number,
-  extra: Partial<{ maksu: Cents; korko: boolean; viivkorko: number }> = {},
+  extra: Partial<{ maksu: Cents; korko: boolean; viivkorko: number; erapvm: string }> = {},
 ) => {
   const [m] = await luoMaksumuistutukset(
     s,
@@ -542,6 +571,82 @@ describe('kirjaaMaksumuistutus', () => {
     await expect(kirjaaLaskuluonnos(s, m.id, env)).rejects.toMatchObject({
       code: 'EIMUISTUTETTAVA',
     });
+  });
+});
+
+describe('kirjaaMaksumuistutus: suojaukset', () => {
+  it('muu kuin muistutusluonnos → EILUONNOS eikä kirjattua tositetta kosketa', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id);
+    const kirjattu = await kirjaaLaskuluonnos(s, m.id, env);
+    // Kirjattu muistutus ei saa saada uutta numeroa eikä kirjoittua uudelleen.
+    await expect(kirjaaMaksumuistutus(s, kirjattu, env)).rejects.toMatchObject({
+      code: 'EILUONNOS',
+    });
+    // Kirjattu myyntilasku ja myyntilaskuluonnos eivät ole muistutusluonnoksia.
+    await expect(kirjaaMaksumuistutus(s, l, env)).rejects.toMatchObject({ code: 'EILUONNOS' });
+    const myyntiluonnos = await lasku(s, { luonnos: true });
+    await expect(kirjaaMaksumuistutus(s, myyntiluonnos, env)).rejects.toMatchObject({
+      code: 'EILUONNOS',
+    });
+    expect(await s.getTosite(kirjattu.id)).toEqual(kirjattu);
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('3');
+  });
+
+  it('virheellinen maksu tai viivkorko kirjauksessa → EIMUISTUTUSARVO', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id);
+    for (const muistutus of [{ maksu: -1 as Cents }, { maksu: 5.5 as Cents }, { viivkorko: -2 }]) {
+      await expect(kirjaaMaksumuistutus(s, m, env, { muistutus })).rejects.toMatchObject({
+        code: 'EIMUISTUTUSARVO',
+      });
+    }
+    expect((await s.getTosite(m.id))?.tila).toBe(TositeTila.VALMISLASKU);
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('2');
+  });
+
+  it('pvm-ylikirjoitus ilman erapvm:ia laskee oletuseräpäivän uudelleen', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id);
+    const kirjattu = await kirjaaMaksumuistutus(s, m, env, { pvm: '2026-06-09' });
+    // 9.6. + 14 pv = 23.6. (tiistai)
+    expect(kirjattu.erapvm).toBe(oikaiseErapaiva('2026-06-23'));
+    expect(kirjattu.erapvm).not.toBe(m.erapvm);
+  });
+
+  it('pvm-ylikirjoitus ja eksplisiittinen erapvm: erapvm säilyy', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id);
+    const kirjattu = await kirjaaMaksumuistutus(s, m, env, {
+      pvm: '2026-06-09',
+      erapvm: '2026-07-15',
+    });
+    expect(kirjattu.erapvm).toBe('2026-07-15');
+  });
+
+  it('ilman pvm-ylikirjoitusta luonnoksen erapvm säilyy', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id, { erapvm: '2026-07-15' });
+    const kirjattu = await kirjaaMaksumuistutus(s, m, env);
+    expect(kirjattu.erapvm).toBe('2026-07-15');
+  });
+
+  it('erapvm ennen pvm:ää → EIERAPVM', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id);
+    await expect(
+      kirjaaMaksumuistutus(s, m, env, { pvm: '2026-06-09', erapvm: '2026-06-08' }),
+    ).rejects.toMatchObject({ code: 'EIERAPVM' });
+    await expect(kirjaaMaksumuistutus(s, m, env, { erapvm: '2026-05-29' })).rejects.toMatchObject({
+      code: 'EIERAPVM',
+    });
+    expect((await s.getAsetukset()).LaskuSeuraavaId).toBe('2');
   });
 });
 

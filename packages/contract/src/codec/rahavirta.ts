@@ -24,6 +24,8 @@ export interface WireRahavirtaRivi {
   numero?: string;
   viite?: string;
   eraKredit?: boolean;
+  muistutus?: true;
+  muistutettu?: number;
   [key: string]: unknown;
 }
 
@@ -50,6 +52,8 @@ export function encodeRahavirtaRivi(r: RahavirtaRivi): WireRahavirtaRivi {
   if (r.viite !== undefined) w.viite = r.viite;
   if (r.eraKredit !== undefined) w.eraKredit = r.eraKredit;
   if (r.alkupera !== undefined) w.alkupera = r.alkupera;
+  if (r.muistutus !== undefined) w.muistutus = r.muistutus;
+  if (r.muistutettu !== undefined) w.muistutettu = r.muistutettu;
   return w;
 }
 
@@ -76,6 +80,8 @@ export function decodeRahavirtaRivi(w: WireRahavirtaRivi): RahavirtaRivi {
   if (w.viite !== undefined) r.viite = w.viite;
   if (w.eraKredit !== undefined) r.eraKredit = w.eraKredit;
   if (onAlkupera(w.alkupera)) r.alkupera = w.alkupera;
+  if (w.muistutus === true) r.muistutus = true;
+  if (w.muistutettu != null) r.muistutettu = Number(w.muistutettu);
   return r;
 }
 

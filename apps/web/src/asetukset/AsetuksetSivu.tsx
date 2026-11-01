@@ -106,11 +106,21 @@ function OrganisaatioLomake({ asetukset }: { asetukset: Asetukset }) {
   const [kotisivu, setKotisivu] = useState(asetukset.Kotisivu ?? '');
   const [iban, setIban] = useState(asetukset.LaskuIban ?? '');
   const [ibanVirhe, setIbanVirhe] = useState<string | null>(null);
+  // Viivästyskoron peruskorko (%), tallennetaan merkkijonona pisteellä; tyhjä = ei asetettu.
+  const [peruskorko, setPeruskorko] = useState(asetukset.LaskuPeruskorko ?? '');
+  const [peruskorkoVirhe, setPeruskorkoVirhe] = useState<string | null>(null);
   const [tallennettu, setTallennettu] = useState(false);
 
   async function lahetaTallennus() {
     setTallennettu(false);
     setIbanVirhe(null);
+    setPeruskorkoVirhe(null);
+    // Peruskorko: pilkku → piste, vähintään 0; tyhjä on sallittu.
+    const peruskorkoSiisti = peruskorko.trim().replace(',', '.');
+    if (peruskorkoSiisti !== '' && !(Number(peruskorkoSiisti) >= 0)) {
+      setPeruskorkoVirhe('Tarkista peruskorko');
+      return;
+    }
     // IBAN normalisoidaan (välit pois, isot kirjaimet) ja validoidaan; tyhjä on sallittu.
     const ibanSiisti = iban.replace(/\s/g, '').toUpperCase();
     if (ibanSiisti !== '' && !tarkistaIban(ibanSiisti)) {
@@ -143,6 +153,8 @@ function OrganisaatioLomake({ asetukset }: { asetukset: Asetukset }) {
     // Tyhjennys poistaa avaimen null-patchilla (olemassa oleva mekanismi).
     if (ibanSiisti !== (asetukset.LaskuIban ?? ''))
       patch.LaskuIban = ibanSiisti === '' ? null : ibanSiisti;
+    if (peruskorkoSiisti !== (asetukset.LaskuPeruskorko ?? ''))
+      patch.LaskuPeruskorko = peruskorkoSiisti === '' ? null : peruskorkoSiisti;
 
     const ok = await tallenna(patch);
     if (ok) setTallennettu(true);
@@ -321,8 +333,24 @@ function OrganisaatioLomake({ asetukset }: { asetukset: Asetukset }) {
           className={`${LK_LUOKKA} tabular-nums`}
         />
       </label>
-      {(ibanVirhe ?? virheviesti) && (
-        <p className="text-[12.5px] text-[var(--danger)]">{ibanVirhe ?? virheviesti}</p>
+      <label className={LABEL_LUOKKA}>
+        Peruskorko
+        <input
+          type="text"
+          inputMode="decimal"
+          aria-label="Peruskorko"
+          value={peruskorko}
+          onChange={(e) => setPeruskorko(e.target.value)}
+          className={`${LK_LUOKKA} tabular-nums`}
+        />
+      </label>
+      <p className="text-[11.5px] text-[var(--text-subtle)]">
+        Suomen Pankin viitekorko, päivittyy 1.1. ja 1.7.
+      </p>
+      {(ibanVirhe ?? peruskorkoVirhe ?? virheviesti) && (
+        <p className="text-[12.5px] text-[var(--danger)]">
+          {ibanVirhe ?? peruskorkoVirhe ?? virheviesti}
+        </p>
       )}
       {tallennettu && <p className="text-[12.5px] text-[var(--positive)]">Tallennettu</p>}
       <div>

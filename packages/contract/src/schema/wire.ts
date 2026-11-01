@@ -104,6 +104,18 @@ export const WireMyyntilaskuSyoteSchema = z
 /** POST /myyntilaskut/:id/kirjaa body: like the invoice body, every field optional. */
 export const WireMyyntilaskuMuutoksetSchema = WireMyyntilaskuSyoteSchema.partial();
 
+/** POST /maksumuistutukset body. maksu is Raha ("N.NN" | number); amounts are validated by the engine. */
+export const WireMaksumuistutusSyoteSchema = z
+  .object({
+    tositteet: z.array(z.number()),
+    pvm: z.string(),
+    erapvm: z.string().optional(),
+    maksu: Raha.optional(),
+    korko: z.boolean(),
+    viivkorko: z.number().optional(),
+  })
+  .passthrough();
+
 /** One invoice-draft list row. summa is Raha ("N.NN" | number). */
 export const WireLaskuluonnosRiviSchema = z
   .object({
@@ -141,6 +153,8 @@ export const WireMyyntilaskuRiviSchema = z
     sarja: z.string(),
     tila: z.number(),
     maksutapa: z.number().optional(),
+    muistutus: z.literal(true).optional(),
+    muistutettu: z.number().optional(),
   })
   .passthrough();
 
@@ -167,6 +181,8 @@ export const WireRahavirtaRiviSchema = z
     numero: z.string().optional(),
     viite: z.string().optional(),
     eraKredit: z.boolean().optional(),
+    muistutus: z.literal(true).optional(),
+    muistutettu: z.number().optional(),
   })
   .passthrough();
 

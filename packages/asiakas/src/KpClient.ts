@@ -27,6 +27,7 @@ import type {
   LiiteMeta,
   LiitetiedotSyote,
   ListattuTosite,
+  MaksumuistutusSyote,
   MarginaaliverolaskelmaParams,
   MyyntilaskuRivi,
   MyyntilaskuSuodatin,
@@ -94,6 +95,8 @@ export interface KpClient {
   // laskuluonnokset (tila 50-99)
   listaaLaskuluonnokset(): Promise<LaskuluonnosRivi[]>;
   kirjaaLaskuluonnos(id: number, muutokset?: Partial<MyyntilaskuSyote>): Promise<StoredTosite>;
+  // maksumuistutukset: luo muistutusluonnokset (tyyppi 216) erääntyneistä laskuista
+  luoMaksumuistutukset(syote: MaksumuistutusSyote): Promise<StoredTosite[]>;
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite>;
   listaaOstolaskut(suodatin: OstolaskuListQuery): Promise<OstolaskuRivi[]>;
   listaaTulot(suodatin: RahavirtaSuodatin): Promise<RahavirtaRivi[]>;

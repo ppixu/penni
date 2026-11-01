@@ -26,6 +26,7 @@ import {
   type LiiteMeta,
   type LiitetiedotSyote,
   type ListattuTosite,
+  type MaksumuistutusSyote,
   type MarginaaliverolaskelmaParams,
   type MyyntilaskuRivi,
   type MyyntilaskuSuodatin,
@@ -94,6 +95,7 @@ import {
   listaaTositteet,
   listaaTulot,
   listaaViennit,
+  luoMaksumuistutukset,
   luoTilinavaus,
   muutaTositteenTila,
   paataTilikausi,
@@ -175,6 +177,9 @@ export class InProcessClient implements KpClient {
   }
   kirjaaLaskuluonnos(id: number, muutokset?: Partial<MyyntilaskuSyote>): Promise<StoredTosite> {
     return kirjaaLaskuluonnos(this.storage, id, this.env(), muutokset);
+  }
+  luoMaksumuistutukset(syote: MaksumuistutusSyote): Promise<StoredTosite[]> {
+    return luoMaksumuistutukset(this.storage, syote, this.env());
   }
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {
     return tallennaOstolasku(this.storage, syote, this.env());

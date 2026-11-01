@@ -38,6 +38,7 @@ import {
   encodeKumppani,
   encodeLiite,
   encodeLiitetiedotSyote,
+  encodeMaksumuistutusSyote,
   encodeMarginaaliveroSyote,
   encodeMyyntilaskuMuutokset,
   encodeMyyntilaskuSyote,
@@ -79,6 +80,7 @@ import {
   type LiiteMeta,
   type LiitetiedotSyote,
   type ListattuTosite,
+  type MaksumuistutusSyote,
   type MarginaaliverolaskelmaParams,
   type MyyntilaskuRivi,
   type MyyntilaskuSuodatin,
@@ -282,6 +284,16 @@ export class HttpClient implements KpClient {
     });
     if (r.status === 200)
       return decodeTosite(r.body as Parameters<typeof decodeTosite>[0]) as StoredTosite;
+    throw virhe(r.status, r.body);
+  }
+  async luoMaksumuistutukset(syote: MaksumuistutusSyote): Promise<StoredTosite[]> {
+    const r = await this.tsr.luoMaksumuistutukset({
+      body: encodeMaksumuistutusSyote(syote) as Parameters<Tsr['luoMaksumuistutukset']>[0]['body'],
+    });
+    if (r.status === 200)
+      return (r.body as Parameters<typeof decodeTosite>[0][]).map(
+        (t) => decodeTosite(t) as StoredTosite,
+      );
     throw virhe(r.status, r.body);
   }
   async tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {
