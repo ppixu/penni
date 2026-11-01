@@ -510,6 +510,23 @@ export const WireToistoSchema = z
   })
   .passthrough();
 
+/** Toiston luonti kirjatusta myyntilaskusta (POST /toistot/laskusta). */
+export const WireToistoLaskustaSchema = z.object({
+  tosite: z.number(),
+  kuukausia: z.number(),
+  seuraava: z.string().optional(),
+  loppuu: z.string().optional(),
+  nimi: z.string().optional(),
+});
+
+/** Erääntyneiden toistojen luonnosten luonti (POST /toistot/luo). */
+export const WireLuoToistotSchema = z.object({ tanaan: z.string() });
+
+export const WireErantyneetToistotSchema = z.object({
+  luodut: z.array(z.number()),
+  ohitettu: z.enum(['EITILIKAUTTA', 'LUKITTU']).optional(),
+});
+
 export const WireLiiteMetaSchema = z
   .object({
     id: z.union([z.number(), z.string()]).optional(),

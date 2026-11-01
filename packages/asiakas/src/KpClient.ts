@@ -9,6 +9,7 @@ import type {
   BudjettiRivi,
   BudjettivertailuParams,
   BudjettivertailuRivi,
+  ErantyneetToistot,
   EuMyyntiYhteenveto,
   HyvityslaskuSyote,
   InitBundle,
@@ -52,6 +53,7 @@ import type {
   TilinpaatosDoc,
   TilinpaatosParams,
   Toisto,
+  ToistoLaskustaSyote,
   TositeFilter,
   TositeSyote,
   TositeVienti,
@@ -180,6 +182,10 @@ export interface KpClient {
   haeToistot(): Promise<Toisto[]>;
   tallennaToisto(toisto: UusiToisto): Promise<Toisto>;
   poistaToisto(id: number): Promise<void>;
+  /** Toisto kirjatusta myyntilaskusta (EITOSITETTA / EIKELPAA / EIKUUKAUSIA). */
+  luoToistoLaskusta(syote: ToistoLaskustaSyote): Promise<Toisto>;
+  /** Luo erääntyneiden toistojen luonnokset; `tanaan` ISO-päivä. */
+  luoErantyneetToistot(tanaan: string): Promise<ErantyneetToistot>;
 
   // liitteet (attachments)
   haeLiitteet(tosite: number): Promise<LiiteMeta[]>;

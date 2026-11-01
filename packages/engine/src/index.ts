@@ -30,6 +30,7 @@ export * from './resources/alvIlmoitus.js';
 export * from './resources/masterData.js';
 export * from './resources/kohdennuksetResource.js';
 export * from './resources/laskutusRekisterit.js';
+export * from './resources/toistoResource.js';
 export * from './resources/tilikausiLukitus.js';
 export * from './resources/tilinavaus.js';
 export * from './resources/saldot.js';

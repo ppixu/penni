@@ -346,5 +346,62 @@ export function runLaskutusClientConformance(name: string, makeClient: MakeClien
         expect(await c.haeToistot()).toEqual([]);
       });
     });
+
+    describe('toistuvat laskut', () => {
+      it('toisto kirjatusta laskusta ja erääntyneen luonnoksen luonti', async () => {
+        const c = await fresh();
+        const asiakas = await c.tallennaKumppani({ nimi: 'Toistoasiakas Oy' });
+        const lasku = await c.tallennaMyyntilasku({
+          pvm: '2026-05-31',
+          erapvm: '2026-06-14',
+          kumppani: asiakas.id,
+          otsikko: 'Toukokuu',
+          rivit,
+        });
+        const t = await c.luoToistoLaskusta({ tosite: lasku.id, kuukausia: 1, nimi: 'Ylläpito' });
+        expect(t).toMatchObject({
+          nimi: 'Ylläpito',
+          kumppani: asiakas.id,
+          kuukausia: 1,
+          seuraava: '2026-06-30',
+          lahdeTosite: lasku.id,
+          aktiivinen: true,
+        });
+        expect(t.pohja).toMatchObject({ otsikko: 'Toukokuu', maksutapa: 0, maksuaikaPaivia: 14 });
+        expect(t.pohja.rivit).toEqual(rivit);
+
+        const tulos = await c.luoErantyneetToistot('2026-07-05');
+        expect(tulos.ohitettu).toBeUndefined();
+        expect(tulos.luodut).toHaveLength(1);
+        const lista = await c.listaaLaskuluonnokset();
+        expect(lista).toHaveLength(1);
+        expect(lista[0]).toMatchObject({
+          tosite: tulos.luodut[0],
+          toisto: t.id,
+          pvm: '2026-06-30',
+          kumppani: asiakas.id,
+          summa: 12_550,
+        });
+        expect((await c.haeToistot())[0]?.seuraava).toBe('2026-07-31');
+
+        expect(await c.luoErantyneetToistot('2026-07-05')).toEqual({ luodut: [] });
+      });
+
+      it('toisto vain kirjatusta laskusta; tilikaudeton päivä ohitetaan', async () => {
+        const c = await fresh();
+        await expect(c.luoToistoLaskusta({ tosite: 999, kuukausia: 1 })).rejects.toMatchObject({
+          code: 'EITOSITETTA',
+        });
+        const lasku = await c.tallennaMyyntilasku({ pvm: '2026-05-31', rivit });
+        await expect(c.luoToistoLaskusta({ tosite: lasku.id, kuukausia: 0 })).rejects.toMatchObject(
+          { code: 'EIKUUKAUSIA' },
+        );
+        await c.luoToistoLaskusta({ tosite: lasku.id, kuukausia: 1 });
+        expect(await c.luoErantyneetToistot('2027-07-05')).toEqual({
+          luodut: [],
+          ohitettu: 'EITILIKAUTTA',
+        });
+      });
+    });
   });
 }

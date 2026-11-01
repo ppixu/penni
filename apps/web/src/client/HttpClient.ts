@@ -7,6 +7,7 @@ import {
   decodeAsetukset,
   decodeBudjettiRivi,
   decodeBudjettivertailuRivi,
+  decodeErantyneetToistot,
   decodeEuMyynti,
   decodeInit,
   decodeJaksotuslaskelma,
@@ -51,6 +52,7 @@ import {
   encodeTilikausi,
   encodeTilinavausSyote,
   encodeToisto,
+  encodeToistoLaskustaSyote,
   encodeTosite,
   encodeTuloveroSyote,
   encodeTuote,
@@ -68,6 +70,7 @@ import {
   type BudjettiRivi,
   type BudjettivertailuParams,
   type BudjettivertailuRivi,
+  type ErantyneetToistot,
   type EuMyyntiYhteenveto,
   type HyvityslaskuSyote,
   type InitBundle,
@@ -112,6 +115,7 @@ import {
   type TilinpaatosDoc,
   type TilinpaatosParams,
   type Toisto,
+  type ToistoLaskustaSyote,
   type Tosite,
   type TositeFilter,
   type TositeSyote,
@@ -752,6 +756,18 @@ export class HttpClient implements KpClient {
   async poistaToisto(id: number): Promise<void> {
     const r = await this.tsr.poistaToisto({ params: { id: String(id) } });
     if (r.status === 200) return;
+    throw virhe(r.status, r.body);
+  }
+  async luoToistoLaskusta(syote: ToistoLaskustaSyote): Promise<Toisto> {
+    const r = await this.tsr.luoToistoLaskusta({
+      body: encodeToistoLaskustaSyote(syote) as Parameters<Tsr['luoToistoLaskusta']>[0]['body'],
+    });
+    if (r.status === 200) return decodeToisto(r.body as Record<string, unknown>);
+    throw virhe(r.status, r.body);
+  }
+  async luoErantyneetToistot(tanaan: string): Promise<ErantyneetToistot> {
+    const r = await this.tsr.luoErantyneetToistot({ body: { tanaan } });
+    if (r.status === 200) return decodeErantyneetToistot(r.body as Record<string, unknown>);
     throw virhe(r.status, r.body);
   }
 

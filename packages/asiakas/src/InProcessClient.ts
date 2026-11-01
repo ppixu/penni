@@ -8,6 +8,7 @@ import {
   type BudjettiRivi,
   type BudjettivertailuParams,
   type BudjettivertailuRivi,
+  type ErantyneetToistot,
   type EuMyyntiYhteenveto,
   type HyvityslaskuSyote,
   type InitBundle,
@@ -53,6 +54,7 @@ import {
   type TilinpaatosDoc,
   type TilinpaatosParams,
   type Toisto,
+  type ToistoLaskustaSyote,
   type TositeFilter,
   type TositeSyote,
   type TositeVienti,
@@ -104,8 +106,10 @@ import {
   listaaTositteet,
   listaaTulot,
   listaaViennit,
+  luoErantyneetToistot,
   luoMaksumuistutukset,
   luoTilinavaus,
+  luoToistoLaskusta,
   muutaTositteenTila,
   paataTilikausi,
   paivitaAsetukset,
@@ -375,6 +379,12 @@ export class InProcessClient implements KpClient {
   }
   poistaToisto(id: number): Promise<void> {
     return poistaToisto(this.storage, id);
+  }
+  luoToistoLaskusta(syote: ToistoLaskustaSyote): Promise<Toisto> {
+    return luoToistoLaskusta(this.storage, syote, this.env());
+  }
+  luoErantyneetToistot(tanaan: string): Promise<ErantyneetToistot> {
+    return luoErantyneetToistot(this.storage, tanaan, this.env());
   }
 
   haeLiitteet(tosite: number): Promise<LiiteMeta[]> {

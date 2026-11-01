@@ -5,6 +5,7 @@ import type { IsoDate } from '../vouchers/types.js';
 import { type MaksumuistutusMuutokset, kirjaaMaksumuistutus } from './maksumuistutusResource.js';
 import { type MyyntilaskuSyote, kirjaaMyyntilaskuYdin } from './myyntilaskuResource.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
+import { paivitaToistoKirjatusta } from './toistoResource.js';
 
 /** Tositetyypit, joista voi olla laskuluonnos. */
 export const LUONNOSTYYPIT: readonly number[] = [
@@ -50,7 +51,8 @@ function luonnosSyotteeksi(t: StoredTosite): MyyntilaskuSyote {
  * tositteen pvm tulee yhdistetyistä tiedoista. Muu kuin luonnos (kirjattu, poistettu, puuttuva)
  * → EILUONNOS. Maksumuistutus kirjataan `kirjaaMaksumuistutus`:lla, joka käyttää muutoksista
  * vain pvm:n, eräpäivän, otsikon ja `muistutus`-kentän (maksu, korkoprosentti); muistutus ilman
- * muistutustietoja (tuotu Kitsas-luonnos) → EIMUISTUTUSTIETOJA.
+ * muistutustietoja (tuotu Kitsas-luonnos) → EIMUISTUTUSTIETOJA. Toistosta luodun laskun kirjaus
+ * päivittää toiston pohjan (`paivitaToistoKirjatusta`).
  */
 export async function kirjaaLaskuluonnos(
   storage: Storage,
@@ -73,7 +75,14 @@ export async function kirjaaLaskuluonnos(
   }
 
   const { luonnos: _luonnos, id: _id, muistutus: _muistutus, ...muutos } = muutokset;
-  return kirjaaMyyntilaskuYdin(storage, { ...luonnosSyotteeksi(t), ...muutos }, env, id);
+  const kirjattu = await kirjaaMyyntilaskuYdin(
+    storage,
+    { ...luonnosSyotteeksi(t), ...muutos },
+    env,
+    id,
+  );
+  await paivitaToistoKirjatusta(storage, kirjattu);
+  return kirjattu;
 }
 
 export interface LaskuluonnosRivi {

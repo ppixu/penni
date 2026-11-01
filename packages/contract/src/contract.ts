@@ -9,6 +9,7 @@ import {
   WireAsetuksetSchema,
   WireBudjettiRiviSchema,
   WireBudjettivertailuRiviSchema,
+  WireErantyneetToistotSchema,
   WireEuMyyntiSchema,
   WireHyvityslaskuSyoteSchema,
   WireInitPatchSchema,
@@ -22,6 +23,7 @@ import {
   WireLiiteMetaSchema,
   WireLiiteSchema,
   WireLiitetiedotSyoteSchema,
+  WireLuoToistotSchema,
   WireMaksumuistutusSyoteSchema,
   WireMarginaaliveroSyoteSchema,
   WireMyyntilaskuMuutoksetSchema,
@@ -39,6 +41,7 @@ import {
   WireTilikausiSchema,
   WireTilinavausSyoteSchema,
   WireTilinpaatosDocSchema,
+  WireToistoLaskustaSchema,
   WireToistoSchema,
   WireTositeSchema,
   WireTositeSyoteSchema,
@@ -513,6 +516,18 @@ export const contract = c.router({
     responses: { 200: WireToistoSchema, 201: WireToistoSchema },
   },
   poistaToisto: { method: 'DELETE', path: '/toistot/:id', responses: { 200: z.null() } },
+  luoToistoLaskusta: {
+    method: 'POST',
+    path: '/toistot/laskusta',
+    body: WireToistoLaskustaSchema,
+    responses: { 200: WireToistoSchema },
+  },
+  luoErantyneetToistot: {
+    method: 'POST',
+    path: '/toistot/luo',
+    body: WireLuoToistotSchema,
+    responses: { 200: WireErantyneetToistotSchema },
+  },
 
   // /liitteet
   haeLiitteet: {

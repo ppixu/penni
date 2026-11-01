@@ -1,5 +1,7 @@
 import type {
+  ErantyneetToistot,
   Toisto,
+  ToistoLaskustaSyote,
   Tuote,
   UusiToisto,
   UusiTuote,
@@ -79,4 +81,32 @@ export function decodeToisto(w: Record<string, unknown>): Toisto {
 
 export function encodeToisto(t: Toisto | UusiToisto): Record<string, unknown> {
   return { ...t, pohja: { ...t.pohja, rivit: t.pohja.rivit.map(encodeRivi) } };
+}
+
+// --- Toistojen luonti ---
+
+export function decodeToistoLaskustaSyote(w: Record<string, unknown>): ToistoLaskustaSyote {
+  return {
+    tosite: Number(w.tosite),
+    kuukausia: Number(w.kuukausia),
+    ...(typeof w.seuraava === 'string' ? { seuraava: w.seuraava } : {}),
+    ...(typeof w.loppuu === 'string' ? { loppuu: w.loppuu } : {}),
+    ...(typeof w.nimi === 'string' ? { nimi: w.nimi } : {}),
+  };
+}
+
+export function encodeToistoLaskustaSyote(s: ToistoLaskustaSyote): Record<string, unknown> {
+  return { ...s };
+}
+
+export function decodeErantyneetToistot(w: Record<string, unknown>): ErantyneetToistot {
+  const ohitettu = w.ohitettu;
+  return {
+    luodut: ((w.luodut ?? []) as unknown[]).map(Number),
+    ...(ohitettu === 'EITILIKAUTTA' || ohitettu === 'LUKITTU' ? { ohitettu } : {}),
+  };
+}
+
+export function encodeErantyneetToistot(t: ErantyneetToistot): Record<string, unknown> {
+  return { ...t };
 }

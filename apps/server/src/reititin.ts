@@ -18,6 +18,7 @@ import {
   decodeTilikausi,
   decodeTilinavausSyote,
   decodeToisto,
+  decodeToistoLaskustaSyote,
   decodeTosite,
   decodeTuloveroSyote,
   decodeTuote,
@@ -29,6 +30,7 @@ import {
   encodeAlvLaskelma,
   encodeBudjettiRivi,
   encodeBudjettivertailuRivi,
+  encodeErantyneetToistot,
   encodeEuMyynti,
   encodeInit,
   encodeJaksotuslaskelma,
@@ -108,8 +110,10 @@ import {
   listaaTositteet,
   listaaTulot,
   listaaViennit,
+  luoErantyneetToistot,
   luoMaksumuistutukset,
   luoTilinavaus,
+  luoToistoLaskusta,
   muutaTositteenTila,
   paataTilikausi,
   paivitaAsetukset,
@@ -597,6 +601,16 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
       await poistaToisto(storage, Number(params.id));
       return { status: 200 as const, body: null };
     },
+
+    luoToistoLaskusta: async ({ body }: { body: Record<string, unknown> }) => {
+      const toisto = await luoToistoLaskusta(storage, decodeToistoLaskustaSyote(body), env());
+      return { status: 200 as const, body: encodeToisto(toisto) };
+    },
+
+    luoErantyneetToistot: async ({ body }: { body: { tanaan: string } }) => ({
+      status: 200 as const,
+      body: encodeErantyneetToistot(await luoErantyneetToistot(storage, body.tanaan, env())),
+    }),
 
     haeLiitteet: async ({ params }: { params: { tosite: string } }) => ({
       status: 200 as const,
