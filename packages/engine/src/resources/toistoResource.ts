@@ -190,7 +190,8 @@ export async function luoErantyneetToistot(
 
 /**
  * Toiston luonnoksen kirjaus päivittää toiston pohjan kirjatusta laskusta (spec §5.2): otsikko,
- * maksutapa, rivit ja maksuaika. Aikataulua (`seuraava`, `pohja.jakso`) ei kosketa, koska
+ * maksutapa, rivit ja maksuaika (vain jos eräpäivää muutettiin: oikaistu eräpäivä ei kasvata
+ * maksuaikaa). Aikataulua (`seuraava`, `pohja.jakso`) ei kosketa, koska
  * myöhempiä luonnoksia voi jo olla luotu. Poistettu toisto ohitetaan.
  */
 export async function paivitaToistoKirjatusta(
@@ -202,6 +203,13 @@ export async function paivitaToistoKirjatusta(
   if (!toisto) return;
   const { otsikko: _otsikko, ...pohja } = toisto.pohja;
   const uusi = pohjaLaskusta(kirjattu, toisto.kuukausia);
+  // Pankkipäivään oikaistu, käyttäjän muuttamatta jättämä eräpäivä ei saa kasvattaa maksuaikaa:
+  // vanha maksuaika säilyy, jos se tuottaa saman eräpäivän.
+  const vanhaErapvm = oikaiseErapaiva(
+    lisaaPaivia(kirjattu.laskupvm ?? kirjattu.pvm, pohja.maksuaikaPaivia),
+  );
+  const maksuaikaPaivia =
+    kirjattu.erapvm === vanhaErapvm ? pohja.maksuaikaPaivia : uusi.maksuaikaPaivia;
   await storage.saveToisto({
     ...toisto,
     pohja: {
@@ -209,7 +217,7 @@ export async function paivitaToistoKirjatusta(
       ...(uusi.otsikko !== undefined ? { otsikko: uusi.otsikko } : {}),
       maksutapa: uusi.maksutapa,
       rivit: uusi.rivit,
-      maksuaikaPaivia: uusi.maksuaikaPaivia,
+      maksuaikaPaivia,
     },
   });
 }

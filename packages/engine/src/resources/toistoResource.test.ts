@@ -403,6 +403,15 @@ describe('luoToistoLaskusta', () => {
 });
 
 describe('toiston luonnoksen kirjaus päivittää pohjan', () => {
+  it('muuttamaton, viikonlopulta siirretty eräpäivä ei kasvata maksuaikaa', async () => {
+    const s = seed();
+    const t = await toisto(s);
+    const { luodut } = await luoErantyneetToistot(s, '2026-02-05', env);
+    const kirjattu = await kirjaaLaskuluonnos(s, luodut[0] as number, env);
+    expect(kirjattu.erapvm).toBe('2026-02-16'); // 14.2. on la -> ma 16.2.
+    expect((await haeToisto(s, t.id)).pohja.maksuaikaPaivia).toBe(14);
+  });
+
   it('muokatut rivit, otsikko ja maksuaika siirtyvät pohjaan; aikataulu ei muutu', async () => {
     const s = seed();
     const t = await toisto(s, {
