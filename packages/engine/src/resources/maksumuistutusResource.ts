@@ -22,15 +22,16 @@ export interface MaksumuistutusSyote {
 /**
  * Muistutuksen lähtötiedot: muistutettava lasku, sen aiemmat kirjatut muistutukset (vanhin
  * ensin) ja erän saldo päivänä `pvm`. Jos annettu tosite on itse muistutus, lähtökohtana on sen
- * alkuperäinen lasku, koska muistutusketju on aina laskun erällä.
+ * alkuperäinen lasku, koska muistutusketju on aina laskun erällä; `valittu` on annettu tosite.
  */
 export async function muistutettavanTiedot(
   storage: Storage,
   laskuId: number,
   pvm: IsoDate,
-): Promise<{ lasku: StoredTosite; aiemmat: StoredTosite[]; saldo: Cents }> {
-  let lasku = await storage.getTosite(laskuId);
-  if (!lasku) throw new ResourceError('EITOSITETTA', `Tositetta ${laskuId} ei ole`);
+): Promise<{ lasku: StoredTosite; aiemmat: StoredTosite[]; saldo: Cents; valittu: StoredTosite }> {
+  const valittu = await storage.getTosite(laskuId);
+  if (!valittu) throw new ResourceError('EITOSITETTA', `Tositetta ${laskuId} ei ole`);
+  let lasku = valittu;
   if (lasku.tyyppi === TositeTyyppi.MAKSUMUISTUTUS && lasku.alkuperainenTosite !== undefined) {
     const alkuperainen = await storage.getTosite(lasku.alkuperainenTosite);
     if (!alkuperainen)
@@ -46,7 +47,7 @@ export async function muistutettavanTiedot(
   const aiemmat = muistutukset
     .filter((m) => m.alkuperainenTosite === id && onKirjanpidossa(m.tila))
     .sort((a, b) => (a.pvm === b.pvm ? a.id - b.id : a.pvm < b.pvm ? -1 : 1));
-  return { lasku, aiemmat, saldo: (erat.get(id) ?? 0) as Cents };
+  return { lasku, aiemmat, saldo: (erat.get(id) ?? 0) as Cents, valittu };
 }
 
 /**
@@ -92,8 +93,19 @@ export async function luoMaksumuistutukset(
 
   const luonnokset = [];
   for (const laskuId of syote.tositteet) {
-    const { lasku, aiemmat, saldo } = await muistutettavanTiedot(storage, laskuId, syote.pvm);
-    if (!onMuistutettava(lasku, saldo, syote.pvm))
+    const { lasku, aiemmat, saldo, valittu } = await muistutettavanTiedot(
+      storage,
+      laskuId,
+      syote.pvm,
+    );
+    // Kelpoisuus koko ketjulle: valitun tositteen on oltava kirjattu, alkuperäisen laskun
+    // täytettävä §4.1 ja uusimman kirjatun muistutuksen eräpäivän oltava ohi.
+    const uusinEra = aiemmat[aiemmat.length - 1]?.erapvm;
+    if (
+      !onKirjanpidossa(valittu.tila) ||
+      !onMuistutettava(lasku, saldo, syote.pvm) ||
+      (uusinEra !== undefined && uusinEra >= syote.pvm)
+    )
       throw new ResourceError('EIMUISTUTETTAVA', `Tositteesta ${laskuId} ei voi tehdä muistutusta`);
 
     const kumppani =

@@ -146,6 +146,7 @@ describe('luoMaksumuistutukset', () => {
         tunniste: 0,
         sarja: '',
         alkuperainenTosite: l.id,
+        erapvm: '2026-06-13',
         muistutus: {
           maksu: 500,
           korko: 100,
@@ -181,6 +182,87 @@ describe('luoMaksumuistutukset', () => {
     expect(m?.muistutus).toMatchObject({ korkoalkaa: '2026-05-31', aiempiSaldo: 100600 });
     // peruste = 100600 - 600 = 100000; 10 % * 31 pv / 365 = 849,3
     expect(m?.muistutus?.korko).toBe(849);
+  });
+
+  describe('muistutusketjun kelpoisuus', () => {
+    /** Alkuperäinen lasku + sen muistutus annetulla tilalla ja eräpäivällä. */
+    const ketju = async (tila: number, erapvm: string) => {
+      const s = seed();
+      const l = await lasku(s);
+      const m = await s.saveTosite(
+        {
+          pvm: '2026-05-30',
+          tyyppi: TositeTyyppi.MAKSUMUISTUTUS,
+          tila,
+          tunniste: 0,
+          sarja: '',
+          alkuperainenTosite: l.id,
+          erapvm,
+          muistutus: {
+            maksu: 500,
+            korko: 0,
+            viivkorko: 11.5,
+            korkoalkaa: '2026-05-01',
+            korkoloppuu: '2026-05-30',
+            aiempiSaldo: 100000,
+            aiemmat: [l.id],
+          },
+          viennit:
+            tila >= TositeTila.KIRJANPIDOSSA
+              ? [
+                  {
+                    tili: 1701,
+                    debet: 500,
+                    kredit: 0,
+                    pvm: '2026-05-30',
+                    alvKoodi: 0,
+                    alvProsentti: 0,
+                    era: l.id,
+                  },
+                  {
+                    tili: 3000,
+                    debet: 0,
+                    kredit: 500,
+                    pvm: '2026-05-30',
+                    alvKoodi: 0,
+                    alvProsentti: 0,
+                  },
+                ]
+              : [],
+        },
+        env,
+      );
+      return { s, l, m };
+    };
+    const syote = (id: number) => ({ tositteet: [id], pvm: '2026-06-30', korko: false });
+
+    it('muistutuksen oma eräpäivä on vielä tulevaisuudessa → EIMUISTUTETTAVA', async () => {
+      const { s, m } = await ketju(TositeTila.KIRJANPIDOSSA, '2026-07-15');
+      await expect(luoMaksumuistutukset(s, syote(m.id), env)).rejects.toMatchObject({
+        code: 'EIMUISTUTETTAVA',
+      });
+    });
+
+    it('muistutusluonnosta ei voi muistuttaa', async () => {
+      const { s, m } = await ketju(TositeTila.VALMISLASKU, '2026-06-13');
+      await expect(luoMaksumuistutukset(s, syote(m.id), env)).rejects.toMatchObject({
+        code: 'EIMUISTUTETTAVA',
+      });
+    });
+
+    it('laskun id: kirjattu muistutus, jonka eräpäivä on tulevaisuudessa, estää → EIMUISTUTETTAVA', async () => {
+      const { s, l } = await ketju(TositeTila.KIRJANPIDOSSA, '2026-07-15');
+      await expect(luoMaksumuistutukset(s, syote(l.id), env)).rejects.toMatchObject({
+        code: 'EIMUISTUTETTAVA',
+      });
+    });
+
+    it('muistutuksen id, kun sen eräpäivä on ohi → uusi muistutus viittaa alkuperäiseen laskuun', async () => {
+      const { s, l, m } = await ketju(TositeTila.KIRJANPIDOSSA, '2026-06-13');
+      const [uusi] = await luoMaksumuistutukset(s, syote(m.id), env);
+      expect(uusi?.alkuperainenTosite).toBe(l.id);
+      expect(uusi?.muistutus?.aiemmat).toEqual([l.id, m.id]);
+    });
   });
 
   it('erääntymätön, maksettu, käteinen tai erätön lasku → EIMUISTUTETTAVA', async () => {
