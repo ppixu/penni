@@ -20,6 +20,7 @@ export * from './resources/context.js';
 export * from './resources/tositeResource.js';
 export * from './resources/myyntilaskuResource.js';
 export * from './resources/laskuluonnosResource.js';
+export * from './resources/maksumuistutusResource.js';
 export * from './resources/tulotResource.js';
 export * from './resources/ostolaskuResource.js';
 export * from './resources/hyvityslaskuResource.js';
