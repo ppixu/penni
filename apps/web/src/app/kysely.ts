@@ -8,6 +8,7 @@ import type {
   BudjettiRivi,
   BudjettivertailuParams,
   BudjettivertailuRivi,
+  ErantyneetToistot,
   EuMyyntiYhteenveto,
   HyvityslaskuSyote,
   InitBundle,
@@ -40,6 +41,7 @@ import type {
   TilinpaatosDoc,
   TilinpaatosParams,
   Toisto,
+  ToistoLaskustaSyote,
   TositeFilter,
   TositeVienti,
   Tuote,
@@ -483,7 +485,7 @@ export function useBudjettivertailu(params: BudjettivertailuParams, enabled = tr
 
 /** Laskutuksen virhekartta (spec §8): ResourceError.code → suomi. Koodi-virhebody-
  *  interluden ansiosta koodit ovat identtiset InProcess- ja HTTP-transporteilla. */
-function laskuVirheViesti(e: unknown): string {
+export function laskuVirheViesti(e: unknown): string {
   if (e instanceof ResourceError) {
     switch (e.code) {
       case 'EIRIVEJA':
@@ -528,6 +530,10 @@ function laskuVirheViesti(e: unknown): string {
         return 'Viite on virheellinen (4-7 numeroa, ei alkunollaa, oikea tarkistenumero)';
       case 'VIITEKAYTOSSA':
         return 'Viite on jo käytössä';
+      case 'EIKELPAA':
+        return 'Toiston voi luoda vain kirjatusta myyntilaskusta';
+      case 'EIKUUKAUSIA':
+        return 'Toistovälin on oltava vähintään yksi kuukausi';
       case 'EITILIA':
         return 'Tili puuttuu';
       case 'EIOTSIKKOA':
@@ -1018,6 +1024,59 @@ export function usePoistaToisto() {
   }
 
   return { poista, virheviesti, poistaa: mutaatio.isPending };
+}
+
+/** Toisto kirjatusta myyntilaskusta. Palauttaa Toiston tai undefined virheessä. */
+export function useLuoToistoLaskusta() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<Toisto, unknown, ToistoLaskustaSyote>({
+    mutationFn: (syote) => client.luoToistoLaskusta(syote),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.toistot });
+    },
+  });
+
+  async function luo(syote: ToistoLaskustaSyote): Promise<Toisto | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(syote);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { luo, virheviesti, luomassa: mutaatio.isPending };
+}
+
+/** Luo erääntyneet toistot luonnoksiksi. Mitätöi toistot ja Lähtevät-listan; virhe → undefined. */
+export function useLuoErantyneetToistot() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<ErantyneetToistot, unknown, IsoDate>({
+    mutationFn: (tanaan) => client.luoErantyneetToistot(tanaan),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: avaimet.toistot });
+      void qc.invalidateQueries({ queryKey: avaimet.laskuluonnokset });
+    },
+  });
+
+  async function luo(tanaan: IsoDate): Promise<ErantyneetToistot | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(tanaan);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { luo, virheviesti, luomassa: mutaatio.isPending };
 }
 
 export function useAlvLaskelma(params: AlvLaskelmaParams, enabled = true) {

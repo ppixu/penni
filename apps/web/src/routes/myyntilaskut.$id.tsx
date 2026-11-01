@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { LaskuDokumentti } from '@/laskutus/LaskuDokumentti';
 import { LaskuLuonnos } from '@/laskutus/LaskuLuonnos';
 import { MuistutusNaytto } from '@/laskutus/MuistutusNaytto';
+import { ToistoDialog } from '@/laskutus/ToistoDialog';
 import { lataaLaskuPdf } from '@/laskutus/lataaLaskuPdf';
 import { HyvitaVahvistus } from '@/ostolaskut/HyvitaVahvistus';
 import { EdellinenSeuraava, useLaskuNaapurit } from '@/tositteet/EdellinenSeuraava.js';
@@ -44,6 +45,7 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
     onHyvitys && tosite?.alkuperainenTosite !== undefined,
   );
   const [hyvitysAuki, setHyvitysAuki] = useState(false);
+  const [toistoAuki, setToistoAuki] = useState(false);
   const client = useKpClient();
   const { lisaa } = useLisaaLiite();
   const [pdfTyossa, setPdfTyossa] = useState(false);
@@ -129,6 +131,13 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
                 void navigate({ to: '/myyntilaskut/$id', params: { id: String(seuraavaId) } })
               }
             />
+            {/* Toisto vaatii kirjatun myyntilaskun (spec §5.2); tämä näkymä näyttää vain kirjattuja,
+                luonnos avautuu lomakkeena ilman tätä nappia. Hyvityslaskua ei toisteta. */}
+            {tosite.tyyppi === TositeTyyppi.MYYNTILASKU && (
+              <Button variant="sec" type="button" onClick={() => setToistoAuki(true)}>
+                Toista
+              </Button>
+            )}
             <Button
               variant="sec"
               type="button"
@@ -158,6 +167,16 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
         <LaskuDokumentti malli={malli} tositeId={tosite.id} />
       </section>
 
+      {toistoAuki && (
+        <ToistoDialog
+          tosite={tosite}
+          onPeruuta={() => setToistoAuki(false)}
+          onValmis={() => {
+            setToistoAuki(false);
+            void navigate({ to: '/toistot' });
+          }}
+        />
+      )}
       {hyvitysAuki && (
         <HyvitaVahvistus
           tosite={tosite.id}

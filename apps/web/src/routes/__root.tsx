@@ -1,5 +1,6 @@
 import { useInit } from '@/app/kysely';
 import { AppShell } from '@/components/shell/AppShell';
+import { ToistoAjo } from '@/laskutus/ToistoAjo';
 import { PiilotetutTilitKonteksti } from '@/tilikartta/PiilotetutTilit';
 import { TiliValintaKonteksti } from '@/tilikartta/TiliValinta';
 import { useTilienKaytto } from '@/tilikartta/tilinakyma';
@@ -35,6 +36,7 @@ function RootComponent() {
         <TiliValintaKonteksti.Provider value={tiliValinta}>
           <AppShell kirjanpito={kirjanpito}>
             <Outlet />
+            <ToistoAjo />
           </AppShell>
         </TiliValintaKonteksti.Provider>
       </PiilotetutTilitKonteksti.Provider>

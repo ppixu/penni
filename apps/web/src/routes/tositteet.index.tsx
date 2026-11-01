@@ -400,6 +400,11 @@ function Selaus() {
         otsikko="Tositteet"
         toiminnot={
           <>
+            {lahtevat && (
+              <Button variant="sec" size="compact" asChild>
+                <Link to="/toistot">Toistuvat laskut</Link>
+              </Button>
+            )}
             <Button variant="sec" size="compact" asChild>
               <Link to="/myyntilaskut/uusi">+ Myyntilasku</Link>
             </Button>
