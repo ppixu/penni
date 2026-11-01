@@ -38,7 +38,7 @@ describe('ajaMigraatiot', () => {
     ajaMigraatiot(db);
     ajaMigraatiot(db);
     const n = (db.prepare('SELECT COUNT(*) AS n FROM migraatio').get() as { n: number }).n;
-    expect(n).toBe(7); // seven append-only migrations applied, each recorded once
+    expect(n).toBe(8); // eight append-only migrations applied, each recorded once
     db.close();
   });
 

@@ -1,4 +1,4 @@
-import { ResourceError, lataaKartta, tasoTyypista } from '@penni/engine';
+import { ResourceError, lataaKartta, tasoTyypista, vertaaVakioviitteita } from '@penni/engine';
 import type {
   Asetukset,
   AuditEntry,
@@ -11,11 +11,16 @@ import type {
   StoredTosite,
   TiliData,
   Tilikausi,
+  Toisto,
   TositeFilter,
   TositeVienti,
+  Tuote,
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiToisto,
+  UusiTuote,
+  Vakioviite,
 } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import type { SqliteAjuri, SqliteValue } from './ajuri.js';
@@ -628,6 +633,76 @@ export function createSqliteCoreStorage(
           ]);
         }
       });
+    },
+    // --- tuotteet ---
+    async getTuotteet() {
+      const rows = ajuri.all('SELECT json FROM tuote ORDER BY nimike, id');
+      return rows.map((r) => JSON.parse(r.json as string) as Tuote);
+    },
+    async saveTuote(t: UusiTuote) {
+      return ajuri.transaction((tx): Tuote => {
+        let id = t.id;
+        if (id === undefined) {
+          const info = tx.run('INSERT INTO tuote (nimike, json) VALUES (?, ?)', [t.nimike, '{}']);
+          id = Number(info.lastInsertRowid);
+        }
+        const { id: _drop, ...rest } = t;
+        const stored: Tuote = { ...rest, id };
+        tx.run('INSERT OR REPLACE INTO tuote (id, nimike, json) VALUES (?, ?, ?)', [
+          id,
+          stored.nimike,
+          JSON.stringify(stored),
+        ]);
+        return stored;
+      });
+    },
+    async deleteTuote(id: number) {
+      ajuri.run('DELETE FROM tuote WHERE id = ?', [id]);
+    },
+
+    // --- vakioviitteet ---
+    async getVakioviitteet() {
+      const rows = ajuri.all('SELECT json FROM vakioviite');
+      return rows.map((r) => JSON.parse(r.json as string) as Vakioviite).sort(vertaaVakioviitteita);
+    },
+    async saveVakioviite(v: Vakioviite) {
+      ajuri.run('INSERT OR REPLACE INTO vakioviite (viite, json) VALUES (?, ?)', [
+        v.viite,
+        JSON.stringify(v),
+      ]);
+      return JSON.parse(JSON.stringify(v)) as Vakioviite;
+    },
+    async deleteVakioviite(viite: string) {
+      ajuri.run('DELETE FROM vakioviite WHERE viite = ?', [viite]);
+    },
+
+    // --- toistot ---
+    async getToistot() {
+      const rows = ajuri.all('SELECT json FROM toisto ORDER BY seuraava, id');
+      return rows.map((r) => JSON.parse(r.json as string) as Toisto);
+    },
+    async saveToisto(t: UusiToisto) {
+      return ajuri.transaction((tx): Toisto => {
+        let id = t.id;
+        if (id === undefined) {
+          const info = tx.run('INSERT INTO toisto (seuraava, aktiivinen, json) VALUES (?, ?, ?)', [
+            t.seuraava,
+            t.aktiivinen ? 1 : 0,
+            '{}',
+          ]);
+          id = Number(info.lastInsertRowid);
+        }
+        const { id: _drop, ...rest } = t;
+        const stored: Toisto = { ...rest, id };
+        tx.run(
+          'INSERT OR REPLACE INTO toisto (id, seuraava, aktiivinen, json) VALUES (?, ?, ?, ?)',
+          [id, stored.seuraava, stored.aktiivinen ? 1 : 0, JSON.stringify(stored)],
+        );
+        return stored;
+      });
+    },
+    async deleteToisto(id: number) {
+      ajuri.run('DELETE FROM toisto WHERE id = ?', [id]);
     },
 
     // --- liitteet ---

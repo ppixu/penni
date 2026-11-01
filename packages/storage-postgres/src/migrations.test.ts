@@ -37,7 +37,7 @@ describe('ajaMigraatiot', () => {
     await ajaMigraatiot(ajuri);
     await ajaMigraatiot(ajuri);
     const { rows } = await ajuri.query('SELECT COUNT(*) AS n FROM migraatio');
-    expect(Number(rows[0]?.n)).toBe(6); // six append-only migrations applied, each recorded once
+    expect(Number(rows[0]?.n)).toBe(7); // seven append-only migrations applied, each recorded once
     await ajuri.close();
   });
 

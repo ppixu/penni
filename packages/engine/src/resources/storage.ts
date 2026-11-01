@@ -3,6 +3,9 @@ import type { Tili, TiliData } from '../accounts/tili.js';
 import type { Alkupera } from '../alv/alkupera.js';
 import type { BudjettiRivi } from '../kohdennukset/budjetti.js';
 import type { Kohdennus, UusiKohdennus } from '../kohdennukset/kohdennus.js';
+import type { Toisto, UusiToisto } from '../laskutus/toisto.js';
+import type { Tuote, UusiTuote } from '../laskutus/tuote.js';
+import type { Vakioviite } from '../laskutus/vakioviite.js';
 import type { Liite, LiiteMeta, UusiLiite } from '../liitteet/liite.js';
 import type { Kumppani, UusiKumppani } from '../partners/kumppani.js';
 import type { IsoDate, Tosite, TositeVienti } from '../vouchers/types.js';
@@ -186,6 +189,26 @@ export interface Storage {
   getBudjetti(tilikausi: IsoDate): Promise<BudjettiRivi[]>;
   /** Replaces the fiscal year's budget atomically; rows with sentit 0 are not stored. */
   putBudjetti(tilikausi: IsoDate, rivit: BudjettiRivi[]): Promise<void>;
+
+  // --- tuotteet (product register) ---
+  /** Nimikkeen mukaan (sitten id). */
+  getTuotteet(): Promise<Tuote[]>;
+  /** Upsert: id puuttuu => uusi id; annettu id siirtää juoksevaa sarjaa. */
+  saveTuote(tuote: UusiTuote): Promise<Tuote>;
+  deleteTuote(id: number): Promise<void>;
+
+  // --- vakioviitteet (standing references) ---
+  /** Viitteen mukaan numeerisesti (sitten merkkijonona). */
+  getVakioviitteet(): Promise<Vakioviite[]>;
+  /** Upsert viitteellä. */
+  saveVakioviite(viite: Vakioviite): Promise<Vakioviite>;
+  deleteVakioviite(viite: string): Promise<void>;
+
+  // --- toistot (recurring-invoice schedules) ---
+  /** Seuraavan eräpäivän mukaan (sitten id). */
+  getToistot(): Promise<Toisto[]>;
+  saveToisto(toisto: UusiToisto): Promise<Toisto>;
+  deleteToisto(id: number): Promise<void>;
 
   // --- liitteet (attachments) ---
   getLiitteet(tosite: number): Promise<LiiteMeta[]>; // metadata only, no blob

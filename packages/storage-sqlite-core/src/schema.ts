@@ -151,4 +151,27 @@ export const SCHEMA_VERSIONS: readonly string[] = [
     PRIMARY KEY (tilikausi, kohdennus, tili)
   );
   `,
+  // v7: laskutuksen lisät — tuote (tuoterekisteri), vakioviite (kiinteä viite -> tili) ja
+  // toisto (toistuvan laskun aikataulu). json-blob + skalaarit järjestystä varten.
+  `
+  CREATE TABLE tuote (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    nimike TEXT,
+    json   TEXT NOT NULL
+  );
+  CREATE INDEX idx_tuote_nimike ON tuote(nimike);
+
+  CREATE TABLE vakioviite (
+    viite TEXT PRIMARY KEY,
+    json  TEXT NOT NULL
+  );
+
+  CREATE TABLE toisto (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    seuraava   TEXT,
+    aktiivinen INTEGER NOT NULL DEFAULT 1,
+    json       TEXT NOT NULL
+  );
+  CREATE INDEX idx_toisto_seuraava ON toisto(seuraava);
+  `,
 ];

@@ -1,6 +1,7 @@
 import type { Cents } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import { AlvKoodi } from '../alv/koodit.js';
+import type { ToistoPohja } from '../laskutus/toisto.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import { CONFORMANCE_SEED, type ConformanceSeed } from './conformance.js';
 import { kirjaaLaskuluonnos } from './laskuluonnosResource.js';
@@ -160,6 +161,155 @@ export function runLaskutusConformance(
       await tallennaSuoritus(s, { tosite: id, pvm: '2026-06-10', summa: c(101445) }, audit);
       expect((await s.queryErat({})).get(lasku.id) ?? 0).toBe(0);
       expect(await listaaMyyntilaskut(s, { avoin: true })).toEqual([]);
+    });
+
+    it('tuote: CRUD ja tuntemattomat avaimet säilyvät', async () => {
+      const s = await fresh();
+      const a = await s.saveTuote({
+        nimike: 'Konsultointi',
+        nimi: { fi: 'Konsultointi', sv: 'Konsultation' },
+        aNetto: 12.5,
+        alvKoodi: AlvKoodi.MYYNNIT_NETTO,
+        alvProsentti: 25.5,
+        tili: 3000,
+        vapaa: { x: [1, 2] },
+      });
+      const b = await s.saveTuote({ nimike: 'Aakkonen', aNetto: 1, alvKoodi: 0, alvProsentti: 0 });
+      expect(a.id).toBeGreaterThan(0);
+      expect(b.id).not.toBe(a.id);
+      const lista = await s.getTuotteet();
+      expect(lista.map((t) => t.nimike)).toEqual(['Aakkonen', 'Konsultointi']);
+      const luettu = lista.find((t) => t.id === a.id);
+      expect(luettu).toEqual(a);
+      expect(luettu?.nimi).toEqual({ fi: 'Konsultointi', sv: 'Konsultation' });
+      expect(luettu?.aNetto).toBe(12.5);
+      expect(luettu?.vapaa).toEqual({ x: [1, 2] });
+
+      const paivitetty = await s.saveTuote({ ...a, nimike: 'Zeta', aNetto: 99.99 });
+      expect(paivitetty.id).toBe(a.id);
+      const toinen = await s.getTuotteet();
+      expect(toinen.map((t) => t.nimike)).toEqual(['Aakkonen', 'Zeta']);
+      expect(toinen.find((t) => t.id === a.id)?.aNetto).toBe(99.99);
+
+      await s.deleteTuote(a.id);
+      expect((await s.getTuotteet()).map((t) => t.id)).toEqual([b.id]);
+    });
+
+    it('tuote: tallennus annetulla id:llä siirtää sarjaa', async () => {
+      const s = await fresh();
+      const kiinteä = await s.saveTuote({
+        id: 50,
+        nimike: 'Kiinteä',
+        aNetto: 5,
+        alvKoodi: 0,
+        alvProsentti: 0,
+      });
+      expect(kiinteä.id).toBe(50);
+      const uusi = await s.saveTuote({ nimike: 'Uusi', aNetto: 6, alvKoodi: 0, alvProsentti: 0 });
+      expect(uusi.id).toBeGreaterThan(50);
+      const lista = await s.getTuotteet();
+      expect(lista).toHaveLength(2);
+      expect(lista.find((t) => t.id === 50)).toMatchObject({ nimike: 'Kiinteä', aNetto: 5 });
+    });
+
+    it('tuote: listaus palauttaa erilliset kopiot', async () => {
+      const s = await fresh();
+      const t = await s.saveTuote({
+        nimike: 'Alkuperäinen',
+        aNetto: 1,
+        alvKoodi: 0,
+        alvProsentti: 0,
+      });
+      const ensin = await s.getTuotteet();
+      const loydetty = ensin.find((x) => x.id === t.id);
+      if (loydetty) loydetty.nimike = 'MUTATED';
+      t.nimike = 'MUTATED';
+      const toiseksi = await s.getTuotteet();
+      expect(toiseksi.find((x) => x.id === t.id)?.nimike).toBe('Alkuperäinen');
+    });
+
+    it('vakioviite: upsert viitteellä ja poisto', async () => {
+      const s = await fresh();
+      await s.saveVakioviite({ viite: '100', tili: 3000, otsikko: 'Jäsenmaksu' });
+      await s.saveVakioviite({ viite: '9', tili: 3100, kohdennus: 2, otsikko: 'Lahjoitus' });
+      expect((await s.getVakioviitteet()).map((v) => v.viite)).toEqual(['9', '100']);
+
+      const paivitetty = await s.saveVakioviite({
+        viite: '100',
+        tili: 3010,
+        otsikko: 'Jäsenmaksu 2',
+        lisatieto: 'x',
+      });
+      expect(paivitetty).toMatchObject({ viite: '100', tili: 3010, lisatieto: 'x' });
+      const lista = await s.getVakioviitteet();
+      expect(lista).toHaveLength(2);
+      expect(lista.find((v) => v.viite === '100')).toEqual(paivitetty);
+      expect(lista.find((v) => v.viite === '9')?.kohdennus).toBe(2);
+
+      const kopio = lista.find((v) => v.viite === '9');
+      if (kopio) kopio.otsikko = 'MUTATED';
+      expect((await s.getVakioviitteet()).find((v) => v.viite === '9')?.otsikko).toBe('Lahjoitus');
+
+      await s.deleteVakioviite('100');
+      expect((await s.getVakioviitteet()).map((v) => v.viite)).toEqual(['9']);
+    });
+
+    it('toisto: CRUD, pohjan rivit säilyvät', async () => {
+      const s = await fresh();
+      const pohja: ToistoPohja = {
+        otsikko: 'Kuukausilasku',
+        maksutapa: 1,
+        sarja: '',
+        maksuaikaPaivia: 14,
+        jakso: { alkaa: '2026-06-01', loppuu: '2026-06-30' },
+        rivit: [
+          {
+            myyntiKpl: 2,
+            aNetto: 12.5,
+            alvKoodi: AlvKoodi.MYYNNIT_NETTO,
+            alvProsentti: 25.5,
+            selite: 'Palvelu',
+            tuote: 7,
+          },
+          { myyntiKpl: 1, aNetto: 30, alvKoodi: 0, alvProsentti: 0, selite: 'Matka', tili: 3010 },
+        ],
+      };
+      const myohainen = await s.saveToisto({
+        nimi: 'Myöhäinen',
+        kumppani: 3,
+        kuukausia: 1,
+        seuraava: '2026-09-01',
+        pohja,
+        aktiivinen: true,
+      });
+      const aikainen = await s.saveToisto({
+        kuukausia: 12,
+        seuraava: '2026-07-01',
+        loppuu: '2027-07-01',
+        lahdeTosite: 4,
+        pohja,
+        aktiivinen: false,
+      });
+      expect(aikainen.id).not.toBe(myohainen.id);
+      const lista = await s.getToistot();
+      expect(lista.map((t) => t.id)).toEqual([aikainen.id, myohainen.id]);
+      expect(lista[1]).toEqual(myohainen);
+      expect(lista[1]?.pohja.rivit).toEqual(pohja.rivit);
+      expect(lista[1]?.pohja.jakso).toEqual({ alkaa: '2026-06-01', loppuu: '2026-06-30' });
+      expect(lista[0]?.aktiivinen).toBe(false);
+      expect(lista[1]?.aktiivinen).toBe(true);
+      expect(lista[0]).toMatchObject({ loppuu: '2027-07-01', lahdeTosite: 4 });
+
+      const siirretty = await s.saveToisto({ ...myohainen, seuraava: '2026-06-15' });
+      expect(siirretty.id).toBe(myohainen.id);
+      expect((await s.getToistot()).map((t) => t.id)).toEqual([myohainen.id, aikainen.id]);
+
+      const kopio = (await s.getToistot())[0];
+      if (kopio) kopio.pohja.rivit.length = 0;
+      expect((await s.getToistot())[0]?.pohja.rivit).toHaveLength(2);
+
+      await s.deleteToisto(myohainen.id);
+      expect((await s.getToistot()).map((t) => t.id)).toEqual([aikainen.id]);
     });
   });
 }

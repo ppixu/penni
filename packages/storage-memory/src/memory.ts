@@ -9,17 +9,22 @@ import type {
   Tilikausi,
   TositeFilter,
 } from '@penni/engine';
-import { ResourceError, lataaKartta, tasoTyypista } from '@penni/engine';
+import { ResourceError, lataaKartta, tasoTyypista, vertaaVakioviitteita } from '@penni/engine';
 import type {
   BudjettiRivi,
   Kohdennus,
   Kumppani,
   Liite,
   LiiteMeta,
+  Toisto,
   TositeVienti,
+  Tuote,
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiToisto,
+  UusiTuote,
+  Vakioviite,
 } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 
@@ -69,6 +74,12 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
 
   const kumppanit = new Map<number, Kumppani>();
   let nextKumppaniId = 1;
+
+  const tuotteet = new Map<number, Tuote>();
+  let nextTuoteId = 1;
+  const vakioviitteet = new Map<string, Vakioviite>();
+  const toistot = new Map<number, Toisto>();
+  let nextToistoId = 1;
 
   const liitteet = new Map<number, Liite>();
   let nextLiiteId = 1;
@@ -339,6 +350,55 @@ export function createMemoryStorage(seed: MemorySeed = {}): Storage {
           .filter((r) => r.sentit !== 0)
           .map(({ kohdennus, tili, sentit }) => ({ kohdennus, tili, sentit })),
       );
+    },
+
+    // --- tuotteet ---
+    async getTuotteet() {
+      return [...tuotteet.values()]
+        .sort((a, b) => (a.nimike < b.nimike ? -1 : a.nimike > b.nimike ? 1 : a.id - b.id))
+        .map((t) => clone(t));
+    },
+    async saveTuote(t: UusiTuote) {
+      const id = t.id ?? nextTuoteId;
+      nextTuoteId = Math.max(nextTuoteId, id + 1);
+      const { id: _omit, ...rest } = t;
+      const stored: Tuote = { ...clone(rest), id };
+      tuotteet.set(id, stored);
+      return clone(stored);
+    },
+    async deleteTuote(id: number) {
+      tuotteet.delete(id);
+    },
+
+    // --- vakioviitteet ---
+    async getVakioviitteet() {
+      return [...vakioviitteet.values()].sort(vertaaVakioviitteita).map((v) => clone(v));
+    },
+    async saveVakioviite(v: Vakioviite) {
+      const stored = clone(v);
+      vakioviitteet.set(stored.viite, stored);
+      return clone(stored);
+    },
+    async deleteVakioviite(viite: string) {
+      vakioviitteet.delete(viite);
+    },
+
+    // --- toistot ---
+    async getToistot() {
+      return [...toistot.values()]
+        .sort((a, b) => (a.seuraava < b.seuraava ? -1 : a.seuraava > b.seuraava ? 1 : a.id - b.id))
+        .map((t) => clone(t));
+    },
+    async saveToisto(t: UusiToisto) {
+      const id = t.id ?? nextToistoId;
+      nextToistoId = Math.max(nextToistoId, id + 1);
+      const { id: _omit, ...rest } = t;
+      const stored: Toisto = { ...clone(rest), id };
+      toistot.set(id, stored);
+      return clone(stored);
+    },
+    async deleteToisto(id: number) {
+      toistot.delete(id);
     },
 
     // --- liitteet ---

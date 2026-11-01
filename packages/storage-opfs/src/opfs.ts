@@ -16,12 +16,17 @@ import type {
   Tili,
   TiliData,
   Tilikausi,
+  Toisto,
   Tosite,
   TositeFilter,
   TositeVienti,
+  Tuote,
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiToisto,
+  UusiTuote,
+  Vakioviite,
 } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import type { SqliteCoreSeed } from '@penni/storage-sqlite-core';
@@ -113,6 +118,15 @@ export async function createOpfsStorage(
     getBudjetti: (tilikausi: IsoDate) => kutsu<BudjettiRivi[]>('getBudjetti', tilikausi),
     putBudjetti: (tilikausi: IsoDate, rivit: BudjettiRivi[]) =>
       kutsu<void>('putBudjetti', tilikausi, rivit),
+    getTuotteet: () => kutsu<Tuote[]>('getTuotteet'),
+    saveTuote: (tuote: UusiTuote) => kutsu<Tuote>('saveTuote', tuote),
+    deleteTuote: (id: number) => kutsu<void>('deleteTuote', id),
+    getVakioviitteet: () => kutsu<Vakioviite[]>('getVakioviitteet'),
+    saveVakioviite: (viite: Vakioviite) => kutsu<Vakioviite>('saveVakioviite', viite),
+    deleteVakioviite: (viite: string) => kutsu<void>('deleteVakioviite', viite),
+    getToistot: () => kutsu<Toisto[]>('getToistot'),
+    saveToisto: (toisto: UusiToisto) => kutsu<Toisto>('saveToisto', toisto),
+    deleteToisto: (id: number) => kutsu<void>('deleteToisto', id),
     laskeLiitteet: async () => {
       const parit = await kutsu<[number, number][]>('laskeLiitteet');
       return new Map<number, number>(parit);
