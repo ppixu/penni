@@ -38,12 +38,15 @@ function vertailtavaTyyppi(tyyppi: number | undefined): number {
  * Vientien vertailuavain: tili, summat, alv, vientityyppi, päivä, selite, kohdennus ja
  * merkkaukset. Päivä, selite ja kohdennukset mukana, koska ruudukko leimaa tositteen päivän
  * kaikille viennille ja antaa alv-vienneille perusrivin selitteen ja kohdennukset (Kitsas jättää
- * ne vain perusviennille: sellainen tosite ei palaudu muuttumattomana). Puuttuva ja tyhjä
- * selite, puuttuva ja 0-kohdennus sekä puuttuvat ja tyhjät merkkaukset ovat samat.
+ * ne vain perusviennille). Puuttuva ja tyhjä selite, puuttuva ja 0-kohdennus sekä puuttuvat ja
+ * tyhjät merkkaukset ovat samat. `alvLoysa`: alv-vientien (koodi >= 100) kohdennus ja
+ * merkkaukset jätetään avaimesta pois; ks. alvVientienKohdennusSallittu.
  */
-function avain(v: TositeVienti): string {
-  const merkkaukset = normalisoiMerkkaukset(v.merkkaukset)?.join(',') ?? '';
-  return `${v.tili}|${v.debet}|${v.kredit}|${v.alvKoodi}|${v.alvProsentti}|${vertailtavaTyyppi(v.tyyppi)}|${v.pvm}|${v.selite ?? ''}|${v.kohdennus ?? 0}|${merkkaukset}`;
+function avain(v: TositeVienti, alvLoysa = false): string {
+  const alvVienti = alvLoysa && v.alvKoodi >= AlvKoodi.ALVKIRJAUS;
+  const merkkaukset = alvVienti ? '' : (normalisoiMerkkaukset(v.merkkaukset)?.join(',') ?? '');
+  const kohdennus = alvVienti ? 0 : (v.kohdennus ?? 0);
+  return `${v.tili}|${v.debet}|${v.kredit}|${v.alvKoodi}|${v.alvProsentti}|${vertailtavaTyyppi(v.tyyppi)}|${v.pvm}|${v.selite ?? ''}|${kohdennus}|${merkkaukset}`;
 }
 
 /**
@@ -76,13 +79,30 @@ function sailymatonKentta(v: TositeVienti): boolean {
   );
 }
 
+/**
+ * Tallennetut alv-viennit (koodi >= 100), joilla ei ole omaa kohdennusta eikä merkkauksia ja
+ * jotka kirjautuvat tasetilille (tili < 3): Kitsas-tuonnin tapa jättää kohdennus perusviennille.
+ * Tallennus lisäisi kohdennuksen niille, mutta tasetilit eivät näy kohdennusraporteilla
+ * eivätkä budjeteissa (vain tilit >= 3), joten mikään raportin luku ei muutu. Tulosvientitilille
+ * osuva alv-vienti (esim. vähennyskelvoton vero kulutilillä) ei kelpaa: sen tulos muuttuisi.
+ */
+function alvVientienKohdennusSallittu(viennit: readonly TositeVienti[]): boolean {
+  return viennit
+    .filter((v) => v.alvKoodi >= AlvKoodi.ALVKIRJAUS)
+    .every(
+      (v) =>
+        (v.kohdennus ?? 0) === 0 && !normalisoiMerkkaukset(v.merkkaukset) && String(v.tili) < '3',
+    );
+}
+
 function samatViennit(
   a: readonly TositeVienti[],
   b: readonly TositeVienti[],
   tiukka: boolean,
+  alvLoysa = false,
 ): boolean {
   if (a.length !== b.length) return false;
-  const avaimella = tiukka ? avain : loysaAvain;
+  const avaimella = tiukka ? (v: TositeVienti) => avain(v, alvLoysa) : loysaAvain;
   const x = a.map(avaimella).sort();
   const y = b.map(avaimella).sort();
   return x.every((k, i) => k === y[i]);
@@ -156,6 +176,10 @@ function riveiksi(viennit: readonly TositeVienti[], brutto: boolean): VientiRivi
  * kirjauksia. Null myös, jos jollakin viennillä on kenttä, jota ruudukko ei säilytä (erä,
  * jaksotus) — esim. Kitsas-tuonnin tiedot katoaisivat tallennettaessa. Viennitön
  * tosite (esim. pelkkä tiliote liitteenä) palautuu tyhjäksi ruudukoksi (`rows: []`).
+ * Poikkeus: Kitsas jättää kohdennuksen ja merkkaukset vain perusviennille, ja editori kopioi ne
+ * alv-vienneille. Jos tallennetuilla alv-vienneillä ei ole kohdennusta eikä merkkauksia ja ne
+ * kirjautuvat tasetilille (tili < 3), vertailu ohittaa alv-vientien kohdennukset (ks.
+ * alvVientienKohdennusSallittu); muuten tällainen tosite jää vain luku -näkymään.
  * Kenttävaatimuksen voi löysätä `optiot.tiukka = false`:lla, kun tositetta ei ole tallennettu
  * (ks. TositeEditorilleOptiot).
  */
@@ -175,7 +199,15 @@ export function tositeEditorille(
     } catch {
       continue;
     }
-    if (!samatViennit(johdetut, tosite.viennit, tiukka)) continue;
+    if (
+      !samatViennit(johdetut, tosite.viennit, tiukka) &&
+      !(
+        tiukka &&
+        alvVientienKohdennusSallittu(tosite.viennit) &&
+        samatViennit(johdetut, tosite.viennit, tiukka, true)
+      )
+    )
+      continue;
     return {
       paiva: tosite.pvm,
       tyyppi: tosite.tyyppi,
