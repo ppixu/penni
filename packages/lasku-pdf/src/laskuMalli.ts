@@ -40,7 +40,7 @@ export interface Maksuosa {
 }
 export interface LaskuMalli {
   laji: LaskuLaji;
-  /** 'Lasku' | 'Kuitti' | 'Hyvityslasku' */
+  /** 'Lasku' | 'Ennakkolasku' | 'Kuitti' | 'Hyvityslasku' | 'Maksumuistutus' */
   otsikko: string;
   /** null → tulostuu '—', PDF estetty. */
   numero: string | null;
@@ -159,6 +159,12 @@ function muistutusRivit(m: Muistutus): MalliRivi[] {
 
 const muistutusSumma = (m: Muistutus): Cents => (m.aiempiSaldo + m.maksu + m.korko) as Cents;
 
+/** Lasku ja ennakkolasku tulostuvat laskuna (maksuosa); käteis- ja korttimyynti kuittina. */
+function laskunMaksutapa(t: StoredTosite): boolean {
+  const maksutapa = t.maksutapa ?? Maksutapa.LASKU;
+  return maksutapa === Maksutapa.LASKU || maksutapa === Maksutapa.ENNAKKOLASKU;
+}
+
 /** Laskurivi näyttömuotoon. */
 function malliRivi(r: TositeRivi): MalliRivi {
   return {
@@ -205,9 +211,9 @@ export function laskuMalli(p: {
       ? 'hyvityslasku'
       : tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS
         ? 'maksumuistutus'
-        : (tosite.maksutapa ?? Maksutapa.LASKU) !== Maksutapa.LASKU
-          ? 'kuitti'
-          : 'lasku';
+        : laskunMaksutapa(tosite)
+          ? 'lasku'
+          : 'kuitti';
 
   // Hyvityslaskun rivit ovat alkuperäisen rivit määrä käännettynä → summat tulostuvat negatiivisina.
   // Maksumuistutuksella ei ole tallennettuja rivejä: rivit johdetaan `muistutus`-objektista.
@@ -349,7 +355,11 @@ export function laskuMalli(p: {
   else if ((laji === 'lasku' || laji === 'maksumuistutus') && iban === '')
     pdfEste = 'Lisää IBAN asetuksissa';
 
-  const otsikko = OTSIKOT[laji];
+  // Ennakkolasku on laji 'lasku' (inforivit ja maksuosa kuten laskulla), vain otsikko eroaa.
+  const otsikko =
+    laji === 'lasku' && tosite.maksutapa === Maksutapa.ENNAKKOLASKU
+      ? 'Ennakkolasku'
+      : OTSIKOT[laji];
   return {
     laji,
     otsikko,

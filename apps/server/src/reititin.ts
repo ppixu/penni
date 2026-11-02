@@ -28,6 +28,7 @@ import {
   encodeAlvErittely,
   encodeAlvIlmoitus,
   encodeAlvLaskelma,
+  encodeAvoinEnnakko,
   encodeBudjettiRivi,
   encodeBudjettivertailuRivi,
   encodeErantyneetToistot,
@@ -80,6 +81,7 @@ import {
   haeAlvIlmoitus,
   haeAlvLaskelma,
   haeAsetukset,
+  haeAvoimetEnnakot,
   haeBudjetti,
   haeEuMyyntiYhteenveto,
   haeInit,
@@ -271,6 +273,11 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
       body: (await luoMaksumuistutukset(storage, decodeMaksumuistutusSyote(body), env())).map(
         encodeTosite,
       ),
+    }),
+
+    haeAvoimetEnnakot: async ({ query }: { query: { kumppani: string } }) => ({
+      status: 200 as const,
+      body: (await haeAvoimetEnnakot(storage, Number(query.kumppani))).map(encodeAvoinEnnakko),
     }),
 
     listaaTulot: async ({ query }: { query: Record<string, string | undefined> }) => ({

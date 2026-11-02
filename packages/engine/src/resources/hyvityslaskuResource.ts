@@ -1,5 +1,5 @@
 import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
-import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
+import { Maksutapa, TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { IsoDate, TositeVienti } from '../vouchers/types.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
 import { tallennaTosite } from './tositeResource.js';
@@ -24,6 +24,9 @@ export async function tallennaHyvityslasku(
   const alkup = await storage.getTosite(syote.alkuperainenTosite);
   if (!alkup)
     throw new ResourceError('EITOSITETTA', `Tositetta ${syote.alkuperainenTosite} ei ole`);
+  // Ennakkolaskua ei hyvitetä (laskulistawidget.cpp:192-196): ennakko hyvitetään loppulaskulla.
+  if (alkup.tyyppi === TositeTyyppi.MYYNTILASKU && alkup.maksutapa === Maksutapa.ENNAKKOLASKU)
+    throw new ResourceError('ENNAKKOLASKU', 'Ennakkolaskusta ei voi tehdä hyvityslaskua');
   if (!alkup.viennit.some((v) => v.era != null))
     throw new ResourceError('EIHYVITETTAVAA', 'Hyvitettävällä tositteella ei ole erää');
 

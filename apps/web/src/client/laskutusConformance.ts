@@ -403,5 +403,54 @@ export function runLaskutusClientConformance(name: string, makeClient: MakeClien
         });
       });
     });
+
+    describe('ennakkolaskut', () => {
+      it('avoin ennakko listautuu ja poistuu loppulaskun vähennyksellä', async () => {
+        const c = await fresh();
+        await c.paivitaAsetukset({
+          LaskuEnnakkosaatavat: '1715',
+          LaskuEnnakkotili: '2861',
+          LaskuEnnakkoALV: '29392',
+        });
+        await c.tallennaTili(1715, { numero: 1715, tyyppi: 'AO', nimi: { fi: 'Ennakkosaatavat' } });
+        await c.tallennaTili(2861, { numero: 2861, tyyppi: 'B', nimi: { fi: 'Saadut ennakot' } });
+        await c.tallennaTili(29392, { numero: 29392, tyyppi: 'B', nimi: { fi: 'Ennakon alv' } });
+        const asiakas = await c.tallennaKumppani({ nimi: 'Ennakkoasiakas Oy' });
+        await expect(
+          c.tallennaMyyntilasku({ pvm: '2026-06-01', maksutapa: 2, rivit }),
+        ).rejects.toMatchObject({ code: 'EIKUMPPANIA' });
+        const ennakko = await c.tallennaMyyntilasku({
+          pvm: '2026-06-01',
+          kumppani: asiakas.id,
+          maksutapa: 2,
+          rivit,
+        });
+        expect(await c.haeAvoimetEnnakot(asiakas.id)).toEqual([
+          {
+            tosite: ennakko.id,
+            numero: ennakko.numero,
+            alvProsentti: 25.5,
+            netto: 10_000 as Cents,
+            avoin: 10_000 as Cents,
+          },
+        ]);
+        await c.tallennaMyyntilasku({
+          pvm: '2026-06-15',
+          kumppani: asiakas.id,
+          rivit: [
+            { myyntiKpl: 1, aNetto: 300, alvKoodi: 11, alvProsentti: 25.5 },
+            {
+              myyntiKpl: 1,
+              aNetto: -100,
+              alvKoodi: 11,
+              alvProsentti: 25.5,
+              tili: 2861,
+              ennakkoTosite: ennakko.id,
+            },
+          ],
+        });
+        expect(await c.haeAvoimetEnnakot(asiakas.id)).toEqual([]);
+      });
+    });
   });
 }

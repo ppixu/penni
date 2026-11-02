@@ -1,14 +1,22 @@
 import { type Cents, roundHalfAway } from '@penni/euro';
 import type { Tili } from '../accounts/tili.js';
+import { AlvKoodi, TILITYS, alvKoodilla } from '../alv/koodit.js';
 import { VientiTyyppi } from '../vouchers/enums.js';
 import type { IsoDate, TositeVienti } from '../vouchers/types.js';
 import { ResourceError } from './storage.js';
 
+/** Ennakkolaskun lykätty alv: ENNAKKOLASKU_MYYNTI + MAKSUPERUSTEINEN_KOHDENTAMATON = 451. */
+export const ENNAKKO_ALV_LYKATTY = alvKoodilla(
+  AlvKoodi.ENNAKKOLASKU_MYYNTI,
+  AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON,
+);
+
 /**
  * Rakenna maksuperusteisen alv:n tunnistuspari yhdelle lykätylle viennille (koodi 418/428):
  * kohdentamattoman tilin purku (säilyttää lykätyn koodin) + vastakirjaus oikealle alv-tilille
- * (118/228). Pyöristys kumulatiivista maksettua osuutta vasten (maksettuEnnen..maksettuJalkeen)
- * -> ei kertymävirhettä. Palauttaa [] jos tunnistettava osuus on 0. linkTo -> maksuperusteinenTosite
+ * (118/228). Ennakkolaskun lykätty alv (451): 29392:n purku koodilla 901 TILITYS + alv-velka
+ * koodilla 151 (taydennysviennit.cpp:63-110). Pyöristys kumulatiivista maksettua osuutta
+ * vasten (maksettuEnnen..maksettuJalkeen) -> ei kertymävirhettä. Palauttaa [] jos tunnistettava osuus on 0. linkTo -> maksuperusteinenTosite
  * asetetaan vain oikean alv-tilin riville (vanhennuksen idempotenssiin).
  */
 export function tunnistaVeroVienti(
@@ -22,7 +30,8 @@ export function tunnistaVeroVienti(
   selite?: string,
   linkTo?: number,
 ): TositeVienti[] {
-  const myynti = l.alvKoodi === 418;
+  const ennakko = l.alvKoodi === ENNAKKO_ALV_LYKATTY;
+  const myynti = l.alvKoodi === 418 || ennakko;
   const V = myynti ? l.kredit : l.debet; // lykätyn veron määrä
   const ennen = roundHalfAway((V * maksettuEnnen) / T);
   const jalkeen = roundHalfAway((V * maksettuJalkeen) / T);
@@ -36,7 +45,8 @@ export function tunnistaVeroVienti(
     debet: myynti ? osuus : nollaC,
     kredit: myynti ? nollaC : osuus,
     pvm,
-    alvKoodi: l.alvKoodi, // 418 / 428 (jää kausisummauksen ulkopuolelle)
+    // 418 / 428 säilyvät, ennakon purku on TILITYS (901); kaikki jäävät kausisummauksen ulkopuolelle.
+    alvKoodi: ennakko ? TILITYS : l.alvKoodi,
     alvProsentti: l.alvProsentti,
     tyyppi: (myynti ? VientiTyyppi.MYYNTI : VientiTyyppi.OSTO) + VientiTyyppi.ALVKIRJAUS,
   };
@@ -45,7 +55,12 @@ export function tunnistaVeroVienti(
     debet: myynti ? nollaC : osuus,
     kredit: myynti ? osuus : nollaC,
     pvm,
-    alvKoodi: myynti ? 118 : 228, // tunnistettu vero -> kausisummaus laskee tähän
+    // tunnistettu vero -> kausisummaus laskee tähän
+    alvKoodi: ennakko
+      ? alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.ALVKIRJAUS)
+      : myynti
+        ? 118
+        : 228,
     alvProsentti: l.alvProsentti,
     tyyppi: (myynti ? VientiTyyppi.MYYNTI : VientiTyyppi.OSTO) + VientiTyyppi.ALVKIRJAUS,
   };

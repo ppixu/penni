@@ -15,7 +15,7 @@ import {
 } from '../vouchers/enums.js';
 import type { IsoDate, Tosite, TositeRivi, TositeVienti } from '../vouchers/types.js';
 import { onkoMaksuperusteinenAlv } from './context.js';
-import { tunnistaVeroVienti } from './maksuperusteinenTunnistus.js';
+import { ENNAKKO_ALV_LYKATTY, tunnistaVeroVienti } from './maksuperusteinenTunnistus.js';
 import {
   type Asetukset,
   type ResourceEnv,
@@ -109,6 +109,11 @@ export function muistutustenMaarat(tositteet: readonly StoredTosite[]): Map<numb
   return maarat;
 }
 
+/** Avaako maksutapa saatavaerän: lasku ja ennakkolasku kyllä, käteis- ja korttimyynti ei. */
+function avaaEran(maksutapa: number): boolean {
+  return maksutapa === Maksutapa.LASKU || maksutapa === Maksutapa.ENNAKKOLASKU;
+}
+
 /** Luonnoksen tilat: 50 (tuotu Kitsas-luonnos) .. 99 (VALMISLASKU 80). */
 function onLuonnosTila(tila: number): boolean {
   return tila >= TositeTila.LUONNOS && tila < TositeTila.KIRJANPIDOSSA;
@@ -133,6 +138,7 @@ async function ratkaiseLaskunTilit(storage: Storage, syote: MyyntilaskuSyote) {
   validoiJakso(syote.jakso);
 
   const maksutapa = syote.maksutapa ?? Maksutapa.LASKU;
+  const ennakko = maksutapa === Maksutapa.ENNAKKOLASKU;
   const asetukset = await storage.getAsetukset();
 
   const oletusMyynti = tiliAsetuksesta(asetukset, 'OletusMyyntitili');
@@ -140,28 +146,45 @@ async function ratkaiseLaskunTilit(storage: Storage, syote: MyyntilaskuSyote) {
   const saatava = tiliAsetuksesta(asetukset, 'LaskuSaatavaTili');
   const kateinen = tiliAsetuksesta(asetukset, 'LaskuKateistili');
   const kortti = tiliAsetuksesta(asetukset, 'LaskuKorttitili');
+  const ennakkosaatavat = tiliAsetuksesta(asetukset, 'LaskuEnnakkosaatavat');
+  const ennakkotili = tiliAsetuksesta(asetukset, 'LaskuEnnakkotili');
+  const ennakkoAlv = tiliAsetuksesta(asetukset, 'LaskuEnnakkoALV');
 
-  // Every row needs a resolvable revenue account.
-  for (const r of syote.rivit) {
-    if ((r.tili ?? oletusMyynti) === undefined)
+  if (ennakko) {
+    // Ennakkolasku kirjataan aina ennakkotileille (rivin oma tili ohitetaan, spec §6.1).
+    if (ennakkosaatavat === undefined || ennakkotili === undefined || ennakkoAlv === undefined)
       throw new ResourceError(
         'EILASKUTILIA',
-        'Riviltä puuttuu myyntitili (aseta OletusMyyntitili)',
+        'Ennakkolaskun tili puuttuu (LaskuEnnakkosaatavat / LaskuEnnakkotili / LaskuEnnakkoALV)',
       );
+  } else {
+    // Every row needs a resolvable revenue account; an advance deduction row its own (2861).
+    for (const r of syote.rivit) {
+      const tili = r.ennakkoTosite != null ? (r.tili ?? ennakkotili) : (r.tili ?? oletusMyynti);
+      if (tili === undefined)
+        throw new ResourceError(
+          'EILASKUTILIA',
+          r.ennakkoTosite != null
+            ? 'Ennakon hyvitysriviltä puuttuu tili (aseta LaskuEnnakkotili)'
+            : 'Riviltä puuttuu myyntitili (aseta OletusMyyntitili)',
+        );
+    }
+    // VAT rows need the payable account.
+    const onAlvia = syote.rivit.some(
+      (r) => r.alvKoodi === AlvKoodi.MYYNNIT_NETTO && r.alvProsentti > 0,
+    );
+    if (onAlvia && alvVelka === undefined)
+      throw new ResourceError('EILASKUTILIA', 'AlvVelkaTili puuttuu');
   }
-  // VAT rows need the payable account.
-  const onAlvia = syote.rivit.some(
-    (r) => r.alvKoodi === AlvKoodi.MYYNNIT_NETTO && r.alvProsentti > 0,
-  );
-  if (onAlvia && alvVelka === undefined)
-    throw new ResourceError('EILASKUTILIA', 'AlvVelkaTili puuttuu');
   // Counter account per payment method.
   const vastatili =
     maksutapa === Maksutapa.KATEINEN
       ? kateinen
       : maksutapa === Maksutapa.KORTTIMAKSU
         ? kortti
-        : saatava;
+        : ennakko
+          ? ennakkosaatavat
+          : saatava;
   if (vastatili === undefined)
     throw new ResourceError(
       'EILASKUTILIA',
@@ -169,6 +192,7 @@ async function ratkaiseLaskunTilit(storage: Storage, syote: MyyntilaskuSyote) {
     );
 
   // Maksuperusteinen alv koskee vain LASKU-myyntiä (käteis-/korttimyynti pysyy suoriteperusteisena).
+  // Ennakkolasku ei koskaan käytä 418-lykkäystä: sen alv lykätään aina koodilla 451 (spec §6.1).
   const maksuperusteinen =
     onkoMaksuperusteinenAlv(asetukset, syote.pvm) && maksutapa === Maksutapa.LASKU;
   let kohdentamatonAlvVelka = 0;
@@ -194,6 +218,9 @@ async function ratkaiseLaskunTilit(storage: Storage, syote: MyyntilaskuSyote) {
       oletusMyynti: oletusMyynti ?? 0,
       alvVelka: alvVelka ?? 0,
       kohdentamatonAlvVelka,
+      ennakkosaatavat: ennakkosaatavat ?? 0,
+      ennakkotili: ennakkotili ?? 0,
+      ennakkoAlv: ennakkoAlv ?? 0,
     },
   };
 }
@@ -261,6 +288,8 @@ export async function kirjaaMyyntilaskuYdin(
     syote,
   );
   if (id !== undefined) await haeMyyntilaskuluonnos(storage, id);
+  if (maksutapa === Maksutapa.ENNAKKOLASKU && syote.kumppani === undefined)
+    throw new ResourceError('EIKUMPPANIA', 'Ennakkolaskulla on oltava asiakas');
 
   // Invoice number + reference (mirrors tositeroute.cpp:235-265).
   const numero = lueSeuraavaLaskunumero(asetukset);
@@ -275,6 +304,16 @@ export async function kirjaaMyyntilaskuYdin(
     ...(syote.otsikko !== undefined ? { otsikko: syote.otsikko } : {}),
     ...(syote.jakso !== undefined ? { jakso: syote.jakso } : {}),
   });
+  // Loppulasku, jolla on ennakon vähennys: saatava = normaalit rivit − vähennys > 0 (spec §6.1).
+  if (
+    maksutapa !== Maksutapa.ENNAKKOLASKU &&
+    syote.rivit.some((r) => r.ennakkoTosite != null) &&
+    (viennit[0]?.debet ?? 0) <= 0
+  )
+    throw new ResourceError(
+      'EISUMMAA',
+      'Ennakon hyvitys on suurempi kuin lasku: laskun loppusumman on oltava positiivinen',
+    );
 
   const posted = await tallennaTosite(
     storage,
@@ -292,10 +331,10 @@ export async function kirjaaMyyntilaskuYdin(
   // mutta myöhempi erän patch ei voi jättää numeroa käyttöön uudelle laskulle.
   await kasvataLaskunumeroa(storage, numero);
 
-  // Lasku (LASKU): avaa erä myyntisaatavariville käyttäen tosite.id:tä globaalisti
-  // uniikkina eräavaimena (sama kaksivaiheinen tallennus kuin ostolaskussa).
-  // Käteis-/korttimyynti ei avaa erää.
-  if (maksutapa !== Maksutapa.LASKU) return posted;
+  // Lasku (LASKU) ja ennakkolasku (ENNAKKOLASKU): avaa erä (myynti- tai ennakko)saatavariville
+  // käyttäen tosite.id:tä globaalisti uniikkina eräavaimena (sama kaksivaiheinen tallennus kuin
+  // ostolaskussa). Käteis-/korttimyynti ei avaa erää.
+  if (!avaaEran(maksutapa)) return posted;
   const viennitEralla = posted.viennit.map((v) =>
     v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS && v.debet > 0
       ? { ...v, era: posted.id }
@@ -506,14 +545,20 @@ export async function tallennaSuoritus(
   // Vain jos laskulla on lykättyä alv:ta, tarkistetaan onko se jo vanhennettu (skannaus
   // vältetään suoriteperusteisilla/tavallisilla laskuilla).
   const omatLykatyt = alkuperainen.viennit.filter((v) => v.alvKoodi === 418 || v.alvKoodi === 428);
-  let lykatyt = omatLykatyt;
+  let maksuperusteiset = omatLykatyt;
   if (omatLykatyt.length > 0) {
     const kirjanpidossa = await storage.listTositteet({ bucket: 'kirjanpidossa' });
     const joVanhennettu = kirjanpidossa.some((tt) =>
       tt.viennit.some((v) => v.maksuperusteinenTosite === alkuperainen.id),
     );
-    if (joVanhennettu) lykatyt = [];
+    if (joVanhennettu) maksuperusteiset = [];
   }
+  // Ennakkolaskun alv (451) tunnistetaan maksettaessa aina, maksuperusteisuudesta riippumatta
+  // (spec §6.1, taydennysviennit.cpp:63-110); ennakon alv:ta ei vanhenneta.
+  const lykatyt = [
+    ...maksuperusteiset,
+    ...alkuperainen.viennit.filter((v) => v.alvKoodi === ENNAKKO_ALV_LYKATTY),
+  ];
   const alkuperainenEra = eranVienti(alkuperainen.viennit);
   if (lykatyt.length > 0 && alkuperainenEra) {
     // alkuperäinen bruttosumma (laskun erävienti, ei muistutuksen veloitus)

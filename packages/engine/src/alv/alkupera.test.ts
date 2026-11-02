@@ -23,6 +23,10 @@ describe('alkuperaKoodista', () => {
     [27, 'muu'], // MAAHANTUONTI (kitsas.h:40)
     [AlvKoodi.MAAHANTUONTI_PALVELUT, 'muu'],
     [927, 'muu'], // MAAHANTUONTI_VERO (kitsas.h:50)
+    // Ennakkolasku on kotimaan myyntiä: 2861:n 51, tunnistettu vero 151 ja lykätty 451.
+    [AlvKoodi.ENNAKKOLASKU_MYYNTI, 'kotimaa'],
+    [alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.ALVKIRJAUS), 'kotimaa'],
+    [alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON), 'kotimaa'],
   ] as const)('%i → %s', (koodi, alkupera) => {
     expect(alkuperaKoodista(koodi)).toBe(alkupera);
   });

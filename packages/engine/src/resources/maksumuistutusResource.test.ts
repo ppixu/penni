@@ -24,7 +24,9 @@ const seed = () =>
   createMemoryStorage({
     tilit: [
       { numero: 1701, tyyppi: 'AS', nimi: { fi: 'Myyntisaamiset' } },
+      { numero: 1715, tyyppi: 'AO', nimi: { fi: 'Myyntisaamiset ennakkolaskuista' } },
       { numero: 1910, tyyppi: 'ARP', nimi: { fi: 'Pankki' } },
+      { numero: 2861, tyyppi: 'B', nimi: { fi: 'Saadut ennakot' } },
       { numero: 3000, tyyppi: 'CL', nimi: { fi: 'Myynti' } },
       { numero: 9170, tyyppi: 'C', nimi: { fi: 'Korkotuotot myyntisaamisista' } },
     ],
@@ -37,6 +39,9 @@ const seed = () =>
       LaskuMaksuaika: '14',
       LaskuMaksumuistutustili: '9170',
       LaskuViivastyskorkotili: '9170',
+      LaskuEnnakkosaatavat: '1715',
+      LaskuEnnakkotili: '2861',
+      LaskuEnnakkoALV: '29392',
     },
   });
 
@@ -133,9 +138,9 @@ describe('luoMaksumuistutukset', () => {
 
   it('ennakkolaskua voi muistuttaa', async () => {
     const s = seed();
-    // Ennakkolaskun kirjaus tulee myöhemmästä tehtävästä; tässä riittää kirjattu erällinen tosite.
-    const avaus = await lasku(s);
-    const l = await s.saveTosite({ ...avaus, maksutapa: Maksutapa.ENNAKKOLASKU }, env);
+    const k = await s.saveKumppani({ nimi: 'Asiakas Oy' });
+    const l = await lasku(s, { kumppani: k.id, maksutapa: Maksutapa.ENNAKKOLASKU });
+    expect(l.viennit.find((v) => v.era != null)).toMatchObject({ tili: 1715, era: l.id });
     const [m] = await luoMaksumuistutukset(
       s,
       { tositteet: [l.id], pvm: '2026-05-30', korko: false },

@@ -158,6 +158,17 @@ export const WireMyyntilaskuRiviSchema = z
   })
   .passthrough();
 
+/** Asiakkaan avoin ennakko (GET /ennakot); netto/avoin ovat Raha ("N.NN" | number). */
+export const WireAvoinEnnakkoSchema = z
+  .object({
+    tosite: z.number(),
+    numero: z.string().optional(),
+    alvProsentti: z.number(),
+    netto: Raha,
+    avoin: Raha,
+  })
+  .passthrough();
+
 /** One Tulot/Menot list row. netto/alv/summa/avoin are Raha ("N.NN" | number). */
 export const WireRahavirtaRiviSchema = z
   .object({

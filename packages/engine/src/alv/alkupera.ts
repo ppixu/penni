@@ -32,6 +32,7 @@ export function alkuperaKoodista(koodi: number): Alkupera | undefined {
     case AlvKoodi.MAKSUPERUSTEINEN_OSTO:
     case AlvKoodi.RAKENNUSPALVELU_MYYNTI:
     case AlvKoodi.RAKENNUSPALVELU_OSTO:
+    case AlvKoodi.ENNAKKOLASKU_MYYNTI: // ennakkolasku = kotimaan myynti (51/151/451)
       return 'kotimaa';
     case AlvKoodi.YHTEISOMYYNTI_TAVARAT:
     case AlvKoodi.YHTEISOMYYNTI_PALVELUT:

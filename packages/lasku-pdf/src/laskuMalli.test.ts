@@ -108,6 +108,9 @@ describe('laskuMalli', () => {
         oletusMyynti: 3000,
         alvVelka: 2939,
         kohdentamatonAlvVelka: 2941,
+        ennakkosaatavat: 1715,
+        ennakkotili: 2861,
+        ennakkoAlv: 29392,
       },
     });
     expect(viennit[0]?.debet).toBe(s.brutto);
@@ -257,6 +260,18 @@ describe('laskuMalli', () => {
     }
     expect(m.tiedostonimi).toBe('Hyvityslasku-6.pdf');
     expect(m.pdfEste).toBeNull();
+  });
+
+  it('ennakkolasku: otsikko Ennakkolasku, laskun inforivit ja maksuosa', () => {
+    const m = malli({ maksutapa: Maksutapa.ENNAKKOLASKU });
+    const tavallinen = malli();
+    expect(m.otsikko).toBe('Ennakkolasku');
+    expect(m.laji).toBe('lasku');
+    expect(m.maksu).not.toBeNull();
+    expect(m.maksu).toEqual(tavallinen.maksu);
+    expect(m.info).toEqual(tavallinen.info);
+    expect(m.pdfEste).toBeNull();
+    expect(m.tiedostonimi).toBe('Ennakkolasku-1.pdf');
   });
 
   it('kuitti: vain numero ja päivä, ei maksuosaa, PDF sallittu ilman IBANia', () => {

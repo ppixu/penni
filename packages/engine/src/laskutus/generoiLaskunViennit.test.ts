@@ -12,6 +12,9 @@ const TILIT = {
   oletusMyynti: 3000,
   alvVelka: 2939,
   kohdentamatonAlvVelka: 2949,
+  ennakkosaatavat: 1715,
+  ennakkotili: 2861,
+  ennakkoAlv: 29392,
 };
 const netto = (
   aNetto: number,
@@ -145,6 +148,9 @@ describe('generoiLaskunViennit maksuperusteinen', () => {
         oletusMyynti: 3000,
         alvVelka: 2939,
         kohdentamatonAlvVelka: 2949,
+        ennakkosaatavat: 1715,
+        ennakkotili: 2861,
+        ennakkoAlv: 29392,
       },
     });
     const revenue = viennit.find((v) => v.tili === 3000);
@@ -172,6 +178,9 @@ describe('generoiLaskunViennit maksuperusteinen', () => {
         oletusMyynti: 3000,
         alvVelka: 2939,
         kohdentamatonAlvVelka: 2949,
+        ennakkosaatavat: 1715,
+        ennakkotili: 2861,
+        ennakkoAlv: 29392,
       },
     });
     expect(viennit.find((v) => v.tili === 2939)?.alvKoodi).toBe(111);
@@ -194,6 +203,9 @@ describe('generoiLaskunViennit marginaaliverotus', () => {
         oletusMyynti: 3000,
         alvVelka: 2939,
         kohdentamatonAlvVelka: 2949,
+        ennakkosaatavat: 1715,
+        ennakkotili: 2861,
+        ennakkoAlv: 29392,
       },
     });
     const revenue = viennit.find((v) => v.tili === 3000);

@@ -53,6 +53,7 @@ export function siirraJaksoa(
  * Toiston pohja laskusta: otsikko, maksutapa, sarja, rivit, lisätiedot ja viivästyskorko sellaisinaan,
  * `maksuaikaPaivia = erapvm − laskupvm` (0 ilman eräpäivää) ja laskutusjakso siirrettynä kerran
  * `kuukausia` eteenpäin (spec §5.2), koska pohjan jakso on SEURAAVAN luonnoksen jakso.
+ * Ennakon vähennysrivit (`ennakkoTosite`) ovat kertaluonteisia eivätkä siirry pohjaan.
  */
 export function pohjaLaskusta(t: Tosite, kuukausia: number): ToistoPohja {
   const laskupvm = t.laskupvm ?? t.pvm;
@@ -60,7 +61,7 @@ export function pohjaLaskusta(t: Tosite, kuukausia: number): ToistoPohja {
     ...(t.otsikko !== undefined ? { otsikko: t.otsikko } : {}),
     maksutapa: t.maksutapa ?? Maksutapa.LASKU,
     ...(t.sarja !== '' ? { sarja: t.sarja } : {}),
-    rivit: t.rivit ?? [],
+    rivit: (t.rivit ?? []).filter((r) => r.ennakkoTosite == null),
     maksuaikaPaivia: t.erapvm !== undefined ? paivienEro(laskupvm, t.erapvm) : 0,
     ...(t.jakso !== undefined ? { jakso: siirraJaksoa(t.jakso, kuukausia) } : {}),
     ...(t.info !== undefined ? { info: t.info } : {}),

@@ -5,6 +5,7 @@ import {
   decodeAlvIlmoitus,
   decodeAlvLaskelma,
   decodeAsetukset,
+  decodeAvoinEnnakko,
   decodeBudjettiRivi,
   decodeBudjettivertailuRivi,
   decodeErantyneetToistot,
@@ -67,6 +68,7 @@ import {
   type AlvLaskelmaTulos,
   type AlvTilitysSyote,
   type Asetukset,
+  type AvoinEnnakko,
   type BudjettiRivi,
   type BudjettivertailuParams,
   type BudjettivertailuRivi,
@@ -310,6 +312,12 @@ export class HttpClient implements KpClient {
       return (r.body as Parameters<typeof decodeTosite>[0][]).map(
         (t) => decodeTosite(t) as StoredTosite,
       );
+    throw virhe(r.status, r.body);
+  }
+  async haeAvoimetEnnakot(kumppani: number): Promise<AvoinEnnakko[]> {
+    const r = await this.tsr.haeAvoimetEnnakot({ query: { kumppani: String(kumppani) } });
+    if (r.status === 200)
+      return (r.body as Parameters<typeof decodeAvoinEnnakko>[0][]).map(decodeAvoinEnnakko);
     throw virhe(r.status, r.body);
   }
   async tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {

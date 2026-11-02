@@ -120,6 +120,24 @@ describe('toisto: puhtaat apurit', () => {
     });
   });
 
+  it('pohjaLaskusta: ennakon vähennysrivit jäävät pois (kertaluonteisia)', () => {
+    const vahennys: TositeRivi = { ...rivi, aNetto: -50, tili: 2861, ennakkoTosite: 7 };
+    const p = pohjaLaskusta(
+      {
+        pvm: '2026-01-15',
+        tyyppi: TositeTyyppi.MYYNTILASKU,
+        tila: TositeTila.KIRJANPIDOSSA,
+        tunniste: 1,
+        sarja: '',
+        maksutapa: Maksutapa.LASKU,
+        rivit: [rivi, vahennys],
+        viennit: [],
+      },
+      1,
+    );
+    expect(p.rivit).toEqual([rivi]);
+  });
+
   it('paivitaRivienAlv: vain vanhentunut yleinen kanta myyntiriveillä vaihtuu', () => {
     const rivit: TositeRivi[] = [
       { ...rivi, alvProsentti: 24 },

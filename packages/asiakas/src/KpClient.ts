@@ -6,6 +6,7 @@ import type {
   AlvLaskelmaTulos,
   AlvTilitysSyote,
   Asetukset,
+  AvoinEnnakko,
   BudjettiRivi,
   BudjettivertailuParams,
   BudjettivertailuRivi,
@@ -105,6 +106,8 @@ export interface KpClient {
   kirjaaLaskuluonnos(id: number, muutokset?: Partial<MyyntilaskuSyote>): Promise<StoredTosite>;
   // maksumuistutukset: luo muistutusluonnokset (tyyppi 216) erääntyneistä laskuista
   luoMaksumuistutukset(syote: MaksumuistutusSyote): Promise<StoredTosite[]>;
+  /** Asiakkaan avoimet ennakot loppulaskun "Hyvitä ennakko" -valintaan (avoin > 0). */
+  haeAvoimetEnnakot(kumppani: number): Promise<AvoinEnnakko[]>;
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite>;
   listaaOstolaskut(suodatin: OstolaskuListQuery): Promise<OstolaskuRivi[]>;
   listaaTulot(suodatin: RahavirtaSuodatin): Promise<RahavirtaRivi[]>;

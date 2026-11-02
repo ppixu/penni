@@ -5,6 +5,7 @@ import {
   type AlvLaskelmaTulos,
   type AlvTilitysSyote,
   type Asetukset,
+  type AvoinEnnakko,
   type BudjettiRivi,
   type BudjettivertailuParams,
   type BudjettivertailuRivi,
@@ -76,6 +77,7 @@ import {
   haeAlvIlmoitus,
   haeAlvLaskelma,
   haeAsetukset,
+  haeAvoimetEnnakot,
   haeBudjetti,
   haeEuMyyntiYhteenveto,
   haeInit,
@@ -199,6 +201,9 @@ export class InProcessClient implements KpClient {
   }
   luoMaksumuistutukset(syote: MaksumuistutusSyote): Promise<StoredTosite[]> {
     return luoMaksumuistutukset(this.storage, syote, this.env());
+  }
+  haeAvoimetEnnakot(kumppani: number): Promise<AvoinEnnakko[]> {
+    return haeAvoimetEnnakot(this.storage, kumppani);
   }
   tallennaOstolasku(syote: OstolaskuSyote): Promise<StoredTosite> {
     return tallennaOstolasku(this.storage, syote, this.env());

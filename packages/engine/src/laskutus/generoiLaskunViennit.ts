@@ -13,6 +13,9 @@ export interface LaskuTilit {
   oletusMyynti: number; // default revenue account when rivi.tili unset (OletusMyyntitili)
   alvVelka: number; // VAT payable (AlvVelkaTili)
   kohdentamatonAlvVelka: number; // KOHDENTAMATONALVVELKA (maksuperusteinen deferral target)
+  ennakkosaatavat: number; // ennakkolaskun saatava (LaskuEnnakkosaatavat, 1715); 0 = ei asetettu
+  ennakkotili: number; // saadut ennakot (LaskuEnnakkotili, 2861); 0 = ei asetettu
+  ennakkoAlv: number; // ennakkolaskun lykätty alv (LaskuEnnakkoALV, 29392); 0 = ei asetettu
 }
 
 export interface LaskunViennitSyote {
@@ -44,25 +47,40 @@ interface VeroKertyma {
  * one receivable/cash debit, one revenue credit per (tili,kohdennus,code,rate,tags) bucket, and one
  * VAT credit per (MYYNNIT_NETTO,rate) bucket. Zero-rated codes emit no VAT leg (gross = net).
  * Single rounding boundary: VAT = roundHalfAway(Σnet × rate / 100) per rate bucket.
+ *
+ * Ennakkolasku (rivivientigeneroija.cpp:142-280): saatava `ennakkosaatavat`, rivien netto
+ * `ennakkotili`-kreditiksi (rivin oma tili ohitetaan, MYYNNIT_NETTO -> 51) ja alv
+ * `ennakkoAlv`-kreditiksi koodilla 451; laskutusjakso ei tule vienneille. Ennakon vähennysrivit
+ * (`ennakkoTosite`) muodostavat oman ryhmänsä, joka kirjataan positiivisena debetinä rivin
+ * tilille (2861) rivin koodilla ja kannalla; niiden netto pienentää kannan alv-ryhmää.
  */
 export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
   const { rivit, maksutapa, pvm, otsikko, tilit, maksuperusteinen, jakso } = s;
 
+  const ennakko = maksutapa === Maksutapa.ENNAKKOLASKU;
   const tiliKertymat = new Map<string, TiliKertyma>();
+  const vahennysKertymat = new Map<string, TiliKertyma>();
   const veroKertymat = new Map<string, VeroKertyma>();
 
   for (const r of rivit) {
     const netto = nettoYhteensaCents(r) as number;
     if (netto === 0) continue;
-    const tili = r.tili ?? tilit.oletusMyynti;
-    const kohdennus = r.kohdennus ?? 0;
-    const merkkaukset = normalisoiMerkkaukset(r.merkkaukset);
+    const vahennys = !ennakko && r.ennakkoTosite != null;
+    const tili = ennakko
+      ? tilit.ennakkotili
+      : vahennys
+        ? (r.tili ?? tilit.ennakkotili)
+        : (r.tili ?? tilit.oletusMyynti);
+    const kohdennus = vahennys ? 0 : (r.kohdennus ?? 0);
+    // Ennakon vähennysrivi ei kanna kohdennusta eikä merkkauksia.
+    const merkkaukset = vahennys ? undefined : normalisoiMerkkaukset(r.merkkaukset);
+    const kertymat = vahennys ? vahennysKertymat : tiliKertymat;
     // Merkkaukset ryhmittelyavaimeen (rivivientigeneroija.cpp:162-237); normalisoitu lista, joten järjestys ei erota.
     const tiliAvain = `${tili}/${kohdennus}/${r.alvKoodi}/${r.alvProsentti}/${(merkkaukset ?? []).join(',')}`;
-    const tk = tiliKertymat.get(tiliAvain);
+    const tk = kertymat.get(tiliAvain);
     if (tk) tk.netto += netto;
     else
-      tiliKertymat.set(tiliAvain, {
+      kertymat.set(tiliAvain, {
         tili,
         kohdennus,
         merkkaukset,
@@ -88,18 +106,37 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
       kredit: k.netto as Cents,
       pvm,
       alvKoodi:
-        maksuperusteinen && k.alvKoodi === AlvKoodi.MYYNNIT_NETTO
-          ? AlvKoodi.MAKSUPERUSTEINEN_MYYNTI
-          : k.alvKoodi,
+        k.alvKoodi !== AlvKoodi.MYYNNIT_NETTO
+          ? k.alvKoodi
+          : ennakko
+            ? AlvKoodi.ENNAKKOLASKU_MYYNTI
+            : maksuperusteinen
+              ? AlvKoodi.MAKSUPERUSTEINEN_MYYNTI
+              : k.alvKoodi,
       alvProsentti: k.alvProsentti,
       tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS,
     };
     if (k.kohdennus) v.kohdennus = k.kohdennus;
     if (k.merkkaukset) v.merkkaukset = [...k.merkkaukset];
-    if (jakso) {
+    if (jakso && !ennakko) {
       v.jaksoalkaa = jakso.alkaa;
       v.jaksoloppuu = jakso.loppuu;
     }
+    if (selite) v.selite = selite;
+    tuloViennit.push(v);
+  }
+  // Ennakon vähennys: positiivinen debet saaduille ennakoille, ei laskutusjaksoa.
+  for (const k of vahennysKertymat.values()) {
+    nettoYhteensa += k.netto;
+    const v: TositeVienti = {
+      tili: k.tili,
+      debet: -k.netto as Cents,
+      kredit: 0 as Cents,
+      pvm,
+      alvKoodi: k.alvKoodi,
+      alvProsentti: k.alvProsentti,
+      tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS,
+    };
     if (selite) v.selite = selite;
     tuloViennit.push(v);
   }
@@ -112,13 +149,19 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
     if (vero === 0) continue;
     veroYhteensa += vero;
     const v: TositeVienti = {
-      tili: maksuperusteinen ? tilit.kohdentamatonAlvVelka : tilit.alvVelka,
+      tili: ennakko
+        ? tilit.ennakkoAlv
+        : maksuperusteinen
+          ? tilit.kohdentamatonAlvVelka
+          : tilit.alvVelka,
       debet: 0 as Cents,
       kredit: vero as Cents,
       pvm,
-      alvKoodi: maksuperusteinen
-        ? alvKoodilla(AlvKoodi.MAKSUPERUSTEINEN_MYYNTI, AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON)
-        : alvKoodilla(AlvKoodi.MYYNNIT_NETTO, AlvKoodi.ALVKIRJAUS),
+      alvKoodi: ennakko
+        ? alvKoodilla(AlvKoodi.ENNAKKOLASKU_MYYNTI, AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON)
+        : maksuperusteinen
+          ? alvKoodilla(AlvKoodi.MAKSUPERUSTEINEN_MYYNTI, AlvKoodi.MAKSUPERUSTEINEN_KOHDENTAMATON)
+          : alvKoodilla(AlvKoodi.MYYNNIT_NETTO, AlvKoodi.ALVKIRJAUS),
       alvProsentti: b.alvProsentti,
       tyyppi: VientiTyyppi.MYYNTI + VientiTyyppi.ALVKIRJAUS,
     };
@@ -131,7 +174,9 @@ export function generoiLaskunViennit(s: LaskunViennitSyote): TositeVienti[] {
       ? tilit.kateinen
       : maksutapa === Maksutapa.KORTTIMAKSU
         ? tilit.kortti
-        : tilit.saatava;
+        : ennakko
+          ? tilit.ennakkosaatavat
+          : tilit.saatava;
   const vastavienti: TositeVienti = {
     tili: vastatili,
     debet: (nettoYhteensa + veroYhteensa) as Cents,

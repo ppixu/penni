@@ -1,8 +1,9 @@
 import { type Cents, Euro } from '@penni/euro';
 import { Luonne, type LuonneArvo, onko } from '../accounts/luonne.js';
 import { type Alkupera, tositteenAlkupera } from '../alv/alkupera.js';
-import { TositeTyyppi, onKirjanpidossa } from '../vouchers/enums.js';
-import type { IsoDate } from '../vouchers/types.js';
+import { Maksutapa, TositeTyyppi, VientiTyyppi, onKirjanpidossa } from '../vouchers/enums.js';
+import type { IsoDate, TositeVienti } from '../vouchers/types.js';
+import { ENNAKKO_ALV_LYKATTY } from './maksuperusteinenTunnistus.js';
 import { eranVienti, muistutuksenSumma, muistutustenMaarat } from './myyntilaskuResource.js';
 import { normalisoiSaldo } from './saldot.js';
 import type { Storage, StoredTosite, TositeBucket } from './storage.js';
@@ -85,6 +86,22 @@ function summaaLuonteella(
   return summa;
 }
 
+/** Kirjattu ennakkolasku: myyntilasku maksutavalla ENNAKKOLASKU. */
+function onKirjattuEnnakko(t: StoredTosite): boolean {
+  return (
+    t.tyyppi === TositeTyyppi.MYYNTILASKU &&
+    t.maksutapa === Maksutapa.ENNAKKOLASKU &&
+    onKirjanpidossa(t.tila)
+  );
+}
+
+/** Kredit − debet vienneistä, jotka täyttävät ehdon. */
+function summaaKredit(t: StoredTosite, ehto: (v: TositeVienti) => boolean): Cents {
+  let summa = Euro.fromCents(0);
+  for (const v of t.viennit) if (ehto(v)) summa = Euro.add(summa, Euro.sub(v.kredit, v.debet));
+  return summa;
+}
+
 async function listaa(
   storage: Storage,
   suodatin: RahavirtaSuodatin,
@@ -125,10 +142,15 @@ async function listaa(
     const onMuistutus = t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS;
     if (onMuistutus && !onKirjanpidossa(t.tila)) continue;
     const muistutusTuloissa = onMuistutus && nettoMask === Luonne.TULO;
+    // Ennakkolasku kuuluu Tuloihin tyypin ja maksutavan perusteella: sen viennit osuvat vain
+    // tasetileille (1715 / 2861 / 29392). Netto = rivien kirjausviennit (2861, tyyppi 201),
+    // alv = lykätty ennakon alv (29392, koodi 451).
+    const ennakkoTuloissa = nettoMask === Luonne.TULO && onKirjattuEnnakko(t);
     // A voucher that never touches the nature we are listing is not ours, even if some
     // other leg (bank, equity, VAT) would look like money moving.
     if (
       !muistutusTuloissa &&
+      !ennakkoTuloissa &&
       !t.viennit.some((v) => {
         const l = luonteet.get(v.tili);
         return l !== undefined && onko(l, nettoMask);
@@ -136,7 +158,9 @@ async function listaa(
     )
       continue;
 
-    const netto = summaaLuonteella(t, luonteet, nettoMask, kreditPositiivinen);
+    const netto = ennakkoTuloissa
+      ? summaaKredit(t, (v) => v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS)
+      : summaaLuonteella(t, luonteet, nettoMask, kreditPositiivinen);
     // Fold BOTH VAT natures with the list's own sign convention. A reverse-charge purchase
     // (EU acquisition, rakennuspalvelu, imported services — generoiVeroviennit.ts:126-201)
     // posts a deductible ALVSAATAVA leg AND a self-assessed-output ALVVELKA leg for the SAME
@@ -147,10 +171,12 @@ async function listaa(
     // outcomes: domestic purchase (255+0), reverse charge with deduction (255−255=0),
     // reverse charge without deduction (0−255=−255, VAT capitalised into netto instead),
     // normal sale (255+0), zero-rated (0+0).
-    const alv = Euro.add(
-      summaaLuonteella(t, luonteet, Luonne.ALVSAATAVA, kreditPositiivinen),
-      summaaLuonteella(t, luonteet, Luonne.ALVVELKA, kreditPositiivinen),
-    );
+    const alv = ennakkoTuloissa
+      ? summaaKredit(t, (v) => v.alvKoodi === ENNAKKO_ALV_LYKATTY)
+      : Euro.add(
+          summaaLuonteella(t, luonteet, Luonne.ALVSAATAVA, kreditPositiivinen),
+          summaaLuonteella(t, luonteet, Luonne.ALVVELKA, kreditPositiivinen),
+        );
     const eraLeg = eranVienti(t.viennit);
     const era = eraLeg?.era;
     // queryErat returns raw Σ(debet − kredit), which is only debit-positive-correct for

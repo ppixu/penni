@@ -514,6 +514,10 @@ export function laskuVirheViesti(e: unknown): string {
         return 'ALV-tili puuttuu tilikartasta';
       case 'EIHYVITETTAVAA':
         return 'Laskua ei voi hyvittää (ei erää)';
+      case 'ENNAKKOLASKU':
+        return 'Ennakkolaskusta ei voi tehdä hyvityslaskua — hyvitä ennakko loppulaskulla';
+      case 'EIKUMPPANIA':
+        return 'Ennakkolaskulla on oltava asiakas';
       case 'EILUONNOS':
         return 'Laskuluonnosta ei löydy (se on jo kirjattu tai poistettu)';
       case 'EIJAKSO':

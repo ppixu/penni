@@ -7,6 +7,7 @@ import {
   WireAlvTilitysSyoteSchema,
   WireAsetuksetPatchSchema,
   WireAsetuksetSchema,
+  WireAvoinEnnakkoSchema,
   WireBudjettiRiviSchema,
   WireBudjettivertailuRiviSchema,
   WireErantyneetToistotSchema,
@@ -77,6 +78,8 @@ const MyyntilaskuListQuery = z.object({
   eraantynyt: z.string().optional(),
   saldopvm: z.string().optional(),
 });
+
+const EnnakotQuery = z.object({ kumppani: z.string() });
 
 const RahavirtaListQuery = z.object({
   bucket: z.string().optional(),
@@ -230,6 +233,13 @@ export const contract = c.router({
     path: '/maksumuistutukset',
     body: WireMaksumuistutusSyoteSchema,
     responses: { 200: z.array(WireTositeSchema) },
+  },
+  /** Asiakkaan avoimet ennakot "Hyvitä ennakko" -valintaan (spec §6.1). */
+  haeAvoimetEnnakot: {
+    method: 'GET',
+    path: '/ennakot',
+    query: EnnakotQuery,
+    responses: { 200: z.array(WireAvoinEnnakkoSchema) },
   },
 
   // Penni-laajennus (ei Kitsas-vastinetta): kaikki tulot/menot tilin luonteen perusteella.

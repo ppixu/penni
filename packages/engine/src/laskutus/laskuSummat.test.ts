@@ -11,6 +11,9 @@ const TILIT = {
   oletusMyynti: 3000,
   alvVelka: 2939,
   kohdentamatonAlvVelka: 0,
+  ennakkosaatavat: 1715,
+  ennakkotili: 2861,
+  ennakkoAlv: 29392,
 };
 
 describe('laskuSummat', () => {

@@ -24,6 +24,7 @@ export * from './resources/maksumuistutusResource.js';
 export * from './resources/tulotResource.js';
 export * from './resources/ostolaskuResource.js';
 export * from './resources/hyvityslaskuResource.js';
+export * from './resources/ennakkoResource.js';
 export * from './resources/alvLaskelma.js';
 export * from './resources/alvErittely.js';
 export * from './resources/alvIlmoitus.js';
