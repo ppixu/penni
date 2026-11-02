@@ -7,6 +7,7 @@ import {
 } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
+import { ToistoMuokkausDialog } from '@/laskutus/ToistoMuokkausDialog';
 import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import type { ErantyneetToistot, Toisto } from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
@@ -42,6 +43,7 @@ function ToistuvatLaskut() {
   const { poista, virheviesti: poistoVirhe } = usePoistaToisto();
   const { luo, virheviesti: luontiVirhe, luomassa } = useLuoErantyneetToistot();
   const [poistettava, setPoistettava] = useState<Toisto | null>(null);
+  const [muokattava, setMuokattava] = useState<Toisto | null>(null);
   const [tulos, setTulos] = useState<ErantyneetToistot | null>(null);
 
   const asiakas = (t: Toisto) =>
@@ -141,6 +143,14 @@ function ToistuvatLaskut() {
                   <td className="px-[10px] py-[9px]">{tilaTeksti(t)}</td>
                   <td className="px-[10px] py-[9px]">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="sec"
+                        size="compact"
+                        type="button"
+                        onClick={() => setMuokattava(t)}
+                      >
+                        Muokkaa
+                      </Button>
                       {!onPaattynyt(t) && (
                         <Button
                           variant="sec"
@@ -168,6 +178,14 @@ function ToistuvatLaskut() {
         )}
       </section>
 
+      {muokattava && (
+        <ToistoMuokkausDialog
+          key={muokattava.id}
+          toisto={muokattava}
+          onPeruuta={() => setMuokattava(null)}
+          onValmis={() => setMuokattava(null)}
+        />
+      )}
       {poistettava && (
         <div
           // biome-ignore lint/a11y/useSemanticElements: peittävä modaali vaatii oman overlay-<div>:n; natiivi <dialog> ei tyylity näin

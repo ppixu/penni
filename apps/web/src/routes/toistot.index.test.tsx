@@ -1,6 +1,7 @@
 import { renderRoute } from '@/test/renderRoute';
 import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import type { KpClient } from '@penni/asiakas';
+import { ResourceError } from '@penni/engine';
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -163,6 +164,109 @@ describe('Toistuvat laskut -lista', () => {
     luo.mockResolvedValueOnce({ luodut: [], ohitettu: 'EITILIKAUTTA' });
     await user.click(screen.getByRole('button', { name: 'Luo erääntyneet nyt' }));
     expect(await screen.findByText(/ei ole tilikautta/)).toBeInTheDocument();
+  });
+});
+
+describe('Toiston muokkaus', () => {
+  const dialogi = () => screen.findByRole('dialog', { name: 'Muokkaa toistoa' });
+
+  it('väli ja seuraava päivä tallentuvat tallennaToisto:lla ja lista näyttää ne; pohja säilyy', async () => {
+    const { user, client } = await renderRoute('/toistot', { seed: SEED, arrange: toisto });
+    const ennen = (await client.haeToistot())[0];
+    const tallenna = vi.spyOn(client, 'tallennaToisto');
+    await user.click(await screen.findByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    const vali = screen.getByLabelText('Toistoväli kuukausina');
+    await user.clear(vali);
+    await user.type(vali, '3');
+    const seuraava = screen.getByLabelText('Seuraava laskupäivä');
+    await user.clear(seuraava);
+    await user.type(seuraava, '2099-02-01');
+    await user.type(screen.getByLabelText('Nimi (valinnainen)'), 'Ylläpito');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(() => expect(tallenna).toHaveBeenCalledTimes(1));
+    expect(tallenna.mock.calls[0]?.[0]).toMatchObject({
+      id: 1,
+      nimi: 'Ylläpito',
+      kuukausia: 3,
+      seuraava: '2099-02-01',
+      loppuu: '2100-12-31',
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByText('3 kk')).toBeInTheDocument();
+    expect(screen.getByText('1.2.2099')).toBeInTheDocument();
+    const jalkeen = (await client.haeToistot())[0];
+    expect(jalkeen?.pohja).toEqual(ennen?.pohja);
+    expect(jalkeen?.lahdeTosite).toBe(ennen?.lahdeTosite);
+  });
+
+  it('päättymispäivän tyhjennys poistaa loppuu-avaimen', async () => {
+    const { user, client } = await renderRoute('/toistot', { seed: SEED, arrange: toisto });
+    const tallenna = vi.spyOn(client, 'tallennaToisto');
+    await user.click(await screen.findByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    await user.clear(screen.getByLabelText('Päättyy (valinnainen)'));
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(() => expect(tallenna).toHaveBeenCalledTimes(1));
+    expect(tallenna.mock.calls[0]?.[0]).not.toHaveProperty('loppuu');
+    expect((await client.haeToistot())[0]).not.toHaveProperty('loppuu');
+  });
+
+  it('virheellinen väli tai loppu ennen alkua näyttää virheen eikä tallenna', async () => {
+    const { user, client } = await renderRoute('/toistot', { seed: SEED, arrange: toisto });
+    const tallenna = vi.spyOn(client, 'tallennaToisto');
+    await user.click(await screen.findByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    const vali = screen.getByLabelText('Toistoväli kuukausina');
+    await user.clear(vali);
+    await user.type(vali, '0');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Toistovälin on oltava');
+    await user.clear(vali);
+    await user.type(vali, '1');
+    const loppu = screen.getByLabelText('Päättyy (valinnainen)');
+    await user.clear(loppu);
+    await user.type(loppu, '2098-01-01');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Päättymispäivä');
+    expect(tallenna).not.toHaveBeenCalled();
+  });
+
+  it('moottorin virhe näytetään dialogissa', async () => {
+    const { user, client } = await renderRoute('/toistot', { seed: SEED, arrange: toisto });
+    vi.spyOn(client, 'tallennaToisto').mockRejectedValue(new ResourceError('EIKUUKAUSIA', 'x'));
+    await user.click(await screen.findByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Toistovälin on oltava');
+    expect(screen.getByRole('dialog', { name: 'Muokkaa toistoa' })).toBeInTheDocument();
+  });
+
+  it('Peruuta sulkee tallentamatta; päättyneen toiston loppupäivän pidennys aktivoi sen', async () => {
+    const { user, client } = await renderRoute('/toistot', {
+      seed: SEED,
+      arrange: async (c) => {
+        await toisto(c);
+        const [t] = await c.haeToistot();
+        if (!t) throw new Error('toisto puuttuu');
+        await c.tallennaToisto({ ...t, seuraava: '2101-01-01', aktiivinen: false });
+      },
+    });
+    const tallenna = vi.spyOn(client, 'tallennaToisto');
+    await user.click(await screen.findByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    await user.click(screen.getByRole('button', { name: 'Peruuta' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(tallenna).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Muokkaa' }));
+    await dialogi();
+    const loppu = screen.getByLabelText('Päättyy (valinnainen)');
+    await user.clear(loppu);
+    await user.type(loppu, '2105-12-31');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(() => expect(tallenna).toHaveBeenCalledTimes(1));
+    expect(tallenna.mock.calls[0]?.[0]).toMatchObject({ aktiivinen: true, loppuu: '2105-12-31' });
   });
 });
 

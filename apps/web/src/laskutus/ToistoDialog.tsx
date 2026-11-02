@@ -9,7 +9,7 @@ const KENTTA_LUOKKA =
   'rounded-[6px] border border-[var(--border-strong)] px-[10px] py-2 text-[13px] normal-case tracking-normal';
 
 /** Väli kentästä: kokonaisluku ≥ 1, muuten null. */
-function lueVali(teksti: string): number | null {
+export function lueVali(teksti: string): number | null {
   const n = Number(teksti);
   return /^\d+$/.test(teksti.trim()) && n >= 1 ? n : null;
 }
