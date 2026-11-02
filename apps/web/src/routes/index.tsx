@@ -6,6 +6,7 @@ import { TositeTyyppiIkoni } from '@/components/TositeTyyppiIkoni';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { RengasKaavio } from '@/kojelauta/RengasKaavio';
+import { TuloslaskelmaKortti } from '@/kojelauta/TuloslaskelmaKortti';
 import { TulosvirtaKaavio } from '@/kojelauta/TulosvirtaKaavio';
 import { type Huomio, kojelaudanHuomiot } from '@/kojelauta/huomiot';
 import { tulosjako } from '@/kojelauta/tulosjako';
@@ -159,14 +160,24 @@ function Kojelauta() {
               <h2 className={OTSIKKO}>Tulot ja kulut</h2>
               <TulosvirtaKaavio jako={virta} keskiNimi={init?.asetukset.Nimi || 'Yritys'} />
             </section>
-            <section
-              aria-label="jakauma"
-              className="flex flex-col gap-5 rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--surface)] p-4"
-            >
-              <h2 className={cn(OTSIKKO, '-mb-3')}>Suurimmat erät</h2>
-              <RengasKaavio otsikko="Tulot" erat={tileittain.tulot} />
-              <RengasKaavio otsikko="Kulut" erat={tileittain.kulut} />
-            </section>
+            <div className="flex flex-col gap-[10px]">
+              {kausi && (
+                <TuloslaskelmaKortti
+                  alkaa={kausi.alkaa}
+                  loppuu={kausi.loppuu}
+                  tanaan={tanaan}
+                  chart={chart}
+                />
+              )}
+              <section
+                aria-label="jakauma"
+                className="flex flex-col gap-5 rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--surface)] p-4"
+              >
+                <h2 className={cn(OTSIKKO, '-mb-3')}>Suurimmat erät</h2>
+                <RengasKaavio otsikko="Tulot" erat={tileittain.tulot} />
+                <RengasKaavio otsikko="Kulut" erat={tileittain.kulut} />
+              </section>
+            </div>
           </div>
         )}
 

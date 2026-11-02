@@ -223,4 +223,55 @@ describe('Kojelauta', () => {
     expect(kulut).toHaveTextContent('Atk-laitteet');
     expect(kulut).toHaveTextContent(/250\s€\s*100\s%/);
   });
+
+  it('näyttää tuloslaskelmakortin: tulos, vähennettävä alv ja kertymä kuukausittain', async () => {
+    await renderRoute('/', {
+      seed: {
+        ...SEED,
+        tilit: [
+          ...SEED.tilit,
+          { numero: 1763, tyyppi: 'AL', nimi: { fi: 'Arvonlisäverosaatavat' } },
+          { numero: 7690, tyyppi: 'D', nimi: { fi: 'Atk-laitteet' } },
+        ],
+      },
+      arrange: async (client) => {
+        const vienti = (pvm: string, tili: number, debet: number, kredit: number) => ({
+          tili,
+          debet: Euro.fromCents(debet),
+          kredit: Euro.fromCents(kredit),
+          pvm,
+          alvKoodi: 0,
+          alvProsentti: 0,
+        });
+        await client.luoTosite({
+          pvm: '2026-01-15',
+          tyyppi: 200,
+          sarja: '',
+          tila: 100,
+          viennit: [vienti('2026-01-15', 1910, 400_00, 0), vienti('2026-01-15', 3000, 0, 400_00)],
+        });
+        await client.luoTosite({
+          pvm: '2026-03-03',
+          tyyppi: 100,
+          sarja: '',
+          tila: 100,
+          viennit: [
+            vienti('2026-03-03', 7690, 100_00, 0),
+            vienti('2026-03-03', 1763, 25_50, 0),
+            vienti('2026-03-03', 1910, 0, 125_50),
+          ],
+        });
+      },
+    });
+
+    const kortti = await screen.findByRole('region', { name: 'tuloslaskelma' });
+    const taulu = await within(kortti).findByRole('table');
+    const kuukausi = (nimi: string) =>
+      within(taulu).getByRole('rowheader', { name: nimi }).closest('tr');
+    expect(kuukausi('Tammikuu 2026')).toHaveTextContent(/400,00\s€/);
+    expect(kuukausi('Helmikuu 2026')).toHaveTextContent(/400,00\s€/);
+    expect(kuukausi('Maaliskuu 2026')).toHaveTextContent(/300,00\s€/);
+    expect(kortti).toHaveTextContent(/Tilikauden tulos300,00\s€/);
+    expect(kortti).toHaveTextContent(/Vähennettävä ALV25,50\s€/);
+  });
 });
