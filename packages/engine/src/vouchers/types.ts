@@ -39,6 +39,7 @@ export interface TositeRivi {
   aleProsentti?: number; // discount percent
   euroAlennus?: number; // euro discount (net), euros
   unKoodi?: string; // UN/ECE unit code, default 'C62'
+  yksikko?: string; // vapaamuotoinen yksikkö (Kitsas: yksikko), kun unKoodia ei ole
   selite?: string;
   tili?: number; // sales-revenue account for this row (falls back to OletusMyyntitili)
   kohdennus?: number; // cost centre

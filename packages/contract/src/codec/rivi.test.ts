@@ -54,3 +54,17 @@ describe('round-trip', () => {
     );
   });
 });
+
+describe('yksikko (vapaa yksikkö)', () => {
+  it('kulkee wire-muotoon ja takaisin', () => {
+    const r: TositeRivi = {
+      myyntiKpl: 1,
+      aNetto: 10,
+      alvKoodi: 0,
+      alvProsentti: 0,
+      yksikko: 'tunti',
+    };
+    expect(encodeRivi(r).yksikko).toBe('tunti');
+    expect(decodeRivi(encodeRivi(r))).toEqual(r);
+  });
+});

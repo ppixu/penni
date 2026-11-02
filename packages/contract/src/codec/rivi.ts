@@ -9,6 +9,7 @@ export interface WireRivi {
   aleprosentti?: number;
   euroalennus?: number;
   unkoodi?: string;
+  yksikko?: string;
   selite?: string;
   tili?: number;
   kohdennus?: number;
@@ -26,6 +27,7 @@ export function encodeRivi(r: TositeRivi): WireRivi {
   if (r.aleProsentti) w.aleprosentti = r.aleProsentti;
   if (r.euroAlennus) w.euroalennus = r.euroAlennus;
   if (r.unKoodi) w.unkoodi = r.unKoodi;
+  if (r.yksikko) w.yksikko = r.yksikko;
   if (r.selite) w.selite = r.selite;
   if (r.tili !== undefined) w.tili = r.tili;
   if (r.kohdennus !== undefined) w.kohdennus = r.kohdennus;
@@ -46,6 +48,7 @@ export function decodeRivi(w: WireRivi): TositeRivi {
     r.aleProsentti = Number(w.aleprosentti);
   if (w.euroalennus != null && Number(w.euroalennus) !== 0) r.euroAlennus = Number(w.euroalennus);
   if (w.unkoodi) r.unKoodi = String(w.unkoodi);
+  if (w.yksikko) r.yksikko = String(w.yksikko);
   if (w.selite) r.selite = String(w.selite);
   if (w.tili != null) r.tili = Number(w.tili);
   if (w.kohdennus != null) r.kohdennus = Number(w.kohdennus);

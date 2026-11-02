@@ -78,12 +78,25 @@ const YLEISET_KANNAT: readonly number[] = [22, 23, 24, 25.5];
  * kosketa.
  */
 export function paivitaRivienAlv(rivit: readonly TositeRivi[], pvm: IsoDate): TositeRivi[] {
+  return rivit.map((r) => {
+    const prosentti = paivitaMyyntiAlvProsentti(r.alvKoodi, r.alvProsentti, pvm);
+    return prosentti === r.alvProsentti ? r : { ...r, alvProsentti: prosentti };
+  });
+}
+
+/**
+ * Yhden rivin versio `paivitaRivienAlv`:sta (jaettu tuotteen poiminnan kanssa): MYYNNIT_NETTO-
+ * rivin vanhentunut yleinen kanta vaihtuu `yleinenAlv(pvm)`:ksi, muut kannat palautuvat sellaisenaan.
+ */
+export function paivitaMyyntiAlvProsentti(
+  alvKoodi: number,
+  alvProsentti: number,
+  pvm: IsoDate,
+): number {
   const yleinen = yleinenAlv(pvm);
-  return rivit.map((r) =>
-    r.alvKoodi === AlvKoodi.MYYNNIT_NETTO &&
-    r.alvProsentti !== yleinen &&
-    YLEISET_KANNAT.includes(r.alvProsentti)
-      ? { ...r, alvProsentti: yleinen }
-      : r,
-  );
+  return alvKoodi === AlvKoodi.MYYNNIT_NETTO &&
+    alvProsentti !== yleinen &&
+    YLEISET_KANNAT.includes(alvProsentti)
+    ? yleinen
+    : alvProsentti;
 }

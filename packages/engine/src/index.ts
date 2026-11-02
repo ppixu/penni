@@ -48,6 +48,12 @@ export * from './resources/tilinpaatos.js';
 export * from './alv/index.js';
 export * from './kuitti/index.js';
 export * from './tiliote/index.js';
-export * from './laskutus/tuote.js';
+// Tuotteen euro-`nettoBrutosta` törmää alv/kannat:n sentti-versioon, joten se exportataan aliaksella.
+export {
+  type Tuote,
+  type UusiTuote,
+  nettoBrutosta as nettoEuroBrutosta,
+  riviTuotteesta,
+} from './laskutus/tuote.js';
 export * from './laskutus/vakioviite.js';
 export * from './laskutus/toisto.js';
