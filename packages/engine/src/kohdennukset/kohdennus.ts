@@ -1,4 +1,5 @@
-import type { Monikielinen } from '../accounts/tili.js';
+import { Luonne, onko } from '../accounts/luonne.js';
+import type { Monikielinen, Tili } from '../accounts/tili.js';
 import { ResourceError } from '../resources/storage.js';
 import { type IsoDate, onkoPvmValidi } from '../vouchers/types.js';
 
@@ -70,6 +71,25 @@ export function kohdennuksenPolku(k: Kohdennus, kaikki: readonly Kohdennus[]): s
  *  (kirjaus/kohdennusproxymodel.cpp:68-103). */
 export function onVoimassa(k: Kohdennus, pvm: IsoDate): boolean {
   return (!k.alkaa || k.alkaa <= pvm) && (!k.paattyy || pvm <= k.paattyy);
+}
+
+/**
+ * Tulostilin oletuskohdennus (Kitsas maaritys/tilinmuokkausdialog.cpp:280-281,422-424): tilin
+ * json-avain `kohdennus`. Palauttaa id:n vain, kun tili on tulostili, arvo on kokonaisluku ≥ 1 ja
+ * se on tallennettu kustannuspaikka tai projekti, joka on voimassa `pvm`:nä; muuten undefined
+ * (tuntematon, vanhentunut ja merkkaus ohitetaan, ei "Tuntematon"-riviä).
+ */
+export function tilinOletusKohdennus(
+  tili: Tili | undefined,
+  kohdennukset: readonly Kohdennus[],
+  pvm: IsoDate,
+): number | undefined {
+  if (!tili || !onko(tili.luonne, Luonne.TULOS)) return undefined;
+  const id = tili.data.kohdennus;
+  if (typeof id !== 'number' || !Number.isInteger(id) || id < 1) return undefined;
+  const k = kohdennukset.find((x) => x.id === id);
+  if (!k || k.tyyppi === KohdennusTyyppi.MERKKAUS) return undefined;
+  return onVoimassa(k, pvm) ? id : undefined;
 }
 
 /** Voimassa välillä: voimassaolo ja [alku, loppu] menevät päällekkäin (yksikin yhteinen päivä). */

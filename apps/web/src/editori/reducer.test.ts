@@ -244,6 +244,26 @@ describe('reducer — alv-koodi ja syöttöperuste', () => {
     expect(t.rows[0]).toMatchObject({ tili: 3000, alvKoodi: 24, bruttoSyotto: false });
   });
 
+  it('setTili asettaa tilin oletuskohdennuksen ja säilyttää merkkaukset', () => {
+    const t0 = alku();
+    const a = avain1(t0);
+    const rivi = t0.rows[0];
+    if (!rivi) throw new Error('rivi puuttuu');
+    const t1 = { ...t0, rows: [{ ...rivi, kohdennus: 3, merkkaukset: [7] }] };
+    const t = reducer(t1, { type: 'setTili', avain: a, tili: 3000, kohdennus: 5 });
+    expect(t.rows[0]).toMatchObject({ tili: 3000, kohdennus: 5, merkkaukset: [7] });
+  });
+
+  it('setTili ilman oletuskohdennusta jättää rivin kohdennuksen ennalleen', () => {
+    const t0 = alku();
+    const a = avain1(t0);
+    const rivi = t0.rows[0];
+    if (!rivi) throw new Error('rivi puuttuu');
+    const t1 = { ...t0, rows: [{ ...rivi, kohdennus: 3 }] };
+    const t = reducer(t1, { type: 'setTili', avain: a, tili: 1900 });
+    expect(t.rows[0]).toMatchObject({ tili: 1900, kohdennus: 3 });
+  });
+
   it('tilin käänteisen alv:n oletus asettaa myös netto-syötön', () => {
     const t0 = alku();
     const t = reducer(t0, {

@@ -1,6 +1,16 @@
-import { usePoistaTili, useTallennaTili, useViennit } from '@/app/kysely';
+import { useKohdennukset, usePoistaTili, useTallennaTili, useViennit } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
-import { type Tili, type TiliData, nimi as tiliNimi } from '@penni/engine';
+import { kohdennusSolunTeksti } from '@/kohdennukset/kohdennusTeksti';
+import {
+  KohdennusTyyppi,
+  Luonne,
+  type Tili,
+  type TiliData,
+  kohdennuksenPolku,
+  onko,
+  nimi as tiliNimi,
+  tyyppiKoodilla,
+} from '@penni/engine';
 import { useMemo, useState } from 'react';
 import {
   onVaroTyyppi,
@@ -47,9 +57,32 @@ export function TiliEditori({
   const [ohje, setOhje] = useState(
     muokkaa && typeof tili.data.ohje === 'string' ? tili.data.ohje : '',
   );
+  // Tilin oletuskohdennus (data.kohdennus): '' = ei oletusta, muuten kohdennuksen id.
+  const [oletusKohdennus, setOletusKohdennus] = useState(() => {
+    const id = muokkaa ? tili.data.kohdennus : undefined;
+    return typeof id === 'number' && Number.isInteger(id) && id >= 1 ? String(id) : '';
+  });
+  const { data: kohdennukset } = useKohdennukset();
+  const valittavat = useMemo(
+    () =>
+      (kohdennukset ?? [])
+        .filter((k) => k.tyyppi !== KohdennusTyyppi.MERKKAUS)
+        .map((k) => ({ id: k.id, teksti: kohdennuksenPolku(k, kohdennukset ?? []) }))
+        .sort((a, b) => a.teksti.localeCompare(b.teksti, 'fi')),
+    [kohdennukset],
+  );
   const [paikallinenVirhe, setPaikallinenVirhe] = useState<string | null>(null);
 
   const tyypit = useMemo(() => tyyppiSuodatin(numero), [numero]);
+  // Oletuskohdennus kuuluu vain tulostilille, ja valinta näytetään vasta kun kirjanpidossa on
+  // kustannuspaikka tai projekti (Kitsas tilinmuokkausdialog.cpp:280-281).
+  const tulostili = tyyppi !== '' && onko(tyyppiKoodilla(tyyppi).luonne, Luonne.TULOS);
+  const naytaOletusKohdennus = tulostili && valittavat.length > 0;
+  // Tallentamaton (tai merkkaukseksi jäänyt) id pidetään valittavana, ettei se katoa huomaamatta.
+  const tuntematonId =
+    oletusKohdennus !== '' && !valittavat.some((k) => String(k.id) === oletusKohdennus)
+      ? Number(oletusKohdennus)
+      : undefined;
 
   async function lahetaTallennus() {
     setPaikallinenVirhe(null);
@@ -79,12 +112,23 @@ export function TiliEditori({
     }
 
     // Preserve existing chart keys when editing; set ohje conditionally (exactOptionalPropertyTypes).
+    // Oletuskohdennus: pois, kun tili ei ole tulostili tai "Ei oletusta"; valitsimen ollessa
+    // piilossa (kohdennuksia ei ole tai ne latautuvat) avain säilyy ennallaan.
+    const { kohdennus: vanhaKohdennus, ...muuData } = muokkaa ? tili.data : {};
+    const kohdennus = naytaOletusKohdennus
+      ? oletusKohdennus !== ''
+        ? Number(oletusKohdennus)
+        : undefined
+      : tulostili
+        ? vanhaKohdennus
+        : undefined;
     const data: TiliData = {
-      ...(muokkaa ? tili.data : {}),
+      ...muuData,
       numero: n,
       tyyppi,
       nimi: { fi: nimi.trim() },
       ...(ohje.trim() !== '' ? { ohje: ohje.trim() } : {}),
+      ...(kohdennus !== undefined ? { kohdennus } : {}),
     };
     const ok = await tallenna(n, data);
     if (ok) onSuljeJaPaivita();
@@ -137,6 +181,29 @@ export function TiliEditori({
               ))}
             </select>
           </label>
+          {naytaOletusKohdennus && (
+            <label className="flex flex-col gap-1 text-[9.5px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]">
+              Oletuskohdennus
+              <select
+                aria-label="Oletuskohdennus"
+                value={oletusKohdennus}
+                onChange={(e) => setOletusKohdennus(e.target.value)}
+                className="rounded-[6px] border border-[var(--border-strong)] px-[10px] py-2 text-[13px]"
+              >
+                <option value="">Ei oletusta</option>
+                {valittavat.map((k) => (
+                  <option key={k.id} value={String(k.id)}>
+                    {k.teksti}
+                  </option>
+                ))}
+                {tuntematonId !== undefined && (
+                  <option value={String(tuntematonId)}>
+                    {kohdennusSolunTeksti(tuntematonId, undefined, kohdennukset ?? [])}
+                  </option>
+                )}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-[9.5px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]">
             Ohje
             <textarea

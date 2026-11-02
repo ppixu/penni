@@ -69,10 +69,13 @@ export function reducer(tila: TositeEditoriTila, action: EditoriAction): TositeE
         rows: paivitaRivi(tila.rows, action.avain, (r) => ({ ...r, selite: action.selite })),
       };
     case 'setTili': {
-      const { alv } = action;
+      const { alv, kohdennus } = action;
       return {
         ...tila,
-        rows: paivitaRivi(tila.rows, action.avain, (r) => {
+        rows: paivitaRivi(tila.rows, action.avain, (r0) => {
+          // Tilin oletuskohdennus korvaa rivin kohdennuksen (Kitsas tositeviennit.cpp:306-308),
+          // merkkaukset säilyvät; oletuksetta rivin kohdennus pysyy.
+          const r = kohdennus !== undefined ? { ...r0, kohdennus } : r0;
           // Tilin oletus esitäyttää vain rivin, jonka alv-koodia käyttäjä ei ole valinnut:
           // tyhjän (EIALV) tai aiemmin tililtä esitäytetyn. Käyttäjän valinta säilyy.
           const kayttajanValinta = r.alvKoodi !== 0 && r.alvTililta !== true;
