@@ -296,7 +296,7 @@ export function lueKitsas(polku: string): KitsasKirja {
     const tuotteet = lueTuotteet(db);
     const vakioviitteet = lueVakioviitteet(db, kattamattomat);
     liitaRivit(tositteet, lueRivit(db), kattamattomat);
-    taydennaLaskutiedot(tositteet, lueLaskut(tositeRivit));
+    taydennaLaskutiedot(tositteet, lueLaskut(tositeRivit), kattamattomat);
 
     // Filed VAT returns (ALVLASKELMA = 9100) — finalized only, for the post-import check.
     const alvIlmoitukset: KitsasAlvIlmoitus[] = [];

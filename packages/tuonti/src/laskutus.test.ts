@@ -6,6 +6,7 @@ import Database from 'better-sqlite3';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   laskutusSisakkaiset,
+  liitaRivit,
   lueRivit,
   lueTuotteet,
   lueVakioviitteet,
@@ -97,6 +98,33 @@ describe('lueRivit', () => {
     ]);
     expect(pudotetut).toEqual({ 'Rivi.json.ennakkoera': 1, 'Rivi.json.laskutetaan': 1 });
   });
+
+  it('ei lue maksumuistutuksen näyttörivejä eikä raportoi niiden avaimia', () => {
+    const { rivit } = lueRivit(db);
+    expect(rivit.has(LASKUTUS_TESTI.muistutus)).toBe(false);
+    expect([...rivit.keys()]).toEqual([LASKUTUS_TESTI.lasku]);
+  });
+
+  it('liitaRivit ei liitä rivejä maksumuistutukselle', () => {
+    const muistutus = tosite(5, TositeTyyppi.MAKSUMUISTUTUS);
+    const lasku = tosite(6, TositeTyyppi.MYYNTILASKU);
+    const rivi = { myyntiKpl: 1, aNetto: 5, alvKoodi: 0, alvProsentti: 0 };
+    const kattamattomat: Record<string, number> = {};
+    liitaRivit(
+      [muistutus, lasku],
+      {
+        rivit: new Map([
+          [5, [rivi]],
+          [6, [rivi]],
+        ]),
+        pudotetut: { 'Rivi.json.x': 2 },
+      },
+      kattamattomat,
+    );
+    expect(muistutus.rivit).toBeUndefined();
+    expect(lasku.rivit).toEqual([rivi]);
+    expect(kattamattomat).toEqual({ 'Rivi.json.x': 2 });
+  });
 });
 
 describe('taydennaLaskutiedot', () => {
@@ -122,6 +150,15 @@ describe('taydennaLaskutiedot', () => {
     );
     expect(ilman.jakso).toEqual({ alkaa: '2026-10-30', loppuu: '2026-11-30' });
     expect(virheellinen.jakso).toBeUndefined();
+  });
+
+  it('ei aseta jaksoa, jonka alku on lopun jälkeen', () => {
+    const lasku = tosite(1, TositeTyyppi.MYYNTILASKU);
+    taydennaLaskutiedot(
+      [lasku],
+      new Map([[1, { toimituspvm: '2026-12-01', jaksopvm: '2026-11-30' }]]),
+    );
+    expect(lasku.jakso).toBeUndefined();
   });
 
   it('muuntaa muistutuksen tiedot senteiksi ja liittää alkuperäisen laskun numerolla', () => {
@@ -157,14 +194,57 @@ describe('taydennaLaskutiedot', () => {
     expect(lasku.muistutus).toBeUndefined();
   });
 
+  it('ottaa korkoprosentin alkuperäiseltä laskulta, kun muistutuksella ei ole omaa', () => {
+    const lasku = tosite(1, TositeTyyppi.MYYNTILASKU, { tila: 100, numero: '17' });
+    const muistutus = tosite(2, TositeTyyppi.MAKSUMUISTUTUS);
+    taydennaLaskutiedot(
+      [lasku, muistutus],
+      new Map([
+        [1, { numero: 17, viivkorko: 11.5 }],
+        [2, { alkupNro: '17', muistutusmaksu: '5.00' }],
+      ]),
+    );
+    expect(muistutus.muistutus?.viivkorko).toBe(11.5);
+    expect(muistutus.viivkorko).toBeUndefined();
+  });
+
+  it('jättää muistutuksen asettamatta ja raportoi avaimet, kun korkoprosenttia ei ole', () => {
+    const muistutus = tosite(2, TositeTyyppi.MAKSUMUISTUTUS);
+    const kattamattomat: Record<string, number> = {};
+    taydennaLaskutiedot(
+      [muistutus],
+      new Map([[2, { alkupNro: 999, muistutusmaksu: '5.00', korko: 0 }]]),
+      kattamattomat,
+    );
+    expect(muistutus.muistutus).toBeUndefined();
+    expect(kattamattomat).toEqual({
+      'Tosite.json.lasku.muistutusmaksu': 1,
+      'Tosite.json.lasku.korko': 1,
+    });
+  });
+
+  it('ilman muistutusavaimia (tyhjä arvo ei ole tieto) muistutusta ei synny, lasku liitetään', () => {
+    const lasku = tosite(1, TositeTyyppi.MYYNTILASKU, { tila: 100, numero: '17' });
+    const muistutus = tosite(2, TositeTyyppi.MAKSUMUISTUTUS);
+    taydennaLaskutiedot(
+      [lasku, muistutus],
+      new Map([[2, { alkupNro: 17, viivkorko: 8, muistutusmaksu: '', korko: null }]]),
+    );
+    expect(muistutus.muistutus).toBeUndefined();
+    expect(muistutus.alkuperainenTosite).toBe(1);
+  });
+
   it('jättää viittaukset asettamatta, kun numerolla ei löydy laskua', () => {
     const muistutus = tosite(2, TositeTyyppi.MAKSUMUISTUTUS);
-    taydennaLaskutiedot([muistutus], new Map([[2, { alkupNro: 999, muistutusmaksu: 5 }]]));
+    taydennaLaskutiedot(
+      [muistutus],
+      new Map([[2, { alkupNro: 999, viivkorko: 7, muistutusmaksu: 5 }]]),
+    );
     expect(muistutus.alkuperainenTosite).toBeUndefined();
     expect(muistutus.muistutus).toEqual({
       maksu: 500,
       korko: 0,
-      viivkorko: 0,
+      viivkorko: 7,
       korkoalkaa: '2026-12-15',
       korkoloppuu: '2026-12-15',
       aiempiSaldo: 0,
@@ -187,6 +267,12 @@ describe('laskutusSisakkaiset', () => {
     });
     expect(ilman.lasku?.has('toimituspvm')).toBe(false);
     expect(ilman.lasku?.has('muistutusmaksu')).toBe(false);
+    const takaperin = laskutusSisakkaiset({
+      tyyppi: TositeTyyppi.MYYNTILASKU,
+      json: JSON.stringify({ lasku: { jaksopvm: '2026-11-30', toimituspvm: '2026-12-01' } }),
+    });
+    expect(takaperin.lasku?.has('jaksopvm')).toBe(false);
+    expect(takaperin.lasku?.has('toimituspvm')).toBe(false);
   });
 });
 
@@ -207,6 +293,11 @@ describe('lueKitsas laskutustiedoilla', () => {
     const muistutus = kirja.tositteet.find((t) => t.id === LASKUTUS_TESTI.muistutus);
     expect(muistutus?.alkuperainenTosite).toBe(LASKUTUS_TESTI.lasku);
     expect(muistutus?.muistutus?.aiemmat).toEqual([LASKUTUS_TESTI.lasku]);
+    expect(muistutus?.muistutus?.viivkorko).toBe(8); // laskulta 17
+    expect(muistutus?.rivit).toBeUndefined();
+    const tyhja = kirja.tositteet.find((t) => t.id === LASKUTUS_TESTI.tyhjaMuistutus);
+    expect(tyhja?.muistutus).toBeUndefined();
+    expect(tyhja?.alkuperainenTosite).toBe(LASKUTUS_TESTI.lasku);
     const orpo = kirja.tositteet.find((t) => t.id === LASKUTUS_TESTI.orpoMuistutus);
     expect(orpo?.alkuperainenTosite).toBeUndefined();
 

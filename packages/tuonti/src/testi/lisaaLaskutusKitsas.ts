@@ -23,6 +23,8 @@ export const LASKUTUS_TESTI = {
   muistutus: 11,
   /** Maksumuistutusluonnos, jonka alkupNro ei vastaa mitään laskua. */
   orpoMuistutus: 12,
+  /** Maksumuistutusluonnos laskulle 17 ilman muistutustietoja (muistutusmaksu on tyhjä). */
+  tyhjaMuistutus: 13,
   /** Laskun viennit (senttejä): 2 × 45,50 + 10,00 = 101,00 netto, alv 25,5 % = 25,76. */
   laskunViennit: { 1910: 12676, 3000: -10100, 2939: -2576 },
 } as const;
@@ -52,13 +54,16 @@ export function lisaaLaskutusKitsas(polku: string): void {
       }),
     );
 
+    // alkaen/paattyen ovat Kitsaksessa käyttämättömiä sarakkeita, joita ei tuoda (spec §8.1).
     db.prepare(
-      'INSERT INTO Vakioviite (viite, tili, kohdennus, otsikko, json) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO Vakioviite (viite, tili, kohdennus, otsikko, alkaen, paattyen, json) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(
       1009,
       3000,
       null,
       'Vuokrat',
+      '2026-01-01',
+      '2026-12-31',
       JSON.stringify({ otsikko: 'Vuokrat', kohdennus: 0, huom: 'säilyy' }),
     );
 
@@ -128,7 +133,9 @@ export function lisaaLaskutusKitsas(polku: string): void {
       }),
     );
 
-    // Maksumuistutusluonnos (MAKSUMUISTUTUS = 216, tila 50) laskulle 17.
+    // Maksumuistutusluonnos (MAKSUMUISTUTUS = 216, tila 50) laskulle 17. Oma viivkorko puuttuu,
+    // joten korkoprosentti tulee laskulta. Kitsaksen näyttörivejä (aiempi saldo nollarivinä,
+    // maksu, korko) ei tuoda: `muistutus` korvaa ne.
     tosite.run(
       LASKUTUS_TESTI.muistutus,
       '2026-12-15',
@@ -144,7 +151,6 @@ export function lisaaLaskutusKitsas(polku: string): void {
       JSON.stringify({
         lasku: {
           alkupNro: 17,
-          viivkorko: 8,
           muistutusmaksu: '5.00',
           korko: 0.31,
           korkoalkaa: '2026-11-16',
@@ -153,6 +159,34 @@ export function lisaaLaskutusKitsas(polku: string): void {
           toimituspvm: '2026-12-15',
         },
       }),
+    );
+
+    rivi.run(
+      LASKUTUS_TESTI.muistutus,
+      1,
+      '',
+      0,
+      0,
+      0,
+      JSON.stringify({ nimike: 'Laskun 17 avoin saldo', laskutetaan: '0' }),
+    );
+    rivi.run(
+      LASKUTUS_TESTI.muistutus,
+      2,
+      '',
+      1,
+      0,
+      5,
+      JSON.stringify({ nimike: 'Muistutusmaksu', tili: 9170 }),
+    );
+    rivi.run(
+      LASKUTUS_TESTI.muistutus,
+      3,
+      '',
+      30,
+      0,
+      0.0103,
+      JSON.stringify({ nimike: 'Viivästyskorko', unkoodi: 'DAY', laskutetaan: '30' }),
     );
 
     // Maksumuistutusluonnos, jonka laskua ei ole kirjassa.
@@ -168,7 +202,23 @@ export function lisaaLaskutusKitsas(polku: string): void {
       null,
       '2026-12-29',
       null,
-      JSON.stringify({ lasku: { alkupNro: 999, muistutusmaksu: '5.00' } }),
+      JSON.stringify({ lasku: { alkupNro: 999, viivkorko: 7, muistutusmaksu: '5.00' } }),
+    );
+
+    // Maksumuistutusluonnos laskulle 17 ilman muistutustietoja: tyhjä arvo ei ole tieto.
+    tosite.run(
+      LASKUTUS_TESTI.tyhjaMuistutus,
+      '2026-12-15',
+      216,
+      50,
+      0,
+      '',
+      'Maksumuistutus ilman tietoja',
+      1,
+      null,
+      '2026-12-29',
+      null,
+      JSON.stringify({ lasku: { alkupNro: 17, muistutusmaksu: '' } }),
     );
   } finally {
     db.close();

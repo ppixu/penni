@@ -51,6 +51,16 @@ function nollaton(arvo: unknown): number | undefined {
   return n === undefined || n === 0 ? undefined : n;
 }
 
+/** Sisällöllinen arvo samassa merkityksessä kuin kattavuusauditissa (laskeKattamattomat). */
+function onArvo(arvo: unknown): boolean {
+  return !(
+    arvo === undefined ||
+    arvo === null ||
+    arvo === '' ||
+    (typeof arvo === 'object' && Object.keys(arvo).length === 0)
+  );
+}
+
 function teksti(arvo: unknown): string | undefined {
   return typeof arvo === 'string' && arvo !== '' ? arvo : undefined;
 }
@@ -121,7 +131,7 @@ export function lueTuotteet(db: Database.Database): UusiTuote[] {
 
 /**
  * Vakioviitteet (`Vakioviite(viite, tili, kohdennus, otsikko, alkaen, paattyen, json)`).
- * Viite luetaan tekstinä sellaisenaan (myös käsin syötettävän 4–7 numeron muodon ulkopuoliset;
+ * Sarakkeita `alkaen` ja `paattyen` Kitsas ei käytä, eikä niitä tuoda (spec §8.1). Viite luetaan tekstinä sellaisenaan (myös käsin syötettävän 4–7 numeron muodon ulkopuoliset;
  * kokonaisluku voi ylittää JS:n tarkan rajan). Json säilyy. Rivi ilman tiliä ei voi ohjata
  * maksua mihinkään: se jätetään pois ja lasketaan `kattamattomat`-raporttiin.
  */
@@ -132,16 +142,13 @@ export function lueVakioviitteet(
   if (!onTaulu(db, 'Vakioviite')) return [];
   const rivit = db
     .prepare(
-      `SELECT CAST(viite AS TEXT) AS viite, tili, kohdennus, otsikko, alkaen, paattyen, json
-       FROM Vakioviite ORDER BY viite`,
+      'SELECT CAST(viite AS TEXT) AS viite, tili, kohdennus, otsikko, json FROM Vakioviite ORDER BY viite',
     )
     .all() as {
     viite: string;
     tili: number | null;
     kohdennus: number | null;
     otsikko: string | null;
-    alkaen: string | null;
-    paattyen: string | null;
     json: string | null;
   }[];
   const tulos: Vakioviite[] = [];
@@ -162,8 +169,6 @@ export function lueVakioviitteet(
     };
     const kohdennus = nollaton(r.kohdennus) ?? nollaton(json.kohdennus);
     if (kohdennus !== undefined) viite.kohdennus = kohdennus;
-    if (r.alkaen) viite.alkaen = r.alkaen;
-    if (r.paattyen) viite.paattyen = r.paattyen;
     tulos.push(viite);
   }
   return tulos;
@@ -248,6 +253,10 @@ function muunnaRivi(r: KitsasRiviRivi): TositeRivi {
  * (Kitsas itse lukee ilman ORDER BY:tä, tositeroute.cpp:486-489). `pudotetut` laskee rivien
  * tiedot, joita ei tuoda, muodossa `Rivi.json.<avain>` → esiintymät: `ennakkoera` (Kitsaksen
  * erämalli eroaa Pennin ennakkolaskuista) ja muut tuntemattomat avaimet, sekä `Rivi.ostokpl`.
+ *
+ * Maksumuistutuksen (216) rivejä ei lueta: Kitsas kirjoittaa niihin vain näyttörivit (aiempi
+ * saldo, muistutusmaksu, korko), jotka Pennissä korvaa tositteen `muistutus` (spec §4.2).
+ * Ne ovat siis katettuja eivätkä näy `pudotetut`-laskennassa.
  */
 export function lueRivit(db: Database.Database): {
   rivit: Map<number, TositeRivi[]>;
@@ -261,7 +270,11 @@ export function lueRivit(db: Database.Database): {
   };
   for (const r of db
     .prepare(
-      'SELECT tosite, rivi, tuote, myyntikpl, ostokpl, ahinta, json FROM Rivi ORDER BY tosite, rivi',
+      `SELECT Rivi.tosite, Rivi.rivi, Rivi.tuote, Rivi.myyntikpl, Rivi.ostokpl, Rivi.ahinta,
+              Rivi.json
+       FROM Rivi LEFT JOIN Tosite ON Tosite.id = Rivi.tosite
+       WHERE Tosite.tyyppi IS NOT ${TositeTyyppi.MAKSUMUISTUTUS}
+       ORDER BY Rivi.tosite, Rivi.rivi`,
     )
     .all() as KitsasRiviRivi[]) {
     const lista = rivit.get(r.tosite) ?? [];
@@ -269,9 +282,7 @@ export function lueRivit(db: Database.Database): {
     rivit.set(r.tosite, lista);
     if (nollaton(r.ostokpl) !== undefined) laske('Rivi.ostokpl');
     for (const [avain, arvo] of Object.entries(lueOlio(r.json))) {
-      if (KASITELLYT_RIVI_JSON.has(avain)) continue;
-      if (arvo === null || arvo === '' || (typeof arvo === 'object' && !Object.keys(arvo).length))
-        continue;
+      if (KASITELLYT_RIVI_JSON.has(avain) || !onArvo(arvo)) continue;
       laske(`Rivi.json.${avain}`);
     }
   }
@@ -280,6 +291,7 @@ export function lueRivit(db: Database.Database): {
 
 /**
  * Liitä luetut rivit tositteisiinsa Kitsas-tosite-id:llä ja lisää pudotetut kattavuusraporttiin.
+ * Maksumuistutukselle (216) ei liitetä rivejä (ks. `lueRivit`).
  */
 export function liitaRivit(
   tositteet: KitsasTosite[],
@@ -287,6 +299,7 @@ export function liitaRivit(
   kattamattomat: Record<string, number>,
 ): void {
   for (const tosite of tositteet) {
+    if (tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS) continue;
     const rivit = luetut.rivit.get(tosite.id);
     if (rivit) tosite.rivit = rivit;
   }
@@ -327,16 +340,38 @@ function alkupNro(lasku: JsonOlio): string | undefined {
 }
 
 /**
+ * Laskutusjakso json `lasku`-kartasta: kelvollinen `jaksopvm` loppuna, alkuna `toimituspvm`,
+ * sen puuttuessa laskupäivä (tositteen `laskupvm`, json `pvm`, tositteen `pvm`). Jos alku on
+ * lopun jälkeen, jaksoa ei ole.
+ */
+function laskunJakso(
+  lasku: JsonOlio,
+  laskupvm: string | null | undefined,
+  tositePvm: string,
+): { alkaa: IsoDate; loppuu: IsoDate } | undefined {
+  const loppuu = pvm(lasku.jaksopvm);
+  if (!loppuu) return undefined;
+  const alkaa = pvm(lasku.toimituspvm) ?? (laskupvm || undefined) ?? pvm(lasku.pvm) ?? tositePvm;
+  return alkaa <= loppuu ? { alkaa, loppuu } : undefined;
+}
+
+/**
  * Täydennä tuodut tositteet laskun lisätiedoilla (`lasku` = Kitsas-tosite-id → json `lasku`):
  * - `viivkorko` säilyy tositteella (muistutuksen korkoprosentti haetaan siitä);
- * - kelvollinen `jaksopvm` → `jakso = { alkaa: toimituspvm ?? laskupäivä, loppuu: jaksopvm }`;
- * - maksumuistutuksella (216) muistutusavaimet → `muistutus` (summat sentteinä);
- * - `alkupNro` liitetään laskuun sen numerolla kuten hyvityslaskut (`alkuperainenTosite`), ja
- *   muistutuksen `aiemmat` on sama lasku. Jos laskua ei löydy, viittaukset jäävät asettamatta.
+ * - kelvollinen jakso (`laskunJakso`) → `jakso`;
+ * - `alkupNro` liitetään laskuun sen numerolla kuten hyvityslaskut (`alkuperainenTosite`). Jos
+ *   laskua ei löydy, viittaus jää asettamatta;
+ * - maksumuistutuksella (216), jolla on jokin muistutusavaimista, → `muistutus` (summat
+ *   sentteinä, `aiemmat` = alkuperäinen lasku). Korkoprosentti on muistutuksen oma `viivkorko`,
+ *   muuten alkuperäisen laskun. Jos kumpaakaan ei ole, `muistutus` jää asettamatta (prosenttia
+ *   ei keksitä): luonnos ei silloin kirjaudu (EIMUISTUTUSTIETOJA), ja Pennissä uudelleen luotu
+ *   muistutus käyttää moottorin oletuskorkoa. Tuomatta jääneet muistutusavaimet lasketaan
+ *   `kattamattomat`-raporttiin, kun se annetaan.
  */
 export function taydennaLaskutiedot(
   tositteet: KitsasTosite[],
   lasku: Map<number, Record<string, unknown>>,
+  kattamattomat?: Record<string, number>,
 ): void {
   const tositeNumerolla = new Map<string, number>();
   for (const t of tositteet) if (t.numero) tositeNumerolla.set(t.numero, t.id);
@@ -348,48 +383,64 @@ export function taydennaLaskutiedot(
     const viivkorko = luku(tiedot.viivkorko);
     if (viivkorko !== undefined) tosite.viivkorko = viivkorko;
 
-    const loppuu = pvm(tiedot.jaksopvm);
-    if (loppuu) {
-      const alkaa = pvm(tiedot.toimituspvm) ?? tosite.laskupvm ?? pvm(tiedot.pvm) ?? tosite.pvm;
-      tosite.jakso = { alkaa, loppuu };
-    }
+    const jakso = laskunJakso(tiedot, tosite.laskupvm, tosite.pvm);
+    if (jakso) tosite.jakso = jakso;
 
     const nro = alkupNro(tiedot);
     const alkuperainen = nro !== undefined ? tositeNumerolla.get(nro) : undefined;
     if (alkuperainen !== undefined && alkuperainen !== tosite.id)
       tosite.alkuperainenTosite = alkuperainen;
 
-    if (
-      tosite.tyyppi === TositeTyyppi.MAKSUMUISTUTUS &&
-      MUISTUTUKSEN_AVAIMET.some((avain) => tiedot[avain] !== undefined && tiedot[avain] !== null)
-    ) {
-      const muistutus: Muistutus = {
-        maksu: sentit(tiedot.muistutusmaksu) ?? Euro.fromCents(0),
-        korko: sentit(tiedot.korko) ?? Euro.fromCents(0),
-        viivkorko: viivkorko ?? 0,
-        korkoalkaa: pvm(tiedot.korkoalkaa) ?? tosite.pvm,
-        korkoloppuu: pvm(tiedot.korkoloppuu) ?? tosite.pvm,
-        aiempiSaldo: sentit(tiedot.aiempisaldo) ?? Euro.fromCents(0),
-        aiemmat: tosite.alkuperainenTosite !== undefined ? [tosite.alkuperainenTosite] : [],
-      };
-      tosite.muistutus = muistutus;
+    if (tosite.tyyppi !== TositeTyyppi.MAKSUMUISTUTUS) continue;
+    const muistutusavaimet = MUISTUTUKSEN_AVAIMET.filter((avain) => onArvo(tiedot[avain]));
+    if (muistutusavaimet.length === 0) continue;
+    const korkoprosentti =
+      viivkorko ??
+      (tosite.alkuperainenTosite !== undefined
+        ? luku(lasku.get(tosite.alkuperainenTosite)?.viivkorko)
+        : undefined);
+    if (korkoprosentti === undefined) {
+      if (kattamattomat)
+        for (const avain of muistutusavaimet) {
+          const nimi = `Tosite.json.lasku.${avain}`;
+          kattamattomat[nimi] = (kattamattomat[nimi] ?? 0) + 1;
+        }
+      continue;
     }
+    tosite.muistutus = {
+      maksu: sentit(tiedot.muistutusmaksu) ?? Euro.fromCents(0),
+      korko: sentit(tiedot.korko) ?? Euro.fromCents(0),
+      viivkorko: korkoprosentti,
+      korkoalkaa: pvm(tiedot.korkoalkaa) ?? tosite.pvm,
+      korkoloppuu: pvm(tiedot.korkoloppuu) ?? tosite.pvm,
+      aiempiSaldo: sentit(tiedot.aiempisaldo) ?? Euro.fromCents(0),
+      aiemmat: tosite.alkuperainenTosite !== undefined ? [tosite.alkuperainenTosite] : [],
+    } satisfies Muistutus;
   }
 }
 
 /**
  * Tositteen json-kattavuusauditin sisäkkäiset avaimet laskutustiedot huomioiden: `viivkorko`
- * katetaan aina, kelvollinen `jaksopvm` (ja sen kanssa `toimituspvm`) jaksoksi, muistutusavaimet
- * maksumuistutuksella. Pelkkä `toimituspvm` ilman jaksoa jää raporttiin (spec §1).
+ * katetaan aina, `jaksopvm` ja `toimituspvm` vain kun niistä syntyy jakso (`laskunJakso`), ja
+ * muistutusavaimet maksumuistutuksella. Pelkkä `toimituspvm` ilman jaksoa jää raporttiin
+ * (spec §1). Muistutusavaimet, joita ei voitu tuoda korkoprosentin puuttuessa, raportoi
+ * `taydennaLaskutiedot`.
  */
 export function laskutusSisakkaiset(rivi: {
   tyyppi: number;
   json: string | null;
+  pvm?: string;
+  laskupvm?: string | null;
 }): Record<string, ReadonlySet<string>> {
-  const lasku = lueOlio(rivi.json).lasku as JsonOlio | undefined;
+  const lasku = lueOlio(rivi.json).lasku;
   const avaimet = new Set(KASITELLYT_TOSITE_SISAKKAISET.lasku);
   avaimet.add('viivkorko');
-  if (lasku && typeof lasku === 'object' && pvm(lasku.jaksopvm)) {
+  if (
+    lasku &&
+    typeof lasku === 'object' &&
+    !Array.isArray(lasku) &&
+    laskunJakso(lasku as JsonOlio, rivi.laskupvm, rivi.pvm ?? '')
+  ) {
     avaimet.add('jaksopvm');
     avaimet.add('toimituspvm');
   }

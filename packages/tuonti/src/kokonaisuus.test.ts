@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { kirjaaLaskuluonnos } from '@penni/engine';
 import { createMemoryStorage } from '@penni/storage-memory';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { kirjoitaKirja } from './kirjoitaKirja.js';
@@ -92,6 +93,15 @@ describe('koko tuonti', () => {
     const muistutus = await storage.getTosite(LASKUTUS_TESTI.muistutus);
     expect(muistutus?.muistutus?.maksu).toBe(500);
     expect(muistutus?.alkuperainenTosite).toBe(LASKUTUS_TESTI.lasku);
+    expect(muistutus?.rivit).toBeUndefined();
+
+    // Muistutusluonnos ilman muistutustietoja: viittaus laskuun on, mutta kirjaus kieltäytyy.
+    const tyhja = await storage.getTosite(LASKUTUS_TESTI.tyhjaMuistutus);
+    expect(tyhja?.alkuperainenTosite).toBe(LASKUTUS_TESTI.lasku);
+    expect(tyhja?.muistutus).toBeUndefined();
+    await expect(
+      kirjaaLaskuluonnos(storage, LASKUTUS_TESTI.tyhjaMuistutus, { aika: AIKA }),
+    ).rejects.toMatchObject({ code: 'EIMUISTUTUSTIETOJA' });
 
     const taysmaytys = await tarkistaTuonti(kirja, storage);
     expect(taysmaytys.maarat.tuotteet).toEqual([1, 1]);
