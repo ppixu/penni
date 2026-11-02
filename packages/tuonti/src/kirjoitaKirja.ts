@@ -84,6 +84,20 @@ export async function kirjoitaKirja(
     await storage.saveKohdennus(k);
   }
 
+  // 4b. tuotteet ja vakioviitteet (ennen tositteita: laskurivin tuote viittaa näihin)
+  ilmoita('tuotteet', 0, kirja.tuotteet.length);
+  n = 0;
+  for (const tuote of kirja.tuotteet) {
+    await storage.saveTuote(tuote);
+    ilmoita('tuotteet', ++n, kirja.tuotteet.length);
+  }
+  ilmoita('vakioviitteet', 0, kirja.vakioviitteet.length);
+  n = 0;
+  for (const viite of kirja.vakioviitteet) {
+    await storage.saveVakioviite(viite);
+    ilmoita('vakioviitteet', ++n, kirja.vakioviitteet.length);
+  }
+
   // 5. Kitsaksen muutoshistoria ennen tositteita, jotta lokin järjestys on aikajärjestys
   const lokiTositteittain = new Map<number, typeof kirja.loki>();
   for (const merkinta of kirja.loki) {
@@ -153,6 +167,8 @@ export async function kirjoitaKirja(
     tilikaudet: kirja.tilikaudet.length,
     asetukset: avaimet.length,
     kumppanit: kirja.kumppanit.length,
+    tuotteet: kirja.tuotteet.length,
+    vakioviitteet: kirja.vakioviitteet.length,
     tositteet: kirja.tositteet.length,
     viennit,
     liitteet: kirja.liitteet.length,

@@ -10,8 +10,16 @@ import { Euro } from '@penni/euro';
 import Database from 'better-sqlite3';
 import { lueKohdennukset } from './kohdennukset.js';
 import {
+  laskutusSisakkaiset,
+  liitaRivit,
+  lueLaskut,
+  lueRivit,
+  lueTuotteet,
+  lueVakioviitteet,
+  taydennaLaskutiedot,
+} from './laskutus.js';
+import {
   KASITELLYT_TOSITE_JSON,
-  KASITELLYT_TOSITE_SISAKKAISET,
   KASITELLYT_VIENTI_JSON,
   KITSAS_LAHDE,
   type KitsasKumppaniRivi,
@@ -49,7 +57,7 @@ export class TuontiVirhe extends Error {
 }
 
 /** Tables Penni's Tier-0 model does not carry over; reported, never silently dropped. */
-const OHITETTAVAT_TAULUT = ['Tuote', 'Vakioviite', 'Ryhma', 'KumppaniRyhmassa', 'Rivi'];
+const OHITETTAVAT_TAULUT = ['Ryhma', 'KumppaniRyhmassa'];
 
 /**
  * Kitsas writes `aika` with SQLite's `current_timestamp` ('YYYY-MM-DD HH:MM:SS', UTC). Penni's
@@ -267,7 +275,7 @@ export function lueKitsas(polku: string): KitsasKirja {
         KASITELLYT_TOSITE_JSON,
         'Tosite.json',
         kattamattomat,
-        KASITELLYT_TOSITE_SISAKKAISET,
+        laskutusSisakkaiset(rivi),
       );
       return muunnaTosite(rivi, viennitTositteittain.get(rivi.id) ?? []);
     });
@@ -283,6 +291,12 @@ export function lueKitsas(polku: string): KitsasKirja {
       if (tosite && alkuperainen !== undefined && alkuperainen !== rivi.id)
         tosite.alkuperainenTosite = alkuperainen;
     }
+
+    // --- laskutus: tuotteet, vakioviitteet, laskurivit ja laskujen lisätiedot (laskutus.ts) ---
+    const tuotteet = lueTuotteet(db);
+    const vakioviitteet = lueVakioviitteet(db, kattamattomat);
+    liitaRivit(tositteet, lueRivit(db), kattamattomat);
+    taydennaLaskutiedot(tositteet, lueLaskut(tositeRivit));
 
     // Filed VAT returns (ALVLASKELMA = 9100) — finalized only, for the post-import check.
     const alvIlmoitukset: KitsasAlvIlmoitus[] = [];
@@ -354,6 +368,8 @@ export function lueKitsas(polku: string): KitsasKirja {
       kumppanit,
       kohdennukset,
       budjetit,
+      tuotteet,
+      vakioviitteet,
       tositteet,
       liitteet,
       kpVersio,

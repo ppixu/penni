@@ -9,6 +9,8 @@ import type {
   UusiKohdennus,
   UusiKumppani,
   UusiLiite,
+  UusiTuote,
+  Vakioviite,
 } from '@penni/engine';
 
 /** A voucher read from a Kitsas book: a Penni Tosite plus its original Kitsas id. */
@@ -28,6 +30,10 @@ export interface KitsasKirja {
   kohdennukset: UusiKohdennus[];
   /** Vuosibudjetit tilikausittain (tilikauden `alkaa`). */
   budjetit: { tilikausi: IsoDate; rivit: BudjettiRivi[] }[];
+  /** Tuoterekisteri Kitsas-id:t säilyttäen (laskutus.ts). */
+  tuotteet: UusiTuote[];
+  /** Vakioviitteet, viite sellaisenaan (laskutus.ts). */
+  vakioviitteet: Vakioviite[];
   tositteet: KitsasTosite[];
   liitteet: KitsasLiite[];
   /** Kitsas KpVersio setting, for the compatibility warning. */
@@ -64,7 +70,15 @@ export interface KitsasAlvIlmoitus {
 
 /** Progress event emitted while writing. `tehty`/`kaikkiaan` are row counts within `vaihe`. */
 export interface TuontiEdistyminen {
-  vaihe: 'tilit' | 'tilikaudet' | 'asetukset' | 'kumppanit' | 'tositteet' | 'liitteet';
+  vaihe:
+    | 'tilit'
+    | 'tilikaudet'
+    | 'asetukset'
+    | 'kumppanit'
+    | 'tuotteet'
+    | 'vakioviitteet'
+    | 'tositteet'
+    | 'liitteet';
   tehty: number;
   kaikkiaan: number;
 }
@@ -75,6 +89,8 @@ export interface TuontiRaportti {
   tilikaudet: number;
   asetukset: number;
   kumppanit: number;
+  tuotteet: number;
+  vakioviitteet: number;
   tositteet: number;
   viennit: number;
   liitteet: number;

@@ -87,6 +87,8 @@ describe('tarkistaTuonti', () => {
       kumppanit: [],
       kohdennukset: [],
       budjetit: [],
+      tuotteet: [],
+      vakioviitteet: [],
       tositteet: [
         {
           id: 1,

@@ -27,6 +27,8 @@ const VAIHEEN_NIMI: Record<TuontiEdistyminen['vaihe'], string> = {
   tilikaudet: 'Tilikaudet',
   asetukset: 'Asetukset',
   kumppanit: 'Kumppanit',
+  tuotteet: 'Tuotteet',
+  vakioviitteet: 'Vakioviitteet',
   tositteet: 'Tositteet',
   liitteet: 'Liitteet',
 };
@@ -176,6 +178,12 @@ export function TuontiNakyma(): React.ReactElement {
                 Tuotiin {tulos.raportti.tositteet} tositetta, {tulos.raportti.viennit} vientiä ja{' '}
                 {tulos.raportti.liitteet} liitettä tiedostoon {tulos.kohde}.
               </p>
+              {(tulos.raportti.tuotteet > 0 || tulos.raportti.vakioviitteet > 0) && (
+                <p className="mt-1 text-[12.5px] text-[var(--text-muted)]">
+                  Laskutuksesta tuotiin {tulos.raportti.tuotteet} tuotetta ja{' '}
+                  {tulos.raportti.vakioviitteet} vakioviitettä.
+                </p>
+              )}
               {tulos.taysmaytys.alvIlmoituksia > 0 && tulos.taysmaytys.alvErot.length === 0 && (
                 <p className="mt-1 text-[12.5px] text-[var(--text-muted)]">
                   Penni laski {tulos.taysmaytys.alvIlmoituksia} Kitsaksessa annettua alv-ilmoitusta

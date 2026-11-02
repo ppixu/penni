@@ -1,4 +1,4 @@
-import type { TuontiSilta } from '@penni/tuonti';
+import type { TuontiEdistyminen, TuontiSilta } from '@penni/tuonti';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,6 +21,8 @@ const RAPORTTI = {
   tilikaudet: 1,
   asetukset: 4,
   kumppanit: 1,
+  tuotteet: 0,
+  vakioviitteet: 0,
   tositteet: 4,
   viennit: 8,
   liitteet: 1,
@@ -79,6 +81,34 @@ describe('TuontiNakyma', () => {
     await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
     expect(await screen.findByText(/Täsmäytys onnistui/i)).toBeInTheDocument();
     expect(silta.tuo).toHaveBeenCalledWith('/tmp/testi.kitsas', expect.any(Function));
+  });
+
+  it('kertoo tuoduista tuotteista ja vakioviitteistä', async () => {
+    window.penni = luoSilta({
+      tuo: vi.fn(async (_polku: string, edistyminen: (e: TuontiEdistyminen) => void) => {
+        edistyminen({ vaihe: 'tuotteet', tehty: 1, kaikkiaan: 3 });
+        return {
+          kohde: '/tmp/testi.penni',
+          raportti: { ...RAPORTTI, tuotteet: 3, vakioviitteet: 2 },
+          taysmaytys: {
+            tasmaa: true,
+            erot: [],
+            maarat: {},
+            ulkopuoliset: 0,
+            alvErot: [],
+            alvIlmoituksia: 0,
+            kattamattomat: {},
+          },
+        };
+      }),
+    });
+    const user = userEvent.setup();
+    render(<TuontiNakyma />);
+    await user.click(screen.getByRole('button', { name: 'Valitse Kitsas-tiedosto' }));
+    await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
+    expect(
+      await screen.findByText(/Laskutuksesta tuotiin 3 tuotetta ja 2 vakioviitettä/),
+    ).toBeInTheDocument();
   });
 
   it('näyttää täsmäytyksen erot tileittäin sentteinä, ei liukulukuina', async () => {

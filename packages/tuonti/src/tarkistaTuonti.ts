@@ -97,6 +97,8 @@ export async function tarkistaTuonti(
   const ulkopuoliset = laskeUlkopuoliset(kirja);
 
   const kumppanit = await storage.getKumppanit();
+  const tuotteet = await storage.getTuotteet();
+  const vakioviitteet = await storage.getVakioviitteet();
   const kartta = await storage.getChart();
   const kaudet = await storage.getTilikaudet();
   let liitteita = 0;
@@ -115,6 +117,8 @@ export async function tarkistaTuonti(
     tilit: [kirja.tilit.length, kartta.length],
     tilikaudet: [kirja.tilikaudet.length, kaudet.length],
     kumppanit: [kirja.kumppanit.length, kumppanit.length],
+    tuotteet: [kirja.tuotteet.length, tuotteet.length],
+    vakioviitteet: [kirja.vakioviitteet.length, vakioviitteet.length],
     liitteet: [kirja.liitteet.length, liitteita],
     tositteet: [finalisoidut.length, kirjanpidossa.length],
     viennit: [

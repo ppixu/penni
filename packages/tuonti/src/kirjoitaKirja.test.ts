@@ -34,6 +34,8 @@ function kirjaTositteineen(tositteet: KitsasTosite[]): KitsasKirja {
     kumppanit: [],
     kohdennukset: [],
     budjetit: [],
+    tuotteet: [],
+    vakioviitteet: [],
     tositteet,
     liitteet: [],
     kpVersio: '24',
@@ -159,6 +161,8 @@ describe('kirjoitaKirja', () => {
       'tilikaudet',
       'asetukset',
       'kumppanit',
+      'tuotteet',
+      'vakioviitteet',
       'tositteet',
       'liitteet',
     ]);
