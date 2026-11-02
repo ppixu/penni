@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <!-- Synteettinen testitiedosto: IBAN ja viitteet ovat keksittyjä, mutta tarkisteiltaan kelvollisia. -->
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>TESTI-053-202610</MsgId>
+      <CreDtTm>2026-11-01T06:00:00+02:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT-202610-1</Id>
+      <ElctrncSeqNb>10</ElctrncSeqNb>
+      <FrToDt>
+        <FrDtTm>2026-10-01T00:00:00+03:00</FrDtTm>
+        <ToDtTm>2026-10-31T23:59:59+02:00</ToDtTm>
+      </FrToDt>
+      <Acct>
+        <Id>
+          <IBAN>FI7455550000012343</IBAN>
+        </Id>
+        <Ccy>EUR</Ccy>
+        <Ownr>
+          <Nm>Testi Oy</Nm>
+        </Ownr>
+      </Acct>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>OPBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="EUR">1000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2026-10-01</Dt>
+        </Dt>
+      </Bal>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="EUR">2184.50</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2026-10-31</Dt>
+        </Dt>
+      </Bal>
+      <Ntry>
+        <NtryRef>1</NtryRef>
+        <Amt Ccy="EUR">49.90</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt>
+          <Dt>2026-10-05</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-10-04</Dt>
+        </ValDt>
+        <AcctSvcrRef>202610050001</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>CCRD</Cd>
+              <SubFmlyCd>POSD</SubFmlyCd>
+            </Fmly>
+          </Domn>
+        </BkTxCd>
+        <NtryDtls>
+          <TxDtls>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="USD">54.20</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <RltdPties>
+              <Cdtr>
+                <Pty>
+                  <Nm>Testikauppa Ltd</Nm>
+                </Pty>
+              </Cdtr>
+            </RltdPties>
+            <RmtInf>
+              <Ustrd>Korttiosto</Ustrd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <NtryRef>2</NtryRef>
+        <Amt Ccy="EUR">1234.5</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt>
+          <Dt>2026-10-12</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-10-12</Dt>
+        </ValDt>
+        <AcctSvcrRef>202610120042</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <RltdPties>
+              <Dbtr>
+                <Pty>
+                  <Nm>Maija Malli</Nm>
+                </Pty>
+              </Dbtr>
+              <DbtrAcct>
+                <Id>
+                  <IBAN>FI1522220000045675</IBAN>
+                </Id>
+              </DbtrAcct>
+            </RltdPties>
+            <RmtInf>
+              <Strd>
+                <CdtrRefInf>
+                  <Tp>
+                    <CdOrPrtry>
+                      <Cd>SCOR</Cd>
+                    </CdOrPrtry>
+                  </Tp>
+                  <Ref>12345 3</Ref>
+                </CdtrRefInf>
+              </Strd>
+              <Ustrd>Lasku 12345</Ustrd>
+              <Ustrd>Kiitos</Ustrd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <NtryRef>3</NtryRef>
+        <Amt Ccy="EUR">0.10</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt>
+          <Dt>2026-10-31</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-10-31</Dt>
+        </ValDt>
+        <AcctSvcrRef>202610310007</AcctSvcrRef>
+        <AddtlNtryInf>Tilinhoitomaksu</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <NtryRef>4</NtryRef>
+        <Amt Ccy="EUR">75.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>PDNG</Cd>
+        </Sts>
+        <BookgDt>
+          <Dt>2026-10-31</Dt>
+        </BookgDt>
+        <AcctSvcrRef>202610310099</AcctSvcrRef>
+        <AddtlNtryInf>Odottava varaus</AddtlNtryInf>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

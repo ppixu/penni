@@ -1,6 +1,7 @@
 import { type Cents, Euro } from '@penni/euro';
 import type { IsoDate } from '../vouchers/types.js';
 import type { AlkuperainenSumma, Tilitapahtuma } from './poimiTiliote.js';
+import type { TiliotteenLahde } from './tiedosto/yhteiset.js';
 
 /** Tiliotteen kattama jakso. */
 export interface TiliotteenKausi {
@@ -18,6 +19,12 @@ export interface Tiliote {
   /** Loppusaldo (kauden viimeisen päivän saldo). */
   loppusaldo?: Cents;
   tapahtumat: Tilitapahtuma[];
+  /** Mikä lukija tiliotteen tuotti (käyttöliittymän tekstit ja tallennettavan liitteen MIME-tyyppi). */
+  lahde?: TiliotteenLahde;
+  /** Tiliotteen oma tili (IBAN ilman välilyöntejä), jos tiedosto kertoo sen. */
+  iban?: string;
+  /** Kausi on päätelty tapahtumien päivistä, ei tiedoston ilmoittama. */
+  kausiPaatelty?: true;
 }
 
 /**

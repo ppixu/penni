@@ -1,7 +1,15 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  truncateSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { TasmaysAineisto } from '@penni/luku';
+import type { TasmaysAineisto, TilioteEsikatselu } from '@penni/luku';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { type TasmaysLukija, type Valitsin, tasmaysKasittelijat } from './tasmaysSilta.js';
 
@@ -25,10 +33,15 @@ function dialogi(
 }
 
 const tyhjaAineisto = {} as TasmaysAineisto;
+const tyhjaEsikatselu = { lahde: 'camt' } as TilioteEsikatselu;
 
-function lukija(): TasmaysLukija & { lueAineisto: ReturnType<typeof vi.fn> } {
+function lukija(): TasmaysLukija & {
+  lueAineisto: ReturnType<typeof vi.fn>;
+  esikatseleTiliote: ReturnType<typeof vi.fn>;
+} {
   return {
     lueAineisto: vi.fn().mockResolvedValue(tyhjaAineisto),
+    esikatseleTiliote: vi.fn().mockReturnValue(tyhjaEsikatselu),
     lueTiedosto: async (polku) => new TextEncoder().encode(`luettu:${polku}`),
   };
 }
@@ -72,6 +85,22 @@ describe('tasmaysKasittelijat — valinnat', () => {
     expect(await k.valitseTiliote(tapahtuma())).toBe(tiliote);
     expect(d.showOpenDialog).toHaveBeenCalledWith(
       expect.objectContaining({ properties: ['openFile'] }),
+    );
+  });
+
+  it('tarjoaa tiliotevalitsimessa PDF-, XML-, CSV- ja TITO-päätteet sekä kaikki tiedostot', async () => {
+    const d = dialogi(tiliote);
+    await tasmaysKasittelijat(d, () => OSOITE).valitseTiliote(tapahtuma());
+    expect(d.showOpenDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: [
+          {
+            name: 'Tiliote (PDF, XML, CSV, TITO)',
+            extensions: ['pdf', 'xml', 'csv', 'txt', 'tito', 'nda'],
+          },
+          { name: 'Kaikki tiedostot', extensions: ['*'] },
+        ],
+      }),
     );
   });
 
@@ -165,7 +194,7 @@ describe('tasmaysKasittelijat — lueAineisto', () => {
     const k = await valitutKasittelijat(l);
     const t = tapahtuma();
     expect(await k.lueAineisto(t, tiliote, kansio)).toBe(tyhjaAineisto);
-    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, kansio, expect.any(Function));
+    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, kansio, expect.any(Function), undefined);
     expect(t.sender.send).toHaveBeenCalledWith(
       'tasmays:edistyminen',
       expect.objectContaining({ vaihe: 'tiliote' }),
@@ -177,7 +206,7 @@ describe('tasmaysKasittelijat — lueAineisto', () => {
     const k = tasmaysKasittelijat(dialogi(tiliote), () => OSOITE, l);
     await k.valitseTiliote(tapahtuma());
     await k.lueAineisto(tapahtuma(), tiliote, null);
-    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, null, expect.any(Function));
+    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, null, expect.any(Function), undefined);
   });
 
   it('hylkää valitsemattoman tiliotteen eikä lue mitään', async () => {
@@ -195,6 +224,151 @@ describe('tasmaysKasittelijat — lueAineisto', () => {
       /Pääsy estetty/,
     );
     expect(l.lueAineisto).not.toHaveBeenCalled();
+  });
+});
+
+describe('tasmaysKasittelijat — lueAineisto valinnat', () => {
+  type Valinnat = Parameters<TasmaysLukija['lueAineisto']>[3];
+
+  it('välittää CSV-sarakejaon lukijalle', async () => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    const valinnat: Valinnat = {
+      csvSarakkeet: { pvm: 0, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: [2], viesti: [] },
+    };
+    await k.lueAineisto(tapahtuma(), tiliote, null, valinnat);
+    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, null, expect.any(Function), valinnat);
+  });
+
+  it('hyväksyy valinnat ilman sarakejakoa', async () => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    await k.lueAineisto(tapahtuma(), tiliote, null, {});
+    expect(l.lueAineisto).toHaveBeenCalledWith(tiliote, null, expect.any(Function), {});
+  });
+
+  it.each([
+    ['null', null],
+    ['merkkijono', 'csv'],
+    ['sarakejako ilman päivämuotoa', { csvSarakkeet: { pvm: 0, maara: 1, nimi: [], viesti: [] } }],
+    [
+      'negatiivinen indeksi',
+      { csvSarakkeet: { pvm: -1, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: [], viesti: [] } },
+    ],
+    [
+      'nimi ei ole lista',
+      { csvSarakkeet: { pvm: 0, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: 2, viesti: [] } },
+    ],
+    ['sarakejako null', { csvSarakkeet: null }],
+  ])('hylkää virheellisen sarakejaon suomeksi lukematta: %s', async (_nimi, valinnat) => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    await expect(
+      k.lueAineisto(tapahtuma(), tiliote, null, valinnat as unknown as Valinnat),
+    ).rejects.toThrow('Sarakejako on virheellinen.');
+    expect(l.lueAineisto).not.toHaveBeenCalled();
+  });
+});
+
+describe('tasmaysKasittelijat — tiedoston enimmäiskoko', () => {
+  // Harva tiedosto: koko on yli 50 Mt, mutta levytilaa ei kulu.
+  const iso = join(juuri, 'iso.csv');
+  writeFileSync(iso, '');
+  truncateSync(iso, 50 * 1024 * 1024 + 1);
+  const rajalla = join(juuri, 'rajalla.csv');
+  writeFileSync(rajalla, '');
+  truncateSync(rajalla, 50 * 1024 * 1024);
+
+  it('pudotettu hylkää yli 50 Mt:n tiedoston eikä lisää sitä sallittuihin', async () => {
+    const k = tasmaysKasittelijat(dialogi(), () => OSOITE, lukija());
+    await expect(k.pudotettu(tapahtuma(), iso)).rejects.toThrow(
+      'Tiedosto on liian suuri tiliotteeksi.',
+    );
+    await expect(k.lueTiedosto(tapahtuma(), iso)).rejects.toThrow(/Pääsy estetty/);
+    expect(await k.pudotettu(tapahtuma(), rajalla)).toBe(rajalla);
+  });
+
+  it('esikatsele ja lueAineisto hylkäävät dialogista valitun liian suuren tiedoston lukematta', async () => {
+    const l = lukija();
+    const k = tasmaysKasittelijat(dialogi(iso), () => OSOITE, l);
+    await k.valitseTiliote(tapahtuma());
+    await expect(k.esikatsele(tapahtuma(), iso)).rejects.toThrow(
+      'Tiedosto on liian suuri tiliotteeksi.',
+    );
+    await expect(k.lueAineisto(tapahtuma(), iso, null)).rejects.toThrow(
+      'Tiedosto on liian suuri tiliotteeksi.',
+    );
+    expect(l.esikatseleTiliote).not.toHaveBeenCalled();
+    expect(l.lueAineisto).not.toHaveBeenCalled();
+  });
+});
+
+describe('tasmaysKasittelijat — pudotettu', () => {
+  const pudotettuTiedosto = join(juuri, 'pudotettu.xml');
+  writeFileSync(pudotettuTiedosto, '<xml/>');
+
+  it('lisää pudotetun tiedoston sallittujen listalle ja palauttaa polun', async () => {
+    const l = lukija();
+    const k = tasmaysKasittelijat(dialogi(), () => OSOITE, l);
+    await expect(k.lueAineisto(tapahtuma(), pudotettuTiedosto, null)).rejects.toThrow(
+      /Pääsy estetty/,
+    );
+    expect(await k.pudotettu(tapahtuma(), pudotettuTiedosto)).toBe(pudotettuTiedosto);
+    await k.lueAineisto(tapahtuma(), pudotettuTiedosto, null);
+    expect(l.lueAineisto).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['tyhjä polku', ''],
+    ['suhteellinen polku', 'tiliote.xml'],
+    ['kansio', kansio],
+    ['olematon tiedosto', join(juuri, 'ei-ole.xml')],
+  ])('hylkää suomenkielisellä viestillä: %s', async (_nimi, polku) => {
+    const k = tasmaysKasittelijat(dialogi(), () => OSOITE, lukija());
+    await expect(k.pudotettu(tapahtuma(), polku)).rejects.toThrow(
+      'Pudotettu tiedosto ei ole luettavissa.',
+    );
+    // Hylätty polku ei päädy sallittujen listalle.
+    await expect(k.lueTiedosto(tapahtuma(), polku || juuri)).rejects.toThrow(/Pääsy estetty/);
+  });
+
+  it('hylkää vieraan lähettäjän lisäämättä tiedostoa', async () => {
+    const l = lukija();
+    const k = tasmaysKasittelijat(dialogi(), () => OSOITE, l);
+    await expect(
+      k.pudotettu(tapahtuma('https://hyokkaaja.example/'), pudotettuTiedosto),
+    ).rejects.toThrow(/IPC-kutsu hylättiin/);
+    await expect(k.lueAineisto(tapahtuma(), pudotettuTiedosto, null)).rejects.toThrow(
+      /Pääsy estetty/,
+    );
+  });
+});
+
+describe('tasmaysKasittelijat — esikatsele', () => {
+  it('hylkää luvattoman polun eikä lue mitään', async () => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    await expect(k.esikatsele(tapahtuma(), salaisuus)).rejects.toThrow(/Pääsy estetty/);
+    expect(l.esikatseleTiliote).not.toHaveBeenCalled();
+  });
+
+  it('lukee sallitun tiedoston tavut ja kutsuu lukijan esikatselua', async () => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    expect(await k.esikatsele(tapahtuma(), tiliote)).toBe(tyhjaEsikatselu);
+    expect(l.esikatseleTiliote).toHaveBeenCalledTimes(1);
+    expect(new TextDecoder().decode(l.esikatseleTiliote.mock.calls[0]?.[0])).toBe(
+      `luettu:${realpathSync(tiliote)}`,
+    );
+  });
+
+  it('hylkää vieraan lähettäjän', async () => {
+    const l = lukija();
+    const k = await valitutKasittelijat(l);
+    await expect(k.esikatsele(tapahtuma('https://hyokkaaja.example/'), tiliote)).rejects.toThrow(
+      /IPC-kutsu hylättiin/,
+    );
+    expect(l.esikatseleTiliote).not.toHaveBeenCalled();
   });
 });
 

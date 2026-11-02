@@ -1,0 +1,5 @@
+Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viitenumero;Valuutta
+2026/10/28;-45,90;Testi Oy;Kauppa Malli Oy;;Korttiosto;;EUR
+2026/10/15;1 250,00;Maija Malli;Testi Oy;;Lasku 12;1000 3;EUR
+2026/10/15;-12,50;Testi Oy;Kahvila Esimerkki;;Kahvi;;EUR
+2026/10/02;-300,00;Testi Oy;;Vuokranantaja Oy;Vuokra lokakuu;12345 3;EUR

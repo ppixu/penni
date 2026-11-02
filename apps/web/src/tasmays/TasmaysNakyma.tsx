@@ -1,15 +1,23 @@
 import { useKpClient } from '@/app/KpClientProvider';
 import { useInit, usePaivitaAsetukset } from '@/app/kysely';
+import { Pudotusalue } from '@/components/Pudotusalue';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { TiliValitsin } from '@/editori/TiliValitsin';
 import type { LadattavaLiite } from '@/liitteet/LiitteidenLataus';
 import {
+  CSV_SARAKKEET_ASETUS,
+  type CsvEsikatselu,
+  type CsvSarakkeet as CsvSarakejako,
   type Kuittilahde,
   type TyolistaTila as Tila,
   type Tili,
+  type TiliotetiedostonValinnat,
+  type TiliotteenLahde,
   type TyolistaRivi,
   asetaTiliSamannimisille,
+  csvSarakkeetAsetukseksi,
+  haeCsvSarakkeet,
   irrotaKuitti,
   kuittiEhdokkaat,
   lataaKartta,
@@ -25,8 +33,9 @@ import {
   tyolistanTositeAsetukset,
 } from '@penni/engine';
 import { type Cents, muotoileEuro, muotoilePvm } from '@penni/euro';
-import type { LukuEdistyminen, TasmaysAineisto } from '@penni/luku';
+import type { LukuEdistyminen, TasmaysAineisto, TilioteEsikatselu } from '@penni/luku';
 import { useMemo, useRef, useState } from 'react';
+import { CsvSarakkeet } from './CsvSarakkeet.js';
 import { KasinKirjaus } from './KasinKirjaus.js';
 import { type OmaLiite, RiviPaneeli } from './RiviPaneeli.js';
 import { TiliotteenTallennus } from './TiliotteenTallennus.js';
@@ -39,6 +48,26 @@ const VAIHEEN_NIMI: Record<LukuEdistyminen['vaihe'], string> = {
   tiliote: 'Tiliote',
   kuitit: 'Kuitit',
 };
+
+/** Tiliotetiedoston muoto yhteenvetorivillä. */
+const LAHTEEN_NIMI: Record<TiliotteenLahde, string> = {
+  pdf: 'PDF',
+  camt053: 'camt.053',
+  camt054: 'camt.054',
+  tito: 'TITO',
+  csv: 'CSV',
+};
+
+/** Viimeksi luetun CSV:n esikatselu ja sillä käytetty sarakejako. */
+interface LuettuCsv {
+  esikatselu: CsvEsikatselu;
+  sarakkeet: CsvSarakejako;
+}
+
+/** Sillan heittämä virhe näytettäväksi ilman Electronin IPC-etuliitettä. */
+function virheteksti(e: unknown): string {
+  return siivoaIpcVirhe(e instanceof Error ? e.message : String(e));
+}
 
 /** Ryhmät joita ei voi piilottaa: nimitäsmäys ja puuttuva kuitti vaativat aina huomion. */
 const AINA_AUKI: ReadonlySet<Tila> = new Set(['nimitasmays', 'kuittiPuuttuu']);
@@ -111,7 +140,7 @@ function Ohje(): React.ReactElement {
   const vaiheet: [string, string][] = [
     [
       'Valitse tiliote',
-      'Pankin tiliote PDF:nä. Jokaisesta tilitapahtumasta tulee työlistalle rivi.',
+      'Pankin tiliote PDF:nä, camt-XML:nä, TITO-tiedostona tai CSV:nä. Jokaisesta tilitapahtumasta tulee työlistalle rivi.',
     ],
     [
       'Valitse kuittikansio',
@@ -159,7 +188,9 @@ function Merkki({ ok, children }: { ok: boolean; children: React.ReactNode }) {
 }
 
 /**
- * Kuukausitiliotteen yhteenveto: kausi, alku- ja loppusaldo sekä kaksi täsmäytystä —
+ * Luetun tiliotteen yhteenveto: tiedostomuoto (CSV:lle tunnistettu pankki), kausi — tiedoston
+ * ilmoittama tai tapahtumista päätelty — ja tapahtumien määrä, kuukausitiliotteelle lisäksi
+ * alku- ja loppusaldo sekä kaksi täsmäytystä —
  * tapahtumien summa = loppusaldo − alkusaldo (poiminta on täydellinen) ja tiliotteen
  * alkusaldo = kirjanpidon pankkitilin saldo kautta edeltävänä päivänä (edelliset kaudet
  * on kirjattu). Tapahtumat-viennillä ei ole saldoja, jolloin näytetään vain kausi.
@@ -167,23 +198,40 @@ function Merkki({ ok, children }: { ok: boolean; children: React.ReactNode }) {
 function TilioteYhteenveto({
   tiliote,
   kirjanpidonAlkusaldo,
+  pankki,
+  onVaihdaSarakkeet,
 }: {
   tiliote: TasmaysAineisto['tiliote'];
   kirjanpidonAlkusaldo: Cents | undefined;
+  /** CSV:n tunnistettu pankki. */
+  pankki?: string | undefined;
+  /** CSV:lle: avaa sarakejaon uudelleen. */
+  onVaihdaSarakkeet?: (() => void) | undefined;
 }): React.ReactElement | null {
-  const { kausi, alkusaldo, loppusaldo, tapahtumat } = tiliote;
-  if (!kausi && alkusaldo === undefined) return null;
+  const { kausi, alkusaldo, loppusaldo, tapahtumat, lahde } = tiliote;
+  if (!kausi && alkusaldo === undefined && !lahde) return null;
   const summa = tapahtumat.reduce((s, t) => s + t.maara, 0);
+  const kuvaus = [
+    lahde && LAHTEEN_NIMI[lahde],
+    lahde === 'csv' && pankki,
+    kausi &&
+      `${tiliote.kausiPaatelty ? 'Tapahtumat' : 'Kausi'} ${muotoilePvm(kausi.alkaa)}–${muotoilePvm(kausi.loppuu)}`,
+    `${tapahtumat.length} tapahtumaa`,
+  ].filter(Boolean);
   return (
     <section
       aria-label="tiliotteen saldot"
       className="flex flex-wrap items-baseline gap-x-5 gap-y-1 border-b border-[var(--border)] px-[22px] py-2 text-[12.5px]"
     >
-      {kausi && (
-        <span className="text-[var(--text-muted)]">
-          Kausi {muotoilePvm(kausi.alkaa)}–{muotoilePvm(kausi.loppuu)} · {tapahtumat.length}{' '}
-          tapahtumaa
-        </span>
+      <span className="text-[var(--text-muted)]">{kuvaus.join(' · ')}</span>
+      {onVaihdaSarakkeet && (
+        <button
+          type="button"
+          onClick={onVaihdaSarakkeet}
+          className="text-[11px] text-[var(--accent)] underline"
+        >
+          Vaihda sarakkeet
+        </button>
       )}
       {alkusaldo !== undefined && loppusaldo !== undefined && (
         <>
@@ -246,6 +294,21 @@ function TasmaysSisalto(): React.ReactElement {
   const seuraavaLiiteId = useRef(1);
   /** Käsin editorissa kirjattava rivi; näkymä vaihtuu editoriin ja tila säilyy taustalla. */
   const [kasinAvain, setKasinAvain] = useState<string | null>(null);
+  /** Luetun CSV:n sarakejako: kuittikansion uudelleenluku ja "Vaihda sarakkeet" käyttävät sitä. */
+  const [luettuCsv, setLuettuCsv] = useState<LuettuCsv | null>(null);
+  /** Avoin sarakejako: tiedosto odottaa, että käyttäjä vahvistaa sarakkeiden roolit. */
+  const [sarakejako, setSarakejako] = useState<{
+    polku: string;
+    esikatselu: CsvEsikatselu;
+    alku: CsvSarakejako;
+  } | null>(null);
+  /**
+   * Vanhentuneen tuloksen vartijat: `valintaNro` kasvaa jokaisesta tiedoston valinnasta,
+   * `lukuNro` jokaisesta luvusta. Hitaan aiemman esikatselun tai luvun tulos hylätään, jos
+   * uudempi on jo alkanut — muuten väärän tiliotteen rivit päätyisivät oikean nimen alle.
+   */
+  const valintaNro = useRef(0);
+  const lukuNro = useRef(0);
 
   const chart = useMemo<Tili[]>(() => (init ? lataaKartta(init.tilit) : []), [init]);
   const saannot = useMemo(
@@ -286,7 +349,11 @@ function TasmaysSisalto(): React.ReactElement {
    * kirjattua erää ehdoteta kahteen kertaan), kirjaushistorian ehdotukset ja kuukausitiliotteen
    * alkusaldon vertailu kirjanpitoon.
    */
-  async function paivitaTyolista(a: TasmaysAineisto, pankkitiliArvo: number | undefined) {
+  async function paivitaTyolista(
+    a: TasmaysAineisto,
+    pankkitiliArvo: number | undefined,
+    nro: number,
+  ) {
     if (pankkitiliArvo === undefined) {
       setVirhe('Valitse pankkitili ennen täsmäytystä.');
       return;
@@ -296,12 +363,23 @@ function TasmaysSisalto(): React.ReactElement {
       chart,
       saannot,
     });
+    if (nro !== lukuNro.current) return;
     setRivit(tulos.rivit);
     setKuititIlmanTapahtumaa(tulos.kuititIlmanTapahtumaa);
     setKirjanpidonAlkusaldo(tulos.kirjanpidonAlkusaldo);
   }
 
-  async function lueJaTasmaa(tiliotePolkuArvo: string, kuittikansioArvo: string | null) {
+  /**
+   * Lukee aineiston ja rakentaa työlistan. true vain, kun luku onnistui ja on yhä uusin;
+   * vanhentunut luku ei koske tilaan lainkaan.
+   */
+  async function lueJaTasmaa(
+    tiliotePolkuArvo: string,
+    kuittikansioArvo: string | null,
+    valinnat: TiliotetiedostonValinnat | undefined,
+  ): Promise<boolean> {
+    const nro = ++lukuNro.current;
+    const ajantasainen = () => nro === lukuNro.current;
     setVirhe(null);
     setAineisto(null);
     setRivit([]);
@@ -315,28 +393,121 @@ function TasmaysSisalto(): React.ReactElement {
       const luettu = await annaTasmaysSilta().lueAineisto(
         tiliotePolkuArvo,
         kuittikansioArvo,
-        setEdistyminen,
+        (e) => {
+          if (ajantasainen()) setEdistyminen(e);
+        },
+        valinnat,
       );
+      if (!ajantasainen()) return false;
       setAineisto(luettu);
-      await paivitaTyolista(luettu, pankkitili);
+      await paivitaTyolista(luettu, pankkitili, nro);
+      return ajantasainen();
     } catch (e) {
-      setVirhe(siivoaIpcVirhe(e instanceof Error ? e.message : String(e)));
+      if (ajantasainen()) setVirhe(virheteksti(e));
+      return false;
     } finally {
-      setEdistyminen(null);
-      setLukemassa(false);
+      if (ajantasainen()) {
+        setEdistyminen(null);
+        setLukemassa(false);
+      }
     }
   }
 
+  /**
+   * Lukee valitun tiliotteen heti — kuittikansio on valinnainen, ja kansion valinta täsmää
+   * uudelleen. CSV:n sarakejako muistetaan uudelleenlukua ja "Vaihda sarakkeet" -linkkiä varten.
+   */
+  async function lueTiliote(polku: string, csv?: LuettuCsv): Promise<boolean> {
+    setTiliotePolku(polku);
+    setLuettuCsv(csv ?? null);
+    setSarakejako(null);
+    return lueJaTasmaa(polku, kuittikansioPolku, csv ? { csvSarakkeet: csv.sarakkeet } : undefined);
+  }
+
+  /**
+   * Valitun tiedoston esikatselu ratkaisee, miten se luetaan: CSV:lle kirjaan tallennettu
+   * sarakejako, sitten tunnistetun pankin profiili, muuten käyttäjä valitsee sarakkeet.
+   * Esikatselun virhe (väärä tiedosto) ei koske aiemmin luettuun työlistaan. `nro` on
+   * valinnan järjestysnumero: uudemman valinnan jälkeen valmistuva esikatselu hylätään.
+   */
+  async function kasittelePolku(polku: string, nro = ++valintaNro.current) {
+    setVirhe(null);
+    let esikatselu: TilioteEsikatselu;
+    try {
+      esikatselu = await annaTasmaysSilta().esikatseleTiliote(polku);
+    } catch (e) {
+      if (nro === valintaNro.current) setVirhe(virheteksti(e));
+      return;
+    }
+    if (nro !== valintaNro.current) return;
+    const csv = esikatselu.csv;
+    if (esikatselu.lahde !== 'csv' || !csv) {
+      await lueTiliote(polku);
+      return;
+    }
+    const tallennettu = init ? haeCsvSarakkeet(init.asetukset, csv.avain) : undefined;
+    if (tallennettu) await lueTiliote(polku, { esikatselu: csv, sarakkeet: tallennettu });
+    else if (csv.pankki) await lueTiliote(polku, { esikatselu: csv, sarakkeet: csv.ehdotus });
+    else setSarakejako({ polku, esikatselu: csv, alku: csv.ehdotus });
+  }
+
+  /**
+   * Vahvistettu sarakejako luetaan, ja vasta onnistunut luku muistetaan kirjaan otsikkorivin
+   * mukaan: rivillä 30 kaatuva jako ei saa korvata toimivaa tallennettua jakoa.
+   */
+  async function vahvistaSarakkeet(sarakkeet: CsvSarakejako) {
+    if (!sarakejako) return;
+    const { polku, esikatselu } = sarakejako;
+    const asetukset = init?.asetukset;
+    const onnistui = await lueTiliote(polku, { esikatselu, sarakkeet });
+    if (onnistui && asetukset)
+      await paivitaAsetukset.tallenna({
+        [CSV_SARAKKEET_ASETUS]: csvSarakkeetAsetukseksi(asetukset, esikatselu.avain, sarakkeet),
+      });
+  }
+
+  /** Avaa sarakejaon uudelleen viimeksi luetulle (tai luettavaksi yritetylle) CSV:lle. */
+  const avaaSarakejako =
+    luettuCsv && tiliotePolku !== null
+      ? () =>
+          setSarakejako({
+            polku: tiliotePolku,
+            esikatselu: luettuCsv.esikatselu,
+            alku: luettuCsv.sarakkeet,
+          })
+      : undefined;
+
+  /** Kirjan asetukset (tallennetut sarakejaot) ja pankkitili tarvitaan ennen ensimmäistä lukua. */
+  function kirjaLadattu(): boolean {
+    if (init) return true;
+    setVirhe('Kirjanpito latautuu vielä. Valitse tiliote hetken kuluttua uudelleen.');
+    return false;
+  }
+
+  /** Vanhan työpöytäversion natiivi tiedostodialogi. */
   async function valitseTiliotePolku() {
     setVirhe(null);
     try {
       const polku = await annaTasmaysSilta().valitseTiliote();
-      if (polku === null) return;
-      setTiliotePolku(polku);
-      // Kuittikansio on valinnainen: tiliote luetaan heti, ja kansion valinta täsmää uudelleen.
-      await lueJaTasmaa(polku, kuittikansioPolku);
+      if (polku === null || !kirjaLadattu()) return;
+      await kasittelePolku(polku);
     } catch (e) {
-      setVirhe(siivoaIpcVirhe(e instanceof Error ? e.message : String(e)));
+      setVirhe(virheteksti(e));
+    }
+  }
+
+  /** Pudotettu tai valittu tiedosto: pääprosessi antaa sen polun (ja sallii sen lukemisen). */
+  async function valitseTiliotetiedosto(tiedostot: readonly File[]) {
+    const [tiedosto] = tiedostot;
+    const silta = annaTasmaysSilta();
+    if (!tiedosto || !silta.tiliotePolku || !kirjaLadattu()) return;
+    setVirhe(null);
+    const nro = ++valintaNro.current;
+    try {
+      const polku = await silta.tiliotePolku(tiedosto);
+      if (nro === valintaNro.current) await kasittelePolku(polku, nro);
+    } catch (e) {
+      if (nro === valintaNro.current) setVirhe(virheteksti(e));
     }
   }
 
@@ -346,15 +517,21 @@ function TasmaysSisalto(): React.ReactElement {
       const polku = await annaTasmaysSilta().valitseKuittikansio();
       if (polku === null) return;
       setKuittikansioPolku(polku);
-      if (tiliotePolku !== null) await lueJaTasmaa(tiliotePolku, polku);
+      // Avoin sarakejako lukee tiedoston vahvistettaessa, jolloin kansio on jo mukana.
+      if (tiliotePolku !== null && !sarakejako)
+        await lueJaTasmaa(
+          tiliotePolku,
+          polku,
+          luettuCsv ? { csvSarakkeet: luettuCsv.sarakkeet } : undefined,
+        );
     } catch (e) {
-      setVirhe(siivoaIpcVirhe(e instanceof Error ? e.message : String(e)));
+      setVirhe(virheteksti(e));
     }
   }
 
   function valitsePankkitili(numero: number) {
     setPankkitiliValittu(numero);
-    if (aineisto) void paivitaTyolista(aineisto, numero);
+    if (aineisto) void paivitaTyolista(aineisto, numero, lukuNro.current);
   }
 
   function togglaaRyhma(tila: Tila) {
@@ -474,9 +651,19 @@ function TasmaysSisalto(): React.ReactElement {
       <TopBar otsikko="Tuo tiliote" alaotsikko={init?.asetukset.Nimi} />
       <section aria-label="tasmays-sivu" className="flex flex-1 flex-col overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-[var(--border)] px-[22px] py-4">
-          <Button variant="sec" type="button" onClick={() => void valitseTiliotePolku()}>
-            Valitse tiliote
-          </Button>
+          {typeof annaTasmaysSilta().tiliotePolku === 'function' ? (
+            <Pudotusalue
+              otsikko="Tiliote"
+              ohje="PDF, camt.053/054 (XML), TITO tai CSV. Pudota tiedosto tähän tai valitse."
+              monta={false}
+              onValitse={(tiedostot) => void valitseTiliotetiedosto(tiedostot)}
+              className="max-w-[340px]"
+            />
+          ) : (
+            <Button variant="sec" type="button" onClick={() => void valitseTiliotePolku()}>
+              Valitse tiliote
+            </Button>
+          )}
           <span className="text-[12px] text-[var(--text-subtle)]">
             {tiliotePolku ?? 'Ei tiliotetta valittu'}
           </span>
@@ -506,22 +693,42 @@ function TasmaysSisalto(): React.ReactElement {
         </div>
 
         {(virhe ?? paivitaAsetukset.virheviesti) && (
-          <p role="alert" className="px-[22px] py-2 text-[12.5px] text-[var(--danger)]">
-            {virhe ?? paivitaAsetukset.virheviesti}
-          </p>
+          <div className="flex items-baseline gap-3 px-[22px] py-2">
+            <p role="alert" className="text-[12.5px] text-[var(--danger)]">
+              {virhe ?? paivitaAsetukset.virheviesti}
+            </p>
+            {/* Kaatunut CSV-luku: ilman aineistoa yhteenvedon linkkiä ei ole, joten sarakejaon
+                korjaus tarjotaan virheen vierestä. */}
+            {virhe && !aineisto && !sarakejako && !lukemassa && avaaSarakejako && (
+              <button
+                type="button"
+                onClick={avaaSarakejako}
+                className="text-[11px] text-[var(--accent)] underline"
+              >
+                Vaihda sarakkeet
+              </button>
+            )}
+          </div>
         )}
 
-        {aineisto && (
+        {aineisto && !sarakejako && (
           <TilioteYhteenveto
             tiliote={aineisto.tiliote}
             kirjanpidonAlkusaldo={kirjanpidonAlkusaldo}
+            pankki={luettuCsv?.esikatselu.pankki}
+            onVaihdaSarakkeet={avaaSarakejako}
           />
         )}
-        {aineisto?.tiliote.kausi && pankkitili !== undefined && (
-          <TiliotteenTallennus tiliote={aineisto.tiliote} pankkitili={pankkitili} />
-        )}
+        {/* Vain tiedoston ilmoittama kausi: tapahtumista päätelty kausi (CSV, camt.054) ei
+            saa tehdä Tiliote-tositetta, joka myöhemmin peittäisi oikean kuukausitiliotteen. */}
+        {aineisto?.tiliote.kausi &&
+          !aineisto.tiliote.kausiPaatelty &&
+          !sarakejako &&
+          pankkitili !== undefined && (
+            <TiliotteenTallennus tiliote={aineisto.tiliote} pankkitili={pankkitili} />
+          )}
 
-        {rivit.length > 0 && (
+        {rivit.length > 0 && !sarakejako && (
           <div className="flex flex-wrap gap-[6px] px-[22px] py-2">
             {RYHMAT.map((r) => (
               <span
@@ -536,8 +743,18 @@ function TasmaysSisalto(): React.ReactElement {
 
         <div className="flex flex-1 overflow-hidden">
           <section aria-label="työlista" className="flex-1 overflow-auto px-[22px] py-4">
-            {rivit.length === 0 && !lukemassa && <Ohje />}
-            {rivit.length > 0 &&
+            {sarakejako && (
+              <CsvSarakkeet
+                key={sarakejako.polku}
+                esikatselu={sarakejako.esikatselu}
+                alku={sarakejako.alku}
+                onVahvista={(s) => void vahvistaSarakkeet(s)}
+                onPeru={() => setSarakejako(null)}
+              />
+            )}
+            {!sarakejako && rivit.length === 0 && !lukemassa && <Ohje />}
+            {!sarakejako &&
+              rivit.length > 0 &&
               RYHMAT.map((ryhma) => {
                 const ryhmanRivit = ryhmitellyt.get(ryhma.tila) ?? [];
                 const pakkoAuki = AINA_AUKI.has(ryhma.tila);
@@ -610,21 +827,27 @@ function TasmaysSisalto(): React.ReactElement {
                   </div>
                 );
               })}
-            <TietoRyhma
-              otsikko="Kuitit ilman tapahtumaa"
-              rivit={kuititIlmanTapahtumaa.map((k) => perusnimi(k.tiedosto))}
-            />
-            <TietoRyhma
-              otsikko="Lukematta jääneet kuitit"
-              rivit={(aineisto?.lukematta ?? []).map((l) => `${perusnimi(l.tiedosto)} — ${l.syy}`)}
-            />
+            {!sarakejako && (
+              <>
+                <TietoRyhma
+                  otsikko="Kuitit ilman tapahtumaa"
+                  rivit={kuititIlmanTapahtumaa.map((k) => perusnimi(k.tiedosto))}
+                />
+                <TietoRyhma
+                  otsikko="Lukematta jääneet kuitit"
+                  rivit={(aineisto?.lukematta ?? []).map(
+                    (l) => `${perusnimi(l.tiedosto)} — ${l.syy}`,
+                  )}
+                />
+              </>
+            )}
           </section>
 
           <section
             aria-label="rivin tiedot"
             className="w-[320px] shrink-0 overflow-auto border-l border-[var(--border)] px-[18px] py-4"
           >
-            {valittuRivi ? (
+            {valittuRivi && !sarakejako ? (
               <RiviPaneeli
                 key={valittuRivi.avain}
                 rivi={valittuRivi}
@@ -652,7 +875,8 @@ function TasmaysSisalto(): React.ReactElement {
         <div className="flex items-center justify-end gap-3 border-t border-[var(--border)] px-[22px] py-3">
           <Button
             type="button"
-            disabled={kaynnissa || valitutMaara === 0}
+            // Avoin sarakejako piilottaa työlistan: piilossa olevia rivejä ei kirjata.
+            disabled={kaynnissa || valitutMaara === 0 || sarakejako !== null}
             onClick={() => void kirjaaValitut()}
           >
             Kirjaa valitut ({valitutMaara})

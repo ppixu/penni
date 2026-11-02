@@ -21,6 +21,10 @@ export interface Tilitapahtuma {
   viesti?: string;
   /** Korttioston alkuperäinen valuuttasumma, jos tiliote kertoo sen. */
   alkuperainen?: AlkuperainenSumma;
+  /** Pankin arkistotunnus (tapahtuman yksilöivä tunnus), jos tiedosto kertoo sen. */
+  arkistotunnus?: string;
+  /** Vastapuolen IBAN ilman välilyöntejä, jos tiedosto kertoo sen. */
+  iban?: string;
 }
 
 // Tapahtumarivi: '<D.M.YYYY>  <nimi [viite]>  <-?rahamäärä>'. Rahamäärä (pilkkudesimaali) ankkuroi loppuun.

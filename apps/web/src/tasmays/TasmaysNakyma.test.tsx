@@ -1,9 +1,14 @@
 import { renderRoute } from '@/test/renderRoute';
-import type { Kuittilahde, Tilitapahtuma } from '@penni/engine';
+import type {
+  CsvEsikatselu,
+  CsvSarakkeet as CsvSarakejako,
+  Kuittilahde,
+  Tilitapahtuma,
+} from '@penni/engine';
 import { AlvKoodi, TositeTila, TositeTyyppi } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import type { TasmaysAineisto, TasmaysSilta } from '@penni/luku';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TasmaysNakyma } from './TasmaysNakyma.js';
 
@@ -31,7 +36,11 @@ function kuitti(tiedosto: string, kuitti: Kuittilahde['kuitti']): Kuittilahde {
   return { tiedosto, kuitti };
 }
 
-/** window.penni tukee vain täsmäytysmetodeja — Tuonti-metodit eivät kuulu tähän testiin. */
+/**
+ * window.penni tukee vain täsmäytysmetodeja — Tuonti-metodit eivät kuulu tähän testiin.
+ * Oletussilta on vanha työpöytäversio ilman `tiliotePolku`a (Valitse tiliote -nappi);
+ * pudotusta testaavat antavat sen yliajona.
+ */
 function luoSilta(yliajot: Partial<TasmaysSilta> = {}): TasmaysSilta {
   return {
     valitseTiliote: vi.fn(async () => '/tmp/tiliote.pdf'),
@@ -41,6 +50,7 @@ function luoSilta(yliajot: Partial<TasmaysSilta> = {}): TasmaysSilta {
       kuitit: [],
       lukematta: [],
     })),
+    esikatseleTiliote: vi.fn(async () => ({ lahde: 'pdf' as const })),
     lueTiedosto: vi.fn(async () => new Uint8Array()),
     ...yliajot,
   };
@@ -405,7 +415,12 @@ describe('TasmaysNakyma', () => {
     await user.click(await screen.findByRole('button', { name: 'Valitse tiliote' }));
 
     const saldot = await screen.findByLabelText('tiliotteen saldot');
-    expect(lueAineisto).toHaveBeenCalledWith('/tmp/tiliote.pdf', null, expect.any(Function));
+    expect(lueAineisto).toHaveBeenCalledWith(
+      '/tmp/tiliote.pdf',
+      null,
+      expect.any(Function),
+      undefined,
+    );
     expect(saldot).toHaveTextContent('tapahtumat täsmäävät saldoihin');
     expect(await within(saldot).findByText(/kirjanpidon saldo .* täsmää/)).toBeInTheDocument();
     const tyolista = screen.getByLabelText('työlista');
@@ -650,5 +665,505 @@ describe('TasmaysNakyma — kuitin lisäys riville', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Jää sivulle' }));
     expect(router.state.location.pathname).toBe('/tasmays');
+  });
+});
+
+describe('TasmaysNakyma — tiliotetiedoston pudotus ja CSV-sarakkeet', () => {
+  /** Samat tapahtumat kuin PDF-testissä "valitsee molemmat tiedostot…". */
+  const TAPAHTUMAT = [
+    tapahtuma('2026-06-02', 'PILVIPALVELU OY', -2500),
+    tapahtuma('2026-06-03', 'TUNTEMATON KAHVILA', -1500),
+    tapahtuma('2026-06-04', 'CURSOR INC', -1000),
+  ];
+  const IBAN = 'FI7455550000012343';
+
+  function camtAineisto(tiedosto = '/tmp/lokakuu.xml'): TasmaysAineisto {
+    return {
+      tiliote: {
+        tiedosto,
+        muoto: 'kuukausitiliote',
+        kausi: { alkaa: '2026-06-01', loppuu: '2026-06-30' },
+        alkusaldo: c(10000),
+        loppusaldo: c(5000),
+        tapahtumat: TAPAHTUMAT,
+        lahde: 'camt053',
+        iban: IBAN,
+      },
+      kuitit: [],
+      lukematta: [],
+    };
+  }
+
+  function csvAineisto(tiedosto: string): TasmaysAineisto {
+    return {
+      tiliote: {
+        tiedosto,
+        muoto: 'tapahtumat',
+        kausi: { alkaa: '2026-10-02', loppuu: '2026-10-30' },
+        tapahtumat: [
+          tapahtuma('2026-10-02', 'Testi Oy', -1250),
+          tapahtuma('2026-10-30', 'Maija Malli', 10000),
+        ],
+        lahde: 'csv',
+        kausiPaatelty: true,
+      },
+      kuitit: [],
+      lukematta: [],
+    };
+  }
+
+  const TUNTEMATON_CSV: CsvEsikatselu = {
+    otsikot: ['Päivä', 'Summa', 'Kuvaus', 'Saaja'],
+    esimerkit: [
+      ['2.10.2026', '-12,50', 'Kahvi lokakuu', 'Testi Oy'],
+      ['30.10.2026', '100,00', 'Lasku 1001', 'Maija Malli'],
+    ],
+    avain: 'päivä|summa|kuvaus|saaja',
+    ehdotus: { pvm: 0, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: [], viesti: [2] },
+  };
+  const DANSKE_CSV: CsvEsikatselu = {
+    ...TUNTEMATON_CSV,
+    avain: 'pvm|määrä|viesti|saaja/maksaja',
+    otsikot: ['Pvm', 'Määrä', 'Viesti', 'Saaja/Maksaja'],
+    ehdotus: { pvm: 0, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: [3], viesti: [2] },
+    pankki: 'Danske Bank',
+  };
+
+  const tiliotePolku = () => vi.fn(async (f: File) => `/tmp/${f.name}`);
+
+  /** Kirjan tiedot (pankkitili, asetukset) on ladattu ennen ensimmäistä pudotusta. */
+  async function odotaKirja() {
+    await screen.findByLabelText('Tiliote');
+    await screen.findAllByText('Demo Oy');
+  }
+
+  function pudota(nimi: string) {
+    const alue = screen.getByLabelText('Tiliote').closest('label') as HTMLElement;
+    fireEvent.drop(alue, { dataTransfer: { files: [new File(['x'], nimi)] } });
+  }
+
+  it('pudotettu camt-tiedosto luetaan ja antaa saman työlistan kuin PDF', async () => {
+    const polku = tiliotePolku();
+    const esikatseleTiliote = vi.fn(async () => ({ lahde: 'camt053' as const }));
+    const lueAineisto = vi.fn(async () => camtAineisto());
+    asetaSilta(luoSilta({ tiliotePolku: polku, esikatseleTiliote, lueAineisto }));
+
+    await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    expect(screen.getByText(/PDF, camt\.053\/054 \(XML\), TITO tai CSV\./)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Valitse tiliote' })).not.toBeInTheDocument();
+    pudota('lokakuu.xml');
+
+    const tyolista = await screen.findByLabelText('työlista');
+    expect(await within(tyolista).findByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+    expect(polku).toHaveBeenCalledWith(expect.objectContaining({ name: 'lokakuu.xml' }));
+    expect(esikatseleTiliote).toHaveBeenCalledWith('/tmp/lokakuu.xml');
+    expect(lueAineisto).toHaveBeenCalledWith(
+      '/tmp/lokakuu.xml',
+      null,
+      expect.any(Function),
+      undefined,
+    );
+    for (const nimi of ['PILVIPALVELU OY', 'TUNTEMATON KAHVILA', 'CURSOR INC'])
+      expect(within(tyolista).getByText(nimi)).toBeInTheDocument();
+    expect(screen.getByLabelText('tiliotteen saldot')).toHaveTextContent(
+      'camt.053 · Kausi 1.6.2026–30.6.2026 · 3 tapahtumaa',
+    );
+    expect(screen.queryByRole('button', { name: 'Vaihda sarakkeet' })).not.toBeInTheDocument();
+  });
+
+  it('tuntematon CSV avaa sarakejaon, jonka vahvistus tallentuu kirjaan ja lukee tiedoston', async () => {
+    const lueAineisto = vi.fn(async () => csvAineisto('/tmp/tilitapahtumat.csv'));
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: TUNTEMATON_CSV })),
+        lueAineisto,
+      }),
+    );
+    let paivitaAsetukset: ReturnType<typeof vi.fn> | undefined;
+    const { user } = await renderRoute('/tasmays', {
+      seed: SEED,
+      arrange: async (client) => {
+        paivitaAsetukset = vi.spyOn(client, 'paivitaAsetukset') as unknown as ReturnType<
+          typeof vi.fn
+        >;
+      },
+    });
+    await odotaKirja();
+    pudota('tilitapahtumat.csv');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Mitä sarakkeet sisältävät?' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Sarake Päivä' })).toHaveValue('pvm');
+    expect(screen.getByRole('combobox', { name: 'Sarake Summa' })).toHaveValue('maara');
+    expect(lueAineisto).not.toHaveBeenCalled();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Sarake Saaja' }), 'Nimi');
+    await user.click(screen.getByRole('button', { name: 'Lue tiliote' }));
+
+    const odotettu: CsvSarakejako = {
+      pvm: 0,
+      pvmMuoto: 'd.m.yyyy',
+      maara: 1,
+      nimi: [3],
+      viesti: [2],
+    };
+    const tyolista = await screen.findByLabelText('työlista');
+    expect(await within(tyolista).findByText('Testi Oy')).toBeInTheDocument();
+    expect(paivitaAsetukset).toHaveBeenCalledTimes(1);
+    const patch = paivitaAsetukset?.mock.calls[0]?.[0] as Record<string, string>;
+    expect(JSON.parse(patch.TiliotteenCsvSarakkeet ?? '')).toEqual([
+      { otsikko: TUNTEMATON_CSV.avain, sarakkeet: odotettu },
+    ]);
+    expect(lueAineisto).toHaveBeenCalledWith(
+      '/tmp/tilitapahtumat.csv',
+      null,
+      expect.any(Function),
+      { csvSarakkeet: odotettu },
+    );
+    expect(screen.queryByRole('heading', { name: 'Mitä sarakkeet sisältävät?' })).toBeNull();
+    expect(screen.getByLabelText('tiliotteen saldot')).toHaveTextContent(
+      'CSV · Tapahtumat 2.10.2026–30.10.2026 · 2 tapahtumaa',
+    );
+  });
+
+  it('tunnetun pankin CSV luetaan suoraan, ja Vaihda sarakkeet avaa sarakejaon uudelleen', async () => {
+    const lueAineisto = vi.fn(async () => csvAineisto('/tmp/danske.csv'));
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: DANSKE_CSV })),
+        lueAineisto,
+      }),
+    );
+    const { user } = await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('danske.csv');
+
+    const saldot = await screen.findByLabelText('tiliotteen saldot');
+    expect(saldot).toHaveTextContent(
+      'CSV · Danske Bank · Tapahtumat 2.10.2026–30.10.2026 · 2 tapahtumaa',
+    );
+    expect(lueAineisto).toHaveBeenCalledWith('/tmp/danske.csv', null, expect.any(Function), {
+      csvSarakkeet: DANSKE_CSV.ehdotus,
+    });
+    expect(screen.queryByRole('heading', { name: 'Mitä sarakkeet sisältävät?' })).toBeNull();
+    // Päätelty kausi ei tee tiedostosta Tiliote-tositetta.
+    expect(screen.queryByRole('button', { name: 'Tallenna tiliote tositteeksi' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Vaihda sarakkeet' }));
+    expect(screen.getByRole('heading', { name: 'Mitä sarakkeet sisältävät?' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Sarake Saaja/Maksaja' })).toHaveValue('nimi');
+    await user.click(screen.getByRole('button', { name: 'Lue tiliote' }));
+    await screen.findByLabelText('tiliotteen saldot');
+    expect(lueAineisto).toHaveBeenCalledTimes(2);
+  });
+
+  it('kirjaan tallennettu sarakejako voittaa pankkiprofiilin', async () => {
+    const tallennettu: CsvSarakejako = {
+      pvm: 0,
+      pvmMuoto: 'd.m.yyyy',
+      maara: 1,
+      nimi: [2],
+      viesti: [],
+    };
+    const lueAineisto = vi.fn(async () => csvAineisto('/tmp/danske.csv'));
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: DANSKE_CSV })),
+        lueAineisto,
+      }),
+    );
+    await renderRoute('/tasmays', {
+      seed: {
+        ...SEED,
+        asetukset: {
+          ...SEED.asetukset,
+          TiliotteenCsvSarakkeet: JSON.stringify([
+            { otsikko: DANSKE_CSV.avain, sarakkeet: tallennettu },
+          ]),
+        },
+      },
+    });
+    await odotaKirja();
+    pudota('danske.csv');
+
+    await screen.findByLabelText('tiliotteen saldot');
+    expect(lueAineisto).toHaveBeenCalledWith('/tmp/danske.csv', null, expect.any(Function), {
+      csvSarakkeet: tallennettu,
+    });
+  });
+
+  it('kuittikansion valinta lukee CSV:n uudelleen samalla sarakejaolla', async () => {
+    const lueAineisto = vi.fn(async () => csvAineisto('/tmp/danske.csv'));
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: DANSKE_CSV })),
+        lueAineisto,
+      }),
+    );
+    const { user } = await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('danske.csv');
+    await screen.findByLabelText('tiliotteen saldot');
+    await user.click(screen.getByRole('button', { name: 'Valitse kuittikansio' }));
+    await screen.findByLabelText('tiliotteen saldot');
+    expect(lueAineisto).toHaveBeenLastCalledWith(
+      '/tmp/danske.csv',
+      '/tmp/kuitit',
+      expect.any(Function),
+      { csvSarakkeet: DANSKE_CSV.ehdotus },
+    );
+  });
+
+  it('tarjoaa Tiliote-tositetta vain ilmoitetulle kaudelle ja tallentaa tiedoston oikeana tyyppinä', async () => {
+    const lueTiedosto = vi.fn(async () => new Uint8Array([60, 63, 120, 109, 108]));
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'camt053' as const })),
+        lueAineisto: vi.fn(async () => camtAineisto()),
+        lueTiedosto,
+      }),
+    );
+    const { user, client } = await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('lokakuu.xml');
+    await user.click(await screen.findByRole('button', { name: 'Tallenna tiliote tositteeksi' }));
+
+    expect(await screen.findByRole('link', { name: 'Tiliote 6/2026' })).toBeInTheDocument();
+    const [tosite] = await client.listaaTositteet({ tyyppi: TositeTyyppi.TILIOTE });
+    expect(tosite?.tiliote?.iban).toBe(IBAN);
+    expect(lueTiedosto).toHaveBeenCalledWith('/tmp/lokakuu.xml');
+    expect(await client.haeLiitteet(tosite?.id ?? 0)).toEqual([
+      expect.objectContaining({ nimi: 'lokakuu.xml', tyyppi: 'application/xml' }),
+    ]);
+  });
+
+  it('päätellyn kauden tiliotetta ei tarjota tallennettavaksi', async () => {
+    const aineisto = camtAineisto();
+    aineisto.tiliote = { ...aineisto.tiliote, lahde: 'camt054', kausiPaatelty: true };
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'camt054' as const })),
+        lueAineisto: vi.fn(async () => aineisto),
+      }),
+    );
+    await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('lokakuu.xml');
+
+    const saldot = await screen.findByLabelText('tiliotteen saldot');
+    expect(saldot).toHaveTextContent('camt.054 · Tapahtumat 1.6.2026–30.6.2026 · 3 tapahtumaa');
+    expect(screen.queryByRole('button', { name: 'Tallenna tiliote tositteeksi' })).toBeNull();
+  });
+
+  it('väärän tiedoston virhe näytetään siistittynä eikä aiemmin luettu työlista katoa', async () => {
+    const esikatseleTiliote = vi
+      .fn<TasmaysSilta['esikatseleTiliote']>()
+      .mockResolvedValueOnce({ lahde: 'camt053' })
+      .mockRejectedValueOnce(
+        new Error(
+          "Error invoking remote method 'tasmays:esikatseleTiliote': LukuVirhe: " +
+            'Tunnistamaton tiedosto: valitse PDF-, camt-, TITO- tai CSV-tiliote.',
+        ),
+      );
+    const lueAineisto = vi.fn(async () => camtAineisto());
+    asetaSilta(luoSilta({ tiliotePolku: tiliotePolku(), esikatseleTiliote, lueAineisto }));
+    await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('lokakuu.xml');
+    const tyolista = await screen.findByLabelText('työlista');
+    expect(await within(tyolista).findByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+
+    pudota('kuva.jpg');
+    const virhe = await screen.findByRole('alert');
+    expect(virhe).toHaveTextContent(
+      'Tunnistamaton tiedosto: valitse PDF-, camt-, TITO- tai CSV-tiliote.',
+    );
+    expect(virhe.textContent).not.toMatch(/Error invoking remote method|LukuVirhe/);
+    expect(lueAineisto).toHaveBeenCalledTimes(1);
+    expect(within(tyolista).getByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+    expect(within(tyolista).getByText('PILVIPALVELU OY')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/lokakuu.xml')).toBeInTheDocument();
+  });
+
+  it('kaatuvaa sarakejakoa ei tallenneta, ja sarakejaon voi avata virheen vierestä', async () => {
+    const lueAineisto = vi.fn<TasmaysSilta['lueAineisto']>(async () => {
+      throw new Error(
+        "Error invoking remote method 'tasmays:lueAineisto': LukuVirhe: " +
+          'Virheellinen summa "abc" (rivi 30)',
+      );
+    });
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: TUNTEMATON_CSV })),
+        lueAineisto,
+      }),
+    );
+    let paivitaAsetukset: ReturnType<typeof vi.fn> | undefined;
+    const { user } = await renderRoute('/tasmays', {
+      seed: SEED,
+      arrange: async (client) => {
+        paivitaAsetukset = vi.spyOn(client, 'paivitaAsetukset') as unknown as ReturnType<
+          typeof vi.fn
+        >;
+      },
+    });
+    await odotaKirja();
+    pudota('tilitapahtumat.csv');
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Sarake Saaja' }), 'Nimi');
+    await user.click(screen.getByRole('button', { name: 'Lue tiliote' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Virheellinen summa "abc" (rivi 30)',
+    );
+    expect(lueAineisto).toHaveBeenCalledTimes(1);
+    expect(paivitaAsetukset).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Vaihda sarakkeet' }));
+    expect(screen.getByRole('heading', { name: 'Mitä sarakkeet sisältävät?' })).toBeInTheDocument();
+    // Esitäytetty juuri yritetyllä jaolla, jotta korjattavaksi jää vain väärä sarake.
+    expect(screen.getByRole('combobox', { name: 'Sarake Saaja' })).toHaveValue('nimi');
+  });
+
+  it.each([
+    ['tallennettu sarakejako', true],
+    ['pankkiprofiili', false],
+  ])('kaatuvan luvun jälkeen (%s) Vaihda sarakkeet on tarjolla', async (_, tallennettu) => {
+    const jako: CsvSarakejako = { pvm: 0, pvmMuoto: 'd.m.yyyy', maara: 1, nimi: [2], viesti: [] };
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'csv' as const, csv: DANSKE_CSV })),
+        lueAineisto: vi.fn(async () => {
+          throw new Error('LukuVirhe: Virheellinen päivämäärä "Yhteensä" (rivi 30)');
+        }),
+      }),
+    );
+    const { user } = await renderRoute('/tasmays', {
+      seed: tallennettu
+        ? {
+            ...SEED,
+            asetukset: {
+              ...SEED.asetukset,
+              TiliotteenCsvSarakkeet: JSON.stringify([
+                { otsikko: DANSKE_CSV.avain, sarakkeet: jako },
+              ]),
+            },
+          }
+        : SEED,
+    });
+    await odotaKirja();
+    pudota('danske.csv');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Virheellinen päivämäärä');
+    await user.click(screen.getByRole('button', { name: 'Vaihda sarakkeet' }));
+    expect(screen.getByRole('combobox', { name: 'Sarake Viesti' })).toHaveValue(
+      tallennettu ? 'nimi' : 'viesti',
+    );
+  });
+
+  /** Lupaus, jonka testi ratkaisee itse. */
+  function lykatty<T>() {
+    let ratkaise!: (arvo: T) => void;
+    const lupaus = new Promise<T>((r) => {
+      ratkaise = r;
+    });
+    return { lupaus, ratkaise };
+  }
+
+  it('hitaan aiemman esikatselun tulos ei korvaa uudempaa tiedostoa', async () => {
+    const hidas = lykatty<{ lahde: 'pdf' }>();
+    const esikatseleTiliote = vi.fn(async (polku: string) =>
+      polku.endsWith('.pdf') ? hidas.lupaus : { lahde: 'camt053' as const },
+    );
+    const lueAineisto = vi.fn(async (polku: string) =>
+      polku.endsWith('.xml')
+        ? camtAineisto(polku)
+        : {
+            tiliote: {
+              tiedosto: polku,
+              muoto: 'tapahtumat' as const,
+              tapahtumat: [tapahtuma('2026-06-09', 'VÄÄRÄ OY', -100)],
+            },
+            kuitit: [],
+            lukematta: [],
+          },
+    );
+    asetaSilta(luoSilta({ tiliotePolku: tiliotePolku(), esikatseleTiliote, lueAineisto }));
+    await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('vaara.pdf');
+    pudota('lokakuu.xml');
+    const tyolista = await screen.findByLabelText('työlista');
+    expect(await within(tyolista).findByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+
+    hidas.ratkaise({ lahde: 'pdf' });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(lueAineisto).toHaveBeenCalledTimes(1);
+    expect(within(tyolista).getByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/lokakuu.xml')).toBeInTheDocument();
+  });
+
+  it('hitaan aiemman luvun tulos ei korvaa uudemman luvun työlistaa', async () => {
+    const hidas = lykatty<TasmaysAineisto>();
+    const nopea = lykatty<TasmaysAineisto>();
+    const lueAineisto = vi.fn((polku: string) =>
+      polku.endsWith('vaara.xml') ? hidas.lupaus : nopea.lupaus,
+    );
+    asetaSilta(
+      luoSilta({
+        tiliotePolku: tiliotePolku(),
+        esikatseleTiliote: vi.fn(async () => ({ lahde: 'camt053' as const })),
+        lueAineisto,
+      }),
+    );
+    await renderRoute('/tasmays', { seed: SEED });
+    await odotaKirja();
+    pudota('vaara.xml');
+    await vi.waitFor(() => expect(lueAineisto).toHaveBeenCalledTimes(1));
+    pudota('lokakuu.xml');
+    await vi.waitFor(() => expect(lueAineisto).toHaveBeenCalledTimes(2));
+
+    nopea.ratkaise(camtAineisto('/tmp/lokakuu.xml'));
+    const tyolista = await screen.findByLabelText('työlista');
+    expect(await within(tyolista).findByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+    hidas.ratkaise({
+      tiliote: {
+        tiedosto: '/tmp/vaara.xml',
+        muoto: 'tapahtumat',
+        tapahtumat: [tapahtuma('2026-06-09', 'VÄÄRÄ OY', -100)],
+      },
+      kuitit: [],
+      lukematta: [],
+    });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(tyolista).getByText('Kuitti puuttuu (3)')).toBeInTheDocument();
+    expect(within(tyolista).queryByText('VÄÄRÄ OY')).toBeNull();
+    expect(screen.getByLabelText('tiliotteen saldot')).toHaveTextContent('camt.053');
+  });
+
+  it('vanha työpöytäversio ilman tiliotePolkua saa Valitse tiliote -napin', async () => {
+    asetaSilta(luoSilta());
+    await renderRoute('/tasmays', { seed: SEED });
+    expect(await screen.findByRole('button', { name: 'Valitse tiliote' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tiliote')).not.toBeInTheDocument();
+  });
+
+  it('ohje nimeää kaikki tiliotemuodot', async () => {
+    asetaSilta(luoSilta());
+    await renderRoute('/tasmays', { seed: SEED });
+    expect(
+      await screen.findByText(
+        'Pankin tiliote PDF:nä, camt-XML:nä, TITO-tiedostona tai CSV:nä. Jokaisesta tilitapahtumasta tulee työlistalle rivi.',
+      ),
+    ).toBeInTheDocument();
   });
 });

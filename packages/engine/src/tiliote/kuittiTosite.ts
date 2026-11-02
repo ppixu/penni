@@ -72,6 +72,7 @@ function pankillaTasapainotettu(
     alvProsentti: 0,
   };
   if (tapahtuma.nimi) pankkiVienti.selite = tapahtuma.nimi;
+  if (tapahtuma.arkistotunnus) pankkiVienti.arkistotunnus = tapahtuma.arkistotunnus;
   return {
     pvm: tapahtuma.pvm,
     tyyppi: tapahtuma.maara < 0 ? TositeTyyppi.MENO : TositeTyyppi.TULO,

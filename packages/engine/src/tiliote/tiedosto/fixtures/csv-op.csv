@@ -1,0 +1,4 @@
+Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero;Saajan pankin BIC;Viite;Viesti;Arkistointitunnus;
+3.10.2026;3.10.2026;-1.234,56;106;TILISIIRTO;Vuokranantaja Oy;FI22 9876 5400 0000 03;OKOYFIHH;123453;Vuokra lokakuu;20261003/5ABC1/000001
+12.10.2026;12.10.2026;+500,00;710;VIITESIIRTO;Maija Malli;FI16 1234 5600 0000 02;NDEAFIHH;10003;;20261012/5ABC1/000002
+25.10.2026;25.10.2026;-9,99;162;PKORTTIMAKSU;Kauppa Malli Oy;;;;Ostos ääkkösillä €;20261025/5ABC1/000003

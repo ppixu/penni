@@ -26,6 +26,8 @@ const tilitapahtumaSchema = z.object({
   maara: sentit, // etumerkillinen: negatiivinen = raha ulos
   viesti: z.string().optional(),
   alkuperainen: z.object({ valuutta: z.string(), maara: sentit }).optional(),
+  arkistotunnus: z.string().optional(), // pankin arkistotunnus (camt/TITO/CSV)
+  iban: z.string().optional(), // vastapuolen IBAN
 });
 
 /** Luettu tiliote (`@penni/luku` lueTiliotePdf -> engine Tiliote), rahat sentteinä. */
@@ -45,6 +47,8 @@ function tapahtumaksi(t: z.output<typeof tilitapahtumaSchema>): Tilitapahtuma {
     maara: t.maara as Cents,
     ...(t.viite !== undefined ? { viite: t.viite } : {}),
     ...(t.viesti !== undefined ? { viesti: t.viesti } : {}),
+    ...(t.arkistotunnus !== undefined ? { arkistotunnus: t.arkistotunnus } : {}),
+    ...(t.iban !== undefined ? { iban: t.iban } : {}),
     ...(t.alkuperainen !== undefined
       ? {
           alkuperainen: { valuutta: t.alkuperainen.valuutta, maara: t.alkuperainen.maara as Cents },

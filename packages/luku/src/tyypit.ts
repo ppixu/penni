@@ -1,6 +1,14 @@
-import type { Kuitti, Kuittilahde, Tiliote } from '@penni/engine';
+/// <reference lib="dom" />
+import type {
+  CsvEsikatselu,
+  Kuitti,
+  Kuittilahde,
+  Tiliote,
+  TiliotetiedostonValinnat,
+  TiliotteenLahde,
+} from '@penni/engine';
 
-export type LukuVirheKoodi = 'EI_TEKSTIA' | 'VAARA_MUOTO' | 'EI_TIEDOSTOJA';
+export type LukuVirheKoodi = 'EI_TEKSTIA' | 'VAARA_MUOTO' | 'EI_TIEDOSTOJA' | 'CSV_SARAKKEET';
 
 /** Luettavan aineiston virhe, jonka käyttöliittymä osaa kääntää ohjeeksi. */
 export class LukuVirhe extends Error {
@@ -38,6 +46,12 @@ export interface TasmaysAineisto {
   lukematta: LukemattaJaanyt[];
 }
 
+/** Tiliotetiedoston esikatselu: lähde ja CSV:lle sarakejaon vahvistamiseen tarvittavat tiedot. */
+export interface TilioteEsikatselu {
+  lahde: TiliotteenLahde;
+  csv?: CsvEsikatselu;
+}
+
 /** Työpöytäsilta: natiivivalitsimet + luku. Renderöijä käyttää vain näitä tyyppejä. */
 export interface TasmaysSilta {
   valitseTiliote(): Promise<string | null>;
@@ -47,6 +61,14 @@ export interface TasmaysSilta {
     tiliote: string,
     kansio: string | null,
     edistyminen: (e: LukuEdistyminen) => void,
+    valinnat?: TiliotetiedostonValinnat,
   ): Promise<TasmaysAineisto>;
+  /** Tiliotetiedoston muoto ja CSV:n sarakejaon esikatselu ennen varsinaista lukua. */
+  esikatseleTiliote(polku: string): Promise<TilioteEsikatselu>;
+  /**
+   * Pudotetun tai `<input>`-valitun tiedoston polku pääprosessin sallittujen listalle.
+   * Puuttuu vanhoista työpöytäversioista.
+   */
+  tiliotePolku?(tiedosto: File): Promise<string>;
   lueTiedosto(polku: string): Promise<Uint8Array>;
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns2:Document xmlns:ns2="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+<ns2:BkToCstmrStmt>
+<ns2:GrpHdr><ns2:MsgId>TESTI-053-V02</ns2:MsgId><ns2:CreDtTm>2026-11-01T06:00:00</ns2:CreDtTm></ns2:GrpHdr>
+<ns2:Stmt>
+<ns2:Id>STMT-V02-1</ns2:Id>
+<ns2:FrToDt><ns2:FrDtTm>2026-10-01T00:00:00+03:00</ns2:FrDtTm><ns2:ToDtTm>2026-10-31T23:59:59+02:00</ns2:ToDtTm></ns2:FrToDt>
+<ns2:Acct><ns2:Id><ns2:IBAN>FI7455550000012343</ns2:IBAN></ns2:Id><ns2:Ccy>EUR</ns2:Ccy></ns2:Acct>
+<ns2:Bal><ns2:Tp><ns2:CdOrPrtry><ns2:Cd>OPBD</ns2:Cd></ns2:CdOrPrtry></ns2:Tp><ns2:Amt Ccy="EUR">1000.00</ns2:Amt><ns2:CdtDbtInd>CRDT</ns2:CdtDbtInd><ns2:Dt><ns2:Dt>2026-10-01</ns2:Dt></ns2:Dt></ns2:Bal>
+<ns2:Bal><ns2:Tp><ns2:CdOrPrtry><ns2:Cd>CLBD</ns2:Cd></ns2:CdOrPrtry></ns2:Tp><ns2:Amt Ccy="EUR">2184.50</ns2:Amt><ns2:CdtDbtInd>CRDT</ns2:CdtDbtInd><ns2:Dt><ns2:Dt>2026-10-31</ns2:Dt></ns2:Dt></ns2:Bal>
+<ns2:Ntry>
+<ns2:Amt Ccy="EUR">49.90</ns2:Amt><ns2:CdtDbtInd>DBIT</ns2:CdtDbtInd><ns2:Sts>BOOK</ns2:Sts>
+<ns2:BookgDt><ns2:Dt>2026-10-05</ns2:Dt></ns2:BookgDt><ns2:ValDt><ns2:Dt>2026-10-04</ns2:Dt></ns2:ValDt>
+<ns2:AcctSvcrRef>202610050001</ns2:AcctSvcrRef>
+<ns2:NtryDtls><ns2:TxDtls>
+<ns2:AmtDtls><ns2:InstdAmt><ns2:Amt Ccy="USD">54.20</ns2:Amt></ns2:InstdAmt></ns2:AmtDtls>
+<ns2:RltdPties><ns2:Cdtr><ns2:Nm>Testikauppa Ltd</ns2:Nm></ns2:Cdtr></ns2:RltdPties>
+<ns2:RmtInf><ns2:Ustrd>Korttiosto</ns2:Ustrd></ns2:RmtInf>
+</ns2:TxDtls></ns2:NtryDtls>
+</ns2:Ntry>
+<ns2:Ntry>
+<ns2:Amt Ccy="EUR">1234.5</ns2:Amt><ns2:CdtDbtInd>CRDT</ns2:CdtDbtInd><ns2:Sts>BOOK</ns2:Sts>
+<ns2:BookgDt><ns2:Dt>2026-10-12</ns2:Dt></ns2:BookgDt><ns2:ValDt><ns2:Dt>2026-10-12</ns2:Dt></ns2:ValDt>
+<ns2:AcctSvcrRef>202610120042</ns2:AcctSvcrRef>
+<ns2:NtryDtls><ns2:TxDtls>
+<ns2:RltdPties><ns2:Dbtr><ns2:Nm>Maija Malli</ns2:Nm></ns2:Dbtr><ns2:DbtrAcct><ns2:Id><ns2:IBAN>FI1522220000045675</ns2:IBAN></ns2:Id></ns2:DbtrAcct></ns2:RltdPties>
+<ns2:RmtInf><ns2:Strd><ns2:CdtrRefInf><ns2:Tp><ns2:CdOrPrtry><ns2:Cd>SCOR</ns2:Cd></ns2:CdOrPrtry></ns2:Tp><ns2:Ref>12345 3</ns2:Ref></ns2:CdtrRefInf></ns2:Strd><ns2:Ustrd>Lasku 12345</ns2:Ustrd><ns2:Ustrd>Kiitos</ns2:Ustrd></ns2:RmtInf>
+</ns2:TxDtls></ns2:NtryDtls>
+</ns2:Ntry>
+<ns2:Ntry>
+<ns2:Amt Ccy="EUR">0.10</ns2:Amt><ns2:CdtDbtInd>DBIT</ns2:CdtDbtInd><ns2:Sts>BOOK</ns2:Sts>
+<ns2:BookgDt><ns2:Dt>2026-10-31</ns2:Dt></ns2:BookgDt><ns2:ValDt><ns2:Dt>2026-10-31</ns2:Dt></ns2:ValDt>
+<ns2:AcctSvcrRef>202610310007</ns2:AcctSvcrRef>
+<ns2:AddtlNtryInf>Tilinhoitomaksu</ns2:AddtlNtryInf>
+</ns2:Ntry>
+<ns2:Ntry>
+<ns2:Amt Ccy="EUR">75.00</ns2:Amt><ns2:CdtDbtInd>DBIT</ns2:CdtDbtInd><ns2:Sts>PDNG</ns2:Sts>
+<ns2:BookgDt><ns2:Dt>2026-10-31</ns2:Dt></ns2:BookgDt>
+<ns2:AcctSvcrRef>202610310099</ns2:AcctSvcrRef>
+<ns2:AddtlNtryInf>Odottava varaus</ns2:AddtlNtryInf>
+</ns2:Ntry>
+</ns2:Stmt>
+</ns2:BkToCstmrStmt>
+</ns2:Document>

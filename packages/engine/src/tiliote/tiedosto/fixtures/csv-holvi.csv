@@ -1,0 +1,4 @@
+Payment date,Date,Amount,Currency,Counterparty,Description,Reference,Message,Filing ID
+2026-10-04,2026-10-04,-19.90,EUR,Kauppa Malli Oy,Card payment,,,"HOLVI-0001"
+2026-10-11,2026-10-11,"1,250.00",EUR,Maija Malli,Bank transfer,RF68 1000 3,Lasku 12,HOLVI-0002
+2026-10-27,2026-10-27,-7.00,EUR,Testi Oy,"Fee, monthly",,"Kuukausimaksu ""lokakuu""",HOLVI-0003

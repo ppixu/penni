@@ -1,0 +1,4 @@
+Kirjauspäivä	Arvopäivä	Maksupäivä	Määrä	Saaja/Maksaja	Tilinumero	BIC	Tapahtuma	Viite	Maksajan viite	Viesti	Kortinnumero	Kuitti
+1.10.2026	1.10.2026	1.10.2026	-300,00	Vuokranantaja Oy	FI22 9876 5400 0000 03	NDEAFIHH	Tilisiirto	123453		Vuokra lokakuu		
+5.10.2026	5.10.2026	5.10.2026	1250,00	Maija Malli	FI16 1234 5600 0000 02	NDEAFIHH	Viitesiirto	10003				
+20.10.2026	20.10.2026	20.10.2026	-45,90	Kauppa Malli Oy			Korttiosto			Ostos	4921 00XX XXXX 1234	

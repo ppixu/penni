@@ -7,7 +7,7 @@ import type {
   TuontiEdistyminen,
   TuontiSilta,
 } from '@penni/tuonti';
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 /** Pääprosessin app-command (hiiren sivunapit Windowsissa/Linuxissa) → sivun historia. */
 interface NavigointiSilta {
@@ -47,13 +47,19 @@ const silta: TuontiSilta &
   poistaViimeisin: (polku) => ipcRenderer.invoke('kirjat:poista', polku),
   valitseTiliote: () => ipcRenderer.invoke('tasmays:valitseTiliote'),
   valitseKuittikansio: () => ipcRenderer.invoke('tasmays:valitseKansio'),
-  lueAineisto: (tiliote, kansio, edistyminen) => {
+  lueAineisto: (tiliote, kansio, edistyminen, valinnat) => {
     const kuuntelija = (_t: unknown, e: LukuEdistyminen): void => edistyminen(e);
     ipcRenderer.on('tasmays:edistyminen', kuuntelija);
     return ipcRenderer
-      .invoke('tasmays:lueAineisto', tiliote, kansio)
+      .invoke('tasmays:lueAineisto', tiliote, kansio, valinnat)
       .finally(() => ipcRenderer.off('tasmays:edistyminen', kuuntelija));
   },
+  esikatseleTiliote: (polku) => ipcRenderer.invoke('tasmays:esikatsele', polku),
+  // getPathForFile on kutsuttava täällä esilatauksessa: se toimii vain levyltä peräisin olevalle
+  // Filelle (muistissa luodulle palauttaa ''), joten sivu ei voi väärentää mielivaltaista polkua.
+  // Pääprosessi tarkistaa vielä, että polku on olemassa oleva tavallinen tiedosto.
+  tiliotePolku: (tiedosto) =>
+    ipcRenderer.invoke('tasmays:pudotettu', webUtils.getPathForFile(tiedosto)),
   lueTiedosto: (polku) => ipcRenderer.invoke('tasmays:lueTiedosto', polku),
   kysyTila: () => ipcRenderer.invoke('kysy:tila'),
   kysy: (kysymysId, kysymys, tapahtuma) => {

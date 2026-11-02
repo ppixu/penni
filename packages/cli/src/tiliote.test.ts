@@ -1,6 +1,7 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { luoTestiPdf } from '@penni/luku/testi';
 import { createSqliteStorage } from '@penni/storage-sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -123,5 +124,51 @@ describe('tiliote', () => {
       ),
     ).toBe(1);
     expect(JSON.parse(puuttuu.err.join('')).koodi).toBe('TIEDOSTO');
+  });
+
+  /** Kopioi moottorin synteettisen tiedostofikstuurin testihakemistoon. */
+  function fikstuuri(nimi: string, kohde: string): string {
+    const polku = join(hakemisto, kohde);
+    copyFileSync(
+      fileURLToPath(new URL(`../../engine/src/tiliote/tiedosto/fixtures/${nimi}`, import.meta.url)),
+      polku,
+    );
+    return polku;
+  }
+
+  it('reads a camt.053 file just like a PDF', async () => {
+    const camt = fikstuuri('camt053-perus.xml', 'tiliote.xml');
+    const { out, io: streams } = io();
+    const koodi = await suorita(['--kirja', kirja, 'tiliote', camt, '--json'], streams);
+    expect(koodi).toBe(0);
+    const tulos = JSON.parse(out.join(''));
+    expect(tulos.rivit.length).toBeGreaterThan(0);
+  });
+
+  it('reads a CSV from a recognised bank', async () => {
+    const csv = fikstuuri('csv-nordea.csv', 'nordea.csv');
+    const { io: streams } = io();
+    expect(await suorita(['--kirja', kirja, 'tiliote', csv, '--json'], streams)).toBe(0);
+  });
+
+  it('explains that the CLI needs a recognised bank CSV for an unknown layout', async () => {
+    const csv = fikstuuri('csv-tuntematon.csv', 'tuntematon.csv');
+    const { err, io: streams } = io();
+    expect(await suorita(['--kirja', kirja, 'tiliote', csv, '--json'], streams)).toBe(1);
+    const virhe = JSON.parse(err.join(''));
+    expect(virhe.koodi).toBe('CSV_SARAKKEET');
+    expect(virhe.viesti ?? virhe.message ?? err.join('')).toContain('Komentorivi tarvitsee');
+  });
+
+  it('rejects a file that is not a statement (JPEG bytes) with the supported formats', async () => {
+    const kuva = join(hakemisto, 'kuva.jpg');
+    writeFileSync(kuva, new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]));
+    const { err, io: streams } = io();
+    expect(await suorita(['--kirja', kirja, 'tiliote', kuva, '--json'], streams)).toBe(1);
+    expect(JSON.parse(err.join('')).koodi).toBe('VAARA_MUOTO');
+    const viesti: string = JSON.parse(err.join('')).virhe;
+    expect(viesti).toContain('Tuettuja muotoja ovat PDF-tiliote');
+    // The supported formats are listed exactly once.
+    expect(viesti.match(/camt\.053/g)).toHaveLength(1);
   });
 });

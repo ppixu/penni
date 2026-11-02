@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Kuittilahde } from '@penni/engine';
-import { lueTiliotePdf } from './lueTiliote.js';
+import type { Kuittilahde, TiliotetiedostonValinnat } from '@penni/engine';
+import { lueTiliotetiedosto } from './lueTiliote.js';
 import {
   type KuittiLukija,
   type LukemattaJaanyt,
@@ -16,7 +16,7 @@ function onkoKuittitiedosto(nimi: string): boolean {
 }
 
 /**
- * Lukee tiliotteen ja kuittikansion yhdeksi täsmäytysaineistoksi. Yksittäisen kuitin
+ * Lukee tiliotteen (PDF tai rakenteinen tiedosto; `valinnat` on CSV:n sarakejako) ja kuittikansion yhdeksi täsmäytysaineistoksi. Yksittäisen kuitin
  * epäonnistuminen ei kaada ajoa: se kirjautuu `lukematta`-listaan ja sen pankkirivi
  * käsitellään kuittina joka puuttuu. Ilman kansiota (`null`) luetaan pelkkä tiliote; valittu
  * mutta tyhjä kansio on sen sijaan virhe, koska se on lähes aina väärä valinta.
@@ -26,9 +26,10 @@ export async function lueAineisto(
   kansio: string | null,
   lukija: KuittiLukija,
   edistyminen?: (e: LukuEdistyminen) => void,
+  valinnat?: TiliotetiedostonValinnat,
 ): Promise<TasmaysAineisto> {
   edistyminen?.({ vaihe: 'tiliote', valmiina: 0, yhteensa: 1, tiedosto: tiliote });
-  const luettu = await lueTiliotePdf(new Uint8Array(await readFile(tiliote)));
+  const luettu = await lueTiliotetiedosto(new Uint8Array(await readFile(tiliote)), valinnat);
   edistyminen?.({ vaihe: 'tiliote', valmiina: 1, yhteensa: 1, tiedosto: tiliote });
   if (kansio === null)
     return { tiliote: { ...luettu, tiedosto: tiliote }, kuitit: [], lukematta: [] };

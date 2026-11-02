@@ -12,6 +12,8 @@ export function luoDemoTasmaysSilta(aineisto: DemoAineisto): TasmaysSilta {
   return {
     valitseTiliote: async () => aineisto.tiliote.tiedosto,
     valitseKuittikansio: async () => KUITTIKANSIO,
+    // Demon tapahtumaluettelo on PDF, joten sarakejakoa ei kysytä.
+    esikatseleTiliote: async () => ({ lahde: 'pdf' }),
     lueAineisto: async (_tiliote, kansio, edistyminen) => {
       const kuitit = kansio === null ? [] : aineisto.kuitit;
       edistyminen({ vaihe: 'tiliote', valmiina: 1, yhteensa: 1 });

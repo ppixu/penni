@@ -3,7 +3,7 @@ import { useTallennaLiite, useTositteet } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
 import { laskeSha } from '@/liitteet/laskeSha';
 import { tilioteTiedoiksi, tiliotteenOtsikko } from '@/tiliote/tiliotetiedot';
-import { TositeTila, TositeTyyppi } from '@penni/engine';
+import { TILIOTTEEN_MIME, type TiliotteenLahde, TositeTila, TositeTyyppi } from '@penni/engine';
 import type { TasmaysAineisto } from '@penni/luku';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -11,10 +11,20 @@ import { useState } from 'react';
 import { siivoaIpcVirhe } from './ipcVirhe.js';
 import { annaTasmaysSilta } from './silta.js';
 
+/** Liitteen tiedostopääte, jos polusta ei saa nimeä. */
+const LIITTEEN_PAATE: Record<TiliotteenLahde, string> = {
+  pdf: 'pdf',
+  camt053: 'xml',
+  camt054: 'xml',
+  tito: 'txt',
+  csv: 'csv',
+};
+
 /**
- * Tallentaa luetun kuukausitiliotteen Tiliote-tositteeksi: kausi, pankkitili ja pankin saldot
- * tositteen tiliote-tietoihin ja PDF liitteeksi. Sama tili ja kausi tallennetaan vain kerran —
- * jo tallennetusta näytetään linkki.
+ * Tallentaa luetun kuukausitiliotteen Tiliote-tositteeksi: kausi, pankkitili, tiliotteen IBAN ja
+ * pankin saldot tositteen tiliote-tietoihin ja alkuperäinen tiedosto (PDF, XML, TITO tai CSV)
+ * liitteeksi omalla nimellään ja muotonsa MIME-tyypillä. Sama tili ja kausi tallennetaan vain
+ * kerran — jo tallennetusta näytetään linkki.
  */
 export function TiliotteenTallennus({
   tiliote,
@@ -26,7 +36,7 @@ export function TiliotteenTallennus({
   const client = useKpClient();
   const qc = useQueryClient();
   const { tallenna: tallennaLiite } = useTallennaLiite();
-  const tiedot = tilioteTiedoiksi(tiliote, pankkitili);
+  const tiedot = tilioteTiedoiksi(tiliote, pankkitili, tiliote.iban);
   const { data: tiliotteet } = useTositteet({ tyyppi: TositeTyyppi.TILIOTE }, tiedot !== null);
   const [tallentaa, setTallentaa] = useState(false);
   const [virhe, setVirhe] = useState<string | null>(null);
@@ -54,10 +64,11 @@ export function TiliotteenTallennus({
         tiliote: tiedot,
       });
       const data = await annaTasmaysSilta().lueTiedosto(tiliote.tiedosto);
+      const lahde = tiliote.lahde ?? 'pdf';
       await tallennaLiite({
         tosite: tosite.id,
-        nimi: tiliote.tiedosto.split('/').pop() ?? 'tiliote.pdf',
-        tyyppi: 'application/pdf',
+        nimi: tiliote.tiedosto.split(/[\\/]/).pop() || `tiliote.${LIITTEEN_PAATE[lahde]}`,
+        tyyppi: TILIOTTEEN_MIME[lahde],
         sha: await laskeSha(data),
         luotu: new Date().toISOString(),
         data,

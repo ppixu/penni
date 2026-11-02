@@ -125,6 +125,22 @@ describe('tiliote', () => {
     expect(toinen.luonnokset).toEqual([]);
   });
 
+  it('keeps the archive id and counterparty IBAN of a file statement on the draft', async () => {
+    const { client } = await kirja();
+    const tapahtumat = TILIOTE.tapahtumat.map((t, i) =>
+      i === 1 ? { ...t, arkistotunnus: '202602100001', iban: 'FI1522220000045675' } : t,
+    );
+    const syote = { tiliote: { ...TILIOTE, tapahtumat }, luonnokset: true };
+    const jasennetty = tiliote.syote.parse(syote) as { tiliote: { tapahtumat: object[] } };
+    expect(jasennetty.tiliote.tapahtumat[1]).toMatchObject({
+      arkistotunnus: '202602100001',
+      iban: 'FI1522220000045675',
+    });
+    const tulos = (await tiliote.suorita(client, syote, env)) as Tulos;
+    const luonnos = await client.haeTosite(tulos.rivit[1]?.luonnos as number);
+    expect(luonnos?.viennit.find((v) => v.tili === 1900)?.arkistotunnus).toBe('202602100001');
+  });
+
   it('honours an explicit bank account and refuses one missing from the chart', async () => {
     const { client } = await kirja();
     const tulos = (await tiliote.suorita(client, { tiliote: TILIOTE, tili: 3000 }, env)) as Tulos;

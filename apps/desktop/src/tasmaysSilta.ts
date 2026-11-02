@@ -1,7 +1,11 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { isAbsolute } from 'node:path';
+import { type TiliotetiedostonValinnat, onkoCsvSarakkeet } from '@penni/engine';
 import {
   type LukuEdistyminen,
   type TasmaysAineisto,
+  type TilioteEsikatselu,
+  esikatseleTiliote,
   lueAineisto,
   pdfTekstiLukija,
 } from '@penni/luku';
@@ -28,13 +32,40 @@ export interface TasmaysLukija {
     tiliote: string,
     kansio: string | null,
     edistyminen: (e: LukuEdistyminen) => void,
+    valinnat?: TiliotetiedostonValinnat,
   ): Promise<TasmaysAineisto>;
+  /** Tunnistaa tiedoston muodon ja ehdottaa CSV:n sarakejaon. Saa vain pääprosessin lukemat tavut. */
+  esikatseleTiliote(tavut: Uint8Array): TilioteEsikatselu;
   lueTiedosto(polku: string): Promise<Uint8Array>;
 }
 
+/** Tiliotetiedoston enimmäiskoko: suurempaa ei lueta pääprosessin muistiin. */
+export const TILIOTTEEN_ENIMMAISKOKO = 50 * 1024 * 1024;
+
+const liianSuuri = () => new Error('Tiedosto on liian suuri tiliotteeksi.');
+
+async function tarkistaKoko(polku: string): Promise<void> {
+  if ((await stat(polku)).size > TILIOTTEEN_ENIMMAISKOKO) throw liianSuuri();
+}
+
+/**
+ * Renderöijän lähettämät valinnat ennen jäsentäjää: puuttuvat tai objekti, jonka sarakejako
+ * puuttuu tai on rakenteeltaan kelvollinen. Eteenpäin menee vain tunnettu kenttä.
+ */
+function tarkistaValinnat(valinnat: unknown): TiliotetiedostonValinnat | undefined {
+  if (valinnat === undefined) return undefined;
+  if (typeof valinnat === 'object' && valinnat !== null) {
+    const { csvSarakkeet } = valinnat as { csvSarakkeet?: unknown };
+    if (csvSarakkeet === undefined) return {};
+    if (onkoCsvSarakkeet(csvSarakkeet)) return { csvSarakkeet };
+  }
+  throw new Error('Sarakejako on virheellinen.');
+}
+
 const levyLukija: TasmaysLukija = {
-  lueAineisto: (tiliote, kansio, edistyminen) =>
-    lueAineisto(tiliote, kansio, pdfTekstiLukija(), edistyminen),
+  lueAineisto: (tiliote, kansio, edistyminen, valinnat) =>
+    lueAineisto(tiliote, kansio, pdfTekstiLukija(), edistyminen, valinnat),
+  esikatseleTiliote: (tavut) => esikatseleTiliote(tavut),
   lueTiedosto: async (polku) => new Uint8Array(await readFile(polku)),
 };
 
@@ -68,9 +99,38 @@ export function tasmaysKasittelijat(
       const polku = await valitse(
         'Valitse tiliote',
         ['openFile'],
-        [{ name: 'Tiliote (PDF)', extensions: ['pdf'] }],
+        [
+          // TITO-tiedostoilla on usein outo tai ei lainkaan päätettä, siksi myös "Kaikki tiedostot".
+          {
+            name: 'Tiliote (PDF, XML, CSV, TITO)',
+            extensions: ['pdf', 'xml', 'csv', 'txt', 'tito', 'nda'],
+          },
+          { name: 'Kaikki tiedostot', extensions: ['*'] },
+        ],
       );
       if (polku !== null) await valitut.lisaaTiedosto(polku);
+      return polku;
+    },
+
+    /**
+     * Pudotetun tai `<input>`-valitun tiedoston polku sallittujen listalle. Polun antaa esilataus
+     * (`webUtils.getPathForFile`), mutta renderöijäkään ei voi väärentää levyllä olevaa Filea —
+     * muistissa luodulle Filelle polku on ''. Hylätyn polun arvoa ei toisteta virheviestissä.
+     */
+    async pudotettu(tapahtuma: IpcLahettaja, polku: string): Promise<string> {
+      tarkistaLahettaja(tapahtuma, annaOsoite());
+      const virhe = new Error('Pudotettu tiedosto ei ole luettavissa.');
+      if (typeof polku !== 'string' || polku === '' || !isAbsolute(polku)) throw virhe;
+      const tiedot = await stat(polku).catch(() => {
+        throw virhe;
+      });
+      if (!tiedot.isFile()) throw virhe;
+      if (tiedot.size > TILIOTTEEN_ENIMMAISKOKO) throw liianSuuri();
+      try {
+        await valitut.lisaaTiedosto(polku);
+      } catch {
+        throw virhe;
+      }
       return polku;
     },
 
@@ -85,15 +145,28 @@ export function tasmaysKasittelijat(
       tapahtuma: TasmaysTapahtuma,
       tiliote: string,
       kansio: string | null,
+      valinnat?: unknown,
     ): Promise<TasmaysAineisto> {
       tarkistaLahettaja(tapahtuma, annaOsoite());
-      await valitut.varmista(tiliote);
+      const tarkistetut = tarkistaValinnat(valinnat);
+      await tarkistaKoko(await valitut.varmista(tiliote));
       if (kansio !== null) await valitut.varmista(kansio);
       // Alkuperäiset polut eteenpäin: renderöijä näyttää niiden tiedostonimet sellaisinaan, ja
       // kuittien polut (kansio + nimi) palaavat myöhemmin lueTiedostoon, joka tarkistaa ne itse.
-      return lukija.lueAineisto(tiliote, kansio, (e) =>
-        tapahtuma.sender.send('tasmays:edistyminen', e),
+      return lukija.lueAineisto(
+        tiliote,
+        kansio,
+        (e) => tapahtuma.sender.send('tasmays:edistyminen', e),
+        tarkistetut,
       );
+    },
+
+    /** Muoto ja CSV:n sarakeehdotus; tavut luetaan täällä, vain sallitulta polulta. */
+    async esikatsele(tapahtuma: IpcLahettaja, polku: string): Promise<TilioteEsikatselu> {
+      tarkistaLahettaja(tapahtuma, annaOsoite());
+      const sallittu = await valitut.varmista(polku);
+      await tarkistaKoko(sallittu);
+      return lukija.esikatseleTiliote(await lukija.lueTiedosto(sallittu));
     },
 
     async lueTiedosto(tapahtuma: IpcLahettaja, polku: string): Promise<Uint8Array> {
@@ -110,8 +183,17 @@ export function rekisteroiTasmays(annaOsoite: () => string | null | undefined): 
   ipcMain.handle('tasmays:valitseKansio', (tapahtuma) =>
     kasittelijat.valitseKuittikansio(tapahtuma),
   );
-  ipcMain.handle('tasmays:lueAineisto', (tapahtuma, tiliote: string, kansio: string | null) =>
-    kasittelijat.lueAineisto(tapahtuma, tiliote, kansio),
+  ipcMain.handle('tasmays:pudotettu', (tapahtuma, polku: string) =>
+    kasittelijat.pudotettu(tapahtuma, polku),
+  );
+  ipcMain.handle('tasmays:esikatsele', (tapahtuma, polku: string) =>
+    kasittelijat.esikatsele(tapahtuma, polku),
+  );
+  ipcMain.handle(
+    'tasmays:lueAineisto',
+    // Valinnat tulevat renderöijältä tarkistamattomina; lueAineisto tarkistaa ne.
+    (tapahtuma, tiliote: string, kansio: string | null, valinnat?: unknown) =>
+      kasittelijat.lueAineisto(tapahtuma, tiliote, kansio, valinnat),
   );
   ipcMain.handle('tasmays:lueTiedosto', (tapahtuma, polku: string) =>
     kasittelijat.lueTiedosto(tapahtuma, polku),

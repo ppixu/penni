@@ -28,7 +28,7 @@ describe('suorita', () => {
     const teksti = out.join('');
     expect(teksti).toContain('tilit —');
     expect(teksti).not.toContain('tilit_haku');
-    expect(teksti).toContain('käyttö: penni tiliote <tiliote.pdf>');
+    expect(teksti).toContain('käyttö: penni tiliote <tiliote.pdf|.xml|.csv|.txt>');
     expect(teksti).toContain('liitteet —');
   });
 

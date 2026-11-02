@@ -4,7 +4,7 @@ import { type Tili, lataaKartta } from '../accounts/tili.js';
 import type { Kuitti } from '../kuitti/kuitti.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { TositeVienti } from '../vouchers/types.js';
-import { luoTositeMatchista, paatteleMenotili } from './kuittiTosite.js';
+import { luoTositeMatchista, luoTositeValinnasta, paatteleMenotili } from './kuittiTosite.js';
 import type { Tilitapahtuma } from './poimiTiliote.js';
 
 const CHART: Tili[] = lataaKartta([
@@ -201,5 +201,44 @@ describe('paatteleMenotili', () => {
       { hae: 'cursor', tili: 2 },
     ];
     expect(paatteleMenotili('Cursor', s, 9)).toBe(1);
+  });
+});
+
+describe('arkistotunnus pankkiviennille', () => {
+  const valinta = { tili: 4000, alvKoodi: 0, alvProsentti: 0 };
+  const pankkiVienti = (t: { viennit: TositeVienti[] }): TositeVienti | undefined =>
+    t.viennit.find((v) => v.tili === 1910);
+
+  it('luoTositeValinnasta kopioi tapahtuman arkistotunnuksen pankkiviennille', () => {
+    const tapahtuma: Tilitapahtuma = {
+      pvm: '2026-10-31',
+      nimi: 'Testi Oy',
+      maara: e('-10.00'),
+      arkistotunnus: '261031ABC123',
+    };
+    const t = luoTositeValinnasta(tapahtuma, valinta, CHART);
+    expect(pankkiVienti(t)?.arkistotunnus).toBe('261031ABC123');
+    expect(t.viennit.find((v) => v.tili === 4000)?.arkistotunnus).toBeUndefined();
+  });
+
+  it('luoTositeValinnasta jättää kentän pois ilman arkistotunnusta', () => {
+    const tapahtuma: Tilitapahtuma = { pvm: '2026-10-31', nimi: 'Testi Oy', maara: e('-10.00') };
+    const t = luoTositeValinnasta(tapahtuma, valinta, CHART);
+    expect(pankkiVienti(t)).toBeDefined();
+    expect('arkistotunnus' in (pankkiVienti(t) ?? {})).toBe(false);
+  });
+
+  it('luoTositeMatchista kopioi arkistotunnuksen pankkiviennille', () => {
+    const tapahtuma: Tilitapahtuma = {
+      pvm: '2026-10-31',
+      nimi: 'Testi Oy',
+      maara: e('-10.00'),
+      arkistotunnus: '261031ABC123',
+    };
+    const t = luoTositeMatchista(tapahtuma, kuitti({ bruttoSumma: e('10.00') }), CHART);
+    expect(pankkiVienti(t)?.arkistotunnus).toBe('261031ABC123');
+    const { arkistotunnus: _pois, ...ilmanTunnusta } = tapahtuma;
+    const ilman = luoTositeMatchista(ilmanTunnusta, kuitti({ bruttoSumma: e('10.00') }), CHART);
+    expect('arkistotunnus' in (pankkiVienti(ilman) ?? {})).toBe(false);
   });
 });

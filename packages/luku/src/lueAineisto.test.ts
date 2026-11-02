@@ -1,9 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Kuitti } from '@penni/engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { lueAineisto } from './lueAineisto.js';
+import { esikatseleTiliote } from './lueTiliote.js';
 import { luoTestiPdf } from './testi/luoTestiPdf.js';
 import { type KuittiLukija, type LukuEdistyminen, LukuVirhe } from './tyypit.js';
 
@@ -37,6 +39,48 @@ beforeAll(() => {
 afterAll(() => rmSync(juuri, { recursive: true, force: true }));
 
 describe('lueAineisto', () => {
+  it('lukee camt-tiedoston ilman kuittikansiota ja merkitsee tiedoston polun', async () => {
+    const camt = join(juuri, 'tiliote.xml');
+    copyFileSync(
+      fileURLToPath(
+        new URL('../../engine/src/tiliote/tiedosto/fixtures/camt053-perus.xml', import.meta.url),
+      ),
+      camt,
+    );
+    const aineisto = await lueAineisto(camt, null, testiLukija());
+    expect(aineisto.tiliote).toMatchObject({
+      tiedosto: camt,
+      lahde: 'camt053',
+      iban: 'FI7455550000012343',
+    });
+    expect(aineisto.tiliote.tapahtumat.length).toBeGreaterThan(0);
+    expect(aineisto.kuitit).toEqual([]);
+  });
+
+  it('välittää sarakevalinnan tuntemattoman CSV:n lukuun', async () => {
+    const csv = join(juuri, 'tuntematon.csv');
+    copyFileSync(
+      fileURLToPath(
+        new URL('../../engine/src/tiliote/tiedosto/fixtures/csv-tuntematon.csv', import.meta.url),
+      ),
+      csv,
+    );
+    await expect(lueAineisto(csv, null, testiLukija())).rejects.toMatchObject({
+      koodi: 'CSV_SARAKKEET',
+    });
+    const ehdotus = esikatseleTiliote(new Uint8Array(readFileSync(csv))).csv?.ehdotus;
+    const aineisto = await lueAineisto(csv, null, testiLukija(), undefined, {
+      csvSarakkeet: ehdotus,
+    });
+    expect(aineisto.tiliote).toMatchObject({ tiedosto: csv, lahde: 'csv' });
+    expect(aineisto.tiliote.tapahtumat.length).toBeGreaterThan(0);
+  });
+
+  it('PDF-tiliotteen lähde on pdf', async () => {
+    const aineisto = await lueAineisto(tiliote, null, testiLukija());
+    expect(aineisto.tiliote.lahde).toBe('pdf');
+  });
+
   it('kokoaa tapahtumat, luetut kuitit ja lukematta jääneet', async () => {
     const aineisto = await lueAineisto(tiliote, kuittikansio, testiLukija());
     expect(aineisto.tiliote.tapahtumat).toHaveLength(1);

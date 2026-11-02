@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import type { ParseArgsConfig } from 'node:util';
-import { LukuVirhe, lueTiliotePdf } from '@penni/luku';
+import { LukuVirhe, lueTiliotetiedosto } from '@penni/luku';
 import { TyokaluVirhe } from '@penni/tyokalut';
 
 type Optiot = NonNullable<ParseArgsConfig['options']>;
@@ -163,20 +163,26 @@ export const KOMENNOT: Record<string, Komento> = {
   },
   tiliote: {
     tyokalu: 'tiliote',
-    kaytto: 'penni tiliote <tiliote.pdf> [--tili <numero>] [--luonnokset]',
+    kaytto: 'penni tiliote <tiliote.pdf|.xml|.csv|.txt> [--tili <numero>] [--luonnokset]',
     optiot: { tili: { type: 'string' }, luonnokset: { type: 'boolean' } },
     syote: async (v, pos) => {
       const polku = pos[0];
       if (polku === undefined)
         throw new TyokaluVirhe(
           'SYOTE',
-          'Käyttö: penni tiliote <tiliote.pdf> [--tili <numero>] [--luonnokset]',
+          'Käyttö: penni tiliote <tiliote.pdf|.xml|.csv|.txt> [--tili <numero>] [--luonnokset]',
         );
       const tavut = await lueTiedosto(polku);
       let tiliote: unknown;
       try {
-        tiliote = await lueTiliotePdf(new Uint8Array(tavut));
+        tiliote = await lueTiliotetiedosto(new Uint8Array(tavut));
       } catch (virhe) {
+        if (virhe instanceof LukuVirhe && virhe.koodi === 'CSV_SARAKKEET')
+          throw new TyokaluVirhe(
+            virhe.koodi,
+            'CSV-tiedoston pankkia ei tunnistettu. Komentorivi tarvitsee tunnetun pankin ' +
+              'CSV-muodon; muun CSV:n sarakkeet voi valita Pennin Tuo tiliote -sivulla.',
+          );
         if (virhe instanceof LukuVirhe) throw new TyokaluVirhe(virhe.koodi, virhe.message);
         throw virhe;
       }
