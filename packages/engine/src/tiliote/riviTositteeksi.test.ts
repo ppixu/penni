@@ -92,6 +92,41 @@ describe('riviTositteeksi', () => {
     expect(tosite.viennit.find((v) => v.tili === 1763)?.debet).toBe(252);
   });
 
+  it('vakioviite-ehdotuksen kohdennus päätyy vastatilin vientiin', () => {
+    const chart = lataaKartta([
+      { numero: 1910, nimi: 'Pankkitili', tyyppi: 'ARP' },
+      { numero: 3010, nimi: 'Jäsenmaksut', tyyppi: 'CL' },
+    ]);
+    const ehdotus = {
+      tili: 3010,
+      alvKoodi: 0,
+      alvProsentti: 0,
+      otsikko: 'Jäsenmaksut',
+      kohdennus: 2,
+      peruste: 'vakioviite' as const,
+    };
+    const tapahtuma = { pvm: '2026-06-02', nimi: 'MATTI', maara: c(5000), viite: '1012' };
+    const tosite = riviTositteeksi(rivi({ tapahtuma, tili: 3010, ehdotus }), chart, {
+      pankkitili: 1910,
+    });
+    expect(tosite.otsikko).toBe('Jäsenmaksut');
+    expect(tosite.viennit.find((v) => v.tili === 3010)).toMatchObject({
+      kredit: 5000,
+      kohdennus: 2,
+    });
+    expect(tosite.viennit.find((v) => v.tili === 1910)).not.toHaveProperty('kohdennus');
+    // ilman kohdennusta avainta ei ole lainkaan
+    const { kohdennus: _k, ...ilmanKohdennusta } = ehdotus;
+    const toinen = riviTositteeksi(
+      rivi({ tapahtuma, tili: 3010, ehdotus: ilmanKohdennusta }),
+      chart,
+      {
+        pankkitili: 1910,
+      },
+    );
+    expect(toinen.viennit.find((v) => v.tili === 3010)).not.toHaveProperty('kohdennus');
+  });
+
   it('ehdotuksen kumppani siirtyy tositteelle, vaihdettu tili ohittaa senkin', () => {
     const ehdotus = {
       tili: 7690,

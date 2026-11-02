@@ -7,8 +7,11 @@ import type { Tilitapahtuma } from './poimiTiliote.js';
 /** Rahan suunta pankkitilin näkökulmasta. */
 export type Rahavirta = 'sisaan' | 'ulos';
 
-/** Mistä ehdotus päätellään: aiempi sama pankkinimi, nimen sanatäsmäys, omistajan liike. */
-export type EhdotuksenPeruste = 'pankkinimi' | 'nimi' | 'omistaja';
+/**
+ * Mistä ehdotus päätellään: aiempi sama pankkinimi, nimen sanatäsmäys, omistajan liike tai
+ * maksun vakioviite.
+ */
+export type EhdotuksenPeruste = 'pankkinimi' | 'nimi' | 'omistaja' | 'vakioviite';
 
 /** Ehdotettu kirjaus pankkitapahtumalle (vastatili + ALV). */
 export interface KirjausEhdotus {
@@ -21,6 +24,8 @@ export interface KirjausEhdotus {
   lahdeTosite?: number;
   /** Lähdetositteen kumppani: toistuva tapahtuma kirjataan samalle kumppanille. */
   kumppani?: number;
+  /** Vakioviitteen kohdennus; päätyy vastatilin vientiin. */
+  kohdennus?: number;
   peruste: EhdotuksenPeruste;
 }
 

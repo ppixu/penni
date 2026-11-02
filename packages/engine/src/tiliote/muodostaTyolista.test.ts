@@ -162,6 +162,51 @@ describe('muodostaTyolista', () => {
   });
 });
 
+describe('muodostaTyolista: vakioviite', () => {
+  const vakioviitteet = [{ viite: '1012', tili: 3010, kohdennus: 2, otsikko: 'Jäsenmaksut' }];
+  const tiliote = {
+    tapahtumat: [
+      { pvm: '2026-07-20', nimi: 'ASIAKAS OY', viite: '1012', maara: c(5000) },
+      { pvm: '2026-07-21', nimi: 'ASIAKAS OY', maara: c(5000) },
+    ],
+  };
+  const optiot = { pankkitili: 1910, chart: CHART, saannot: lueTasmaysSaannot({}) };
+
+  it('ehdottaa vakioviitteen tiliä, vaikka nimihistoria osoittaa muualle', async () => {
+    const storage = await kirja();
+    let kutsuja = 0;
+    const tulos = await muodostaTyolista(
+      {
+        ...lahde(storage),
+        haeVakioviitteet: async () => {
+          kutsuja++;
+          return vakioviitteet;
+        },
+      },
+      tiliote,
+      [],
+      optiot,
+    );
+    const [viitteella, ilman] = tulos.rivit;
+    expect(viitteella?.tili).toBe(3010);
+    expect(viitteella?.ehdotus).toMatchObject({
+      tili: 3010,
+      kohdennus: 2,
+      otsikko: 'Jäsenmaksut',
+      peruste: 'vakioviite',
+    });
+    // viitteetön rivi: nimihistoria (ASIAKAS OY -> 3000) kuten ennen
+    expect(ilman?.ehdotus).toMatchObject({ tili: 3000, peruste: 'pankkinimi' });
+    expect(kutsuja).toBe(1);
+  });
+
+  it('toimii kuten ennen, kun lähde ei tarjoa vakioviitteitä', async () => {
+    const storage = await kirja();
+    const tulos = await muodostaTyolista(lahde(storage), tiliote, [], optiot);
+    expect(tulos.rivit[0]?.ehdotus).toMatchObject({ tili: 3000, peruste: 'pankkinimi' });
+  });
+});
+
 describe('tasmayksenPankkitili / tyolistanPvmVali', () => {
   it('prefers the stored TasmaysPankkitili, then the first bank account in the chart', () => {
     expect(tasmayksenPankkitili({ TasmaysPankkitili: '1911' }, CHART)).toBe(1911);

@@ -48,5 +48,7 @@ export function riviTositteeksi(
     tosite.otsikko = rivi.tapahtuma.nimi;
   if (ehdotus?.otsikko) tosite.otsikko = ehdotus.otsikko;
   if (ehdotus?.kumppani !== undefined) tosite.kumppani = ehdotus.kumppani;
+  if (ehdotus?.kohdennus !== undefined)
+    for (const v of tosite.viennit) if (v.tili === ehdotus.tili) v.kohdennus = ehdotus.kohdennus;
   return tosite;
 }

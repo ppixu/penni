@@ -10,3 +10,4 @@ export * from './tasmaysSaannot.js';
 export * from './riviTositteeksi.js';
 export * from './muodostaTyolista.js';
 export * from './tiedosto/index.js';
+export * from './vakioviiteEhdotus.js';

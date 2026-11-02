@@ -1,6 +1,7 @@
 import type { Cents } from '@penni/euro';
 import { Luonne } from '../accounts/luonne.js';
 import { type Tili, tiliTyypilla } from '../accounts/tili.js';
+import type { Vakioviite } from '../laskutus/vakioviite.js';
 import type { Kumppani } from '../partners/kumppani.js';
 import { tiliAsetuksesta } from '../resources/myyntilaskuResource.js';
 import type { SaldotParams, SaldotTulos } from '../resources/saldot.js';
@@ -23,6 +24,7 @@ import {
   rakennaTyolista,
   siirraPaivia,
 } from './tyolista.js';
+import { vakioviiteEhdotus } from './vakioviiteEhdotus.js';
 
 /**
  * Mistä työlista lukee kirjan: tositteet, kumppanit ja saldot. `KpClient` täyttää tämän
@@ -33,6 +35,11 @@ export interface TyolistaLahde {
   listaaTositteet(filter: TositeFilter): Promise<StoredTosite[]>;
   haeKumppanit(): Promise<Kumppani[]>;
   haeSaldot(params: SaldotParams): Promise<SaldotTulos>;
+  /**
+   * Vakioviitteet saapuvien maksujen ohjaukseen; `KpClient` täyttää tämän. Valinnainen:
+   * lähde ilman sitä käyttäytyy kuten ennen.
+   */
+  haeVakioviitteet?(): Promise<Vakioviite[]>;
 }
 
 /**
@@ -82,7 +89,9 @@ export function tyolistanPvmVali(tapahtumat: readonly { pvm: IsoDate }[]): {
 }
 
 /**
- * Historian ehdotus riville. Käyttäjän tallentama myyjäkohtainen menotilisääntö on
+ * Ehdotus riville. Saapuvan maksun vakioviite (valinnainen `vakioviitteet`) voittaa kaiken
+ * muun: viite on nimenomainen ohjaus tilille ja kohdennukselle. Ilman vakioviitteitä
+ * (vanhat kutsujat) toimitaan kuten ennen. Muuten historian ehdotus: käyttäjän tallentama myyjäkohtainen menotilisääntö on
  * nimenomainen valinta ja voittaa historian: sääntöön osuvalle menolle ei ehdoteta mitään,
  * jolloin moottori käyttää sääntöä kirjatessa.
  */
@@ -90,8 +99,11 @@ export function ehdotusRiville(
   muisti: Kirjausmuisti,
   tulos: TapahtumaTulos,
   saannot: TasmaysSaannot,
+  vakioviitteet: readonly Vakioviite[] = [],
 ): KirjausEhdotus | undefined {
   const { tapahtuma } = tulos;
+  const viitteesta = vakioviiteEhdotus(tapahtuma, vakioviitteet);
+  if (viitteesta) return viitteesta;
   if (tapahtuma.maara < 0) {
     const nimi = [tulos.kuitti?.kuitti.myyja, tapahtuma.nimi].filter(Boolean).join(' ');
     if (paatteleMenotili(nimi, saannot.menotiliSaannot, undefined) !== undefined) return undefined;
@@ -145,9 +157,10 @@ export async function muodostaTyolista(
     ]);
     kirjatutLahde = [...kirjanpidossa, ...luonnokset];
   }
-  const [historia, kumppanit, saldot] = await Promise.all([
+  const [historia, kumppanit, vakioviitteet, saldot] = await Promise.all([
     lahde.listaaTositteet({ bucket: 'kirjanpidossa' }),
     lahde.haeKumppanit(),
+    lahde.haeVakioviitteet ? lahde.haeVakioviitteet() : Promise.resolve([]),
     kausi && tiliote.alkusaldo !== undefined
       ? lahde.haeSaldot({ pvm: kausi.alkaa, tili: pankkitili, alkusaldot: true })
       : Promise.resolve(undefined),
@@ -161,7 +174,7 @@ export async function muodostaTyolista(
   });
   const tulos: TyolistaTulos = {
     rivit: rakennaTyolista(raportti, poimiKirjatut(kirjatutLahde, pankkitili), {
-      ehdota: (t) => ehdotusRiville(muisti, t, saannot),
+      ehdota: (t) => ehdotusRiville(muisti, t, saannot, vakioviitteet),
     }),
     kuititIlmanTapahtumaa: raportti.kuititIlmanTapahtumaa,
   };
