@@ -95,6 +95,11 @@ function onKirjattuEnnakko(t: StoredTosite): boolean {
   );
 }
 
+/** Myyntilasku tai sen hyvityslasku (ei muistutus). */
+function onMyyntilasku(t: StoredTosite): boolean {
+  return t.tyyppi === TositeTyyppi.MYYNTILASKU || t.tyyppi === TositeTyyppi.HYVITYSLASKU;
+}
+
 /** Kredit − debet vienneistä, jotka täyttävät ehdon. */
 function summaaKredit(t: StoredTosite, ehto: (v: TositeVienti) => boolean): Cents {
   let summa = Euro.fromCents(0);
@@ -143,8 +148,8 @@ async function listaa(
     if (onMuistutus && !onKirjanpidossa(t.tila)) continue;
     const muistutusTuloissa = onMuistutus && nettoMask === Luonne.TULO;
     // Ennakkolasku kuuluu Tuloihin tyypin ja maksutavan perusteella: sen viennit osuvat vain
-    // tasetileille (1715 / 2861 / 29392). Netto = rivien kirjausviennit (2861, tyyppi 201),
-    // alv = lykätty ennakon alv (29392, koodi 451).
+    // tasetileille (1715 / 2861 / 29392). Netto = rivien kirjausviennit (2861, tyyppi 201,
+    // ks. alla), alv = lykätty ennakon alv (29392, koodi 451).
     const ennakkoTuloissa = nettoMask === Luonne.TULO && onKirjattuEnnakko(t);
     // A voucher that never touches the nature we are listing is not ours, even if some
     // other leg (bank, equity, VAT) would look like money moving.
@@ -158,9 +163,23 @@ async function listaa(
     )
       continue;
 
-    const netto = ennakkoTuloissa
-      ? summaaKredit(t, (v) => v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS)
-      : summaaLuonteella(t, luonteet, nettoMask, kreditPositiivinen);
+    // Myyntilaskun (ja sen hyvityksen) netto sisältää myös rivien kirjausviennit (tyyppi 201)
+    // tasetileillä: ennakkolaskun 2861-kreditit ja loppulaskun ennakon vähennyksen 2861-debetin.
+    // Näin rivin summa = laskun saatava (= avoin ennen maksua), eikä ennakon ja loppulaskun
+    // netto summaudu kahdesti (ennakko 1000 + loppulasku 2000 − 1000 = myynti 2000).
+    const netto =
+      nettoMask === Luonne.TULO && onMyyntilasku(t)
+        ? Euro.add(
+            summaaLuonteella(t, luonteet, nettoMask, kreditPositiivinen),
+            summaaKredit(t, (v) => {
+              const l = luonteet.get(v.tili);
+              return (
+                v.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.KIRJAUS &&
+                !(l !== undefined && onko(l, Luonne.TULO))
+              );
+            }),
+          )
+        : summaaLuonteella(t, luonteet, nettoMask, kreditPositiivinen);
     // Fold BOTH VAT natures with the list's own sign convention. A reverse-charge purchase
     // (EU acquisition, rakennuspalvelu, imported services — generoiVeroviennit.ts:126-201)
     // posts a deductible ALVSAATAVA leg AND a self-assessed-output ALVVELKA leg for the SAME

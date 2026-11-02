@@ -308,6 +308,21 @@ describe('ennakon hyvitys loppulaskulla', () => {
     const debet = l.viennit.reduce((a, v) => a + v.debet, 0);
     const kredit = l.viennit.reduce((a, v) => a + v.kredit, 0);
     expect(debet).toBe(kredit);
+
+    // Listoilla loppulaskun summa = saatava = avoin (ei "osittain maksettu" ennen maksua), ja
+    // ennakon + loppulaskun netto = todellinen myynti 2000 € (ei 3000 €).
+    const tulot = await listaaTulot(s, {});
+    const loppuRivi = tulot.find((r) => r.tosite === l.id);
+    expect(loppuRivi).toMatchObject({ netto: 100000, alv: 25500, summa: 125500, avoin: 125500 });
+    expect(tulot.find((r) => r.tosite === e.id)).toMatchObject({ netto: 100000, summa: 125500 });
+    expect(tulot.reduce((a, r) => a + r.netto, 0)).toBe(200000);
+    const laskut = await listaaMyyntilaskut(s, {});
+    expect(laskut.find((r) => r.tosite === l.id)).toMatchObject({
+      summa: 125500,
+      avoin: 125500,
+      tili: 1701,
+      era: l.id,
+    });
   });
 
   it('vähennys suurempi kuin lasku -> EISUMMAA eikä numeroa kuluteta', async () => {
