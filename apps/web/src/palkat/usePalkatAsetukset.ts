@@ -182,7 +182,8 @@ export const PALKKATILI_KOODIT: readonly PalkkaKoodi[] = [
   'MP',
 ];
 
-function lueOhitus(teksti: string | undefined): TaulukkoOhitus {
+/** Lukee `PalkatTaulukot`-asetuksen; heittää, jos rakenne tai jokin kenttä on virheellinen. */
+export function lueOhitus(teksti: string | undefined): TaulukkoOhitus {
   const raaka = jasennaJson(teksti);
   if (raaka === undefined) return {};
   if (!onOlio(raaka)) throw new Error('odotettiin oliota');
