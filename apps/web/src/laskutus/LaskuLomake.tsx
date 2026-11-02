@@ -1,4 +1,6 @@
 import {
+  useAvoimetEnnakot,
+  useInit,
   useKirjaaLaskuluonnos,
   useKohdennukset,
   useKumppanit,
@@ -11,7 +13,7 @@ import { SegmentedControl } from '@/editori/SegmentedControl';
 import { useMuutosseuranta } from '@/tallentamaton/useMuutosseuranta';
 import { useTallentamatonVaroitus } from '@/tallentamaton/useTallentamatonVaroitus';
 import { laskuVertailuun } from '@/tallentamaton/vertailu';
-import { Maksutapa, type StoredTosite, laskuSummat } from '@penni/engine';
+import { Maksutapa, type StoredTosite, laskuSummat, tiliAsetuksesta } from '@penni/engine';
 import { muotoileEuro } from '@penni/euro';
 import { useMemo, useReducer, useState } from 'react';
 import { KumppaniDialog } from './KumppaniDialog.js';
@@ -35,6 +37,7 @@ const MAKSUTAVAT = [
   { arvo: Maksutapa.LASKU, label: 'Lasku' },
   { arvo: Maksutapa.KATEINEN, label: 'Käteinen' },
   { arvo: Maksutapa.KORTTIMAKSU, label: 'Korttimaksu' },
+  { arvo: Maksutapa.ENNAKKOLASKU, label: 'Ennakkolasku' },
 ];
 
 /** Prosentti suomalaisella desimaalipilkulla (25.5 → '25,5'). */
@@ -85,11 +88,15 @@ export function LaskuLomake({
   );
   const { data: kumppanit } = useKumppanit();
   const { data: kohdennukset } = useKohdennukset();
+  const { data: init } = useInit();
+  const ennakkoTili = init ? tiliAsetuksesta(init.asetukset, 'LaskuEnnakkotili') : undefined;
+  const { data: avoimetEnnakot } = useAvoimetEnnakot(tila.kumppani);
   const { tallenna, virheviesti, tallentaa } = useTallennaMyyntilasku();
   const { kirjaa, virheviesti: kirjausVirhe, kirjaamassa } = useKirjaaLaskuluonnos();
   const { poista, virheviesti: poistoVirhe, poistaa } = usePoistaLaskuluonnos();
   const [huomio, setHuomio] = useState<string | null>(null);
   const [dialogiAuki, setDialogiAuki] = useState(false);
+  const [ennakkoValintaAuki, setEnnakkoValintaAuki] = useState(false);
   const { onkoLikainen, asetaPohja } = useMuutosseuranta(tila, laskuVertailuun);
   const varoitus = useTallentamatonVaroitus(onkoLikainen);
 
@@ -102,8 +109,21 @@ export function LaskuLomake({
   // pois tallennettavasta laskusta huomaamatta (ks. rakennaLaskuSyote.ts). Käteis-/
   // korttikuitilla eräpäivää ei tarvita, joten se saa jäädä tyhjäksi.
   const eiSummaa = tila.rivit.every(riviHinnaton);
-  const asiakasPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.kumppani === undefined;
-  const erapvmPuuttuu = tila.maksutapa === Maksutapa.LASKU && tila.erapvm === '';
+  // Ennakkolasku on saatava kuten lasku: se tarvitsee asiakkaan (moottorin EIKUMPPANIA) ja eräpäivän.
+  const saatava = tila.maksutapa === Maksutapa.LASKU || tila.maksutapa === Maksutapa.ENNAKKOLASKU;
+  const asiakasPuuttuu = saatava && tila.kumppani === undefined;
+  const erapvmPuuttuu = saatava && tila.erapvm === '';
+  const onEnnakkolasku = tila.maksutapa === Maksutapa.ENNAKKOLASKU;
+  // "Hyvitä ennakko": vain muulla kuin ennakkolaskulla; asiakkaan avoimista ennakoista ne, joita
+  // ei vielä ole vähennetty tällä laskulla (yksi vähennysrivi per ennakko ja verokanta).
+  const valittavatEnnakot = onEnnakkolasku
+    ? []
+    : (avoimetEnnakot ?? []).filter(
+        (e) =>
+          !tila.rivit.some(
+            (r) => r.lisat?.ennakkoTosite === e.tosite && r.alvProsentti === e.alvProsentti,
+          ),
+      );
   const lomakeVirhe = laskuLomakeVirhe(tila);
   const tyossa = tallentaa || kirjaamassa || poistaa;
   // Luonnos on keskeneräinen työ: se tarvitsee vain summallisen rivin ja kelvollisen jakson.
@@ -252,6 +272,52 @@ export function LaskuLomake({
           pvm={tila.laskupvm}
           dispatch={dispatch}
           kohdennukset={kohdennukset}
+          ennakkolasku={onEnnakkolasku}
+          ennakot={avoimetEnnakot ?? []}
+          lisatoiminnot={
+            valittavatEnnakot.length > 0 ? (
+              <div className="relative">
+                <Button
+                  variant="sec"
+                  size="compact"
+                  type="button"
+                  disabled={ennakkoTili === undefined}
+                  title={ennakkoTili === undefined ? 'Ennakkotili puuttuu asetuksista' : undefined}
+                  aria-expanded={ennakkoValintaAuki}
+                  onClick={() => setEnnakkoValintaAuki((auki) => !auki)}
+                >
+                  Hyvitä ennakko
+                </Button>
+                {ennakkoValintaAuki && (
+                  <ul
+                    aria-label="Avoimet ennakot"
+                    className="absolute left-0 top-full z-10 mt-1 flex min-w-[320px] flex-col gap-1 rounded-[var(--radius-input)] border border-[var(--border-strong)] bg-[var(--surface)] p-2 shadow-md"
+                  >
+                    {valittavatEnnakot.map((e) => (
+                      <li key={`${e.tosite}/${e.alvProsentti}`}>
+                        <Button
+                          variant="ghost"
+                          size="compact"
+                          type="button"
+                          className="w-full justify-between"
+                          onClick={() => {
+                            dispatch({
+                              type: 'lisaaEnnakonHyvitys',
+                              ennakko: e,
+                              tili: ennakkoTili,
+                            });
+                            setEnnakkoValintaAuki(false);
+                          }}
+                        >
+                          {`Ennakkolasku ${e.numero ?? e.tosite} · alv ${prosenttiTeksti(e.alvProsentti)} % · avoin ${muotoileEuro(e.avoin)}`}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : undefined
+          }
         />
 
         {virhe ? (

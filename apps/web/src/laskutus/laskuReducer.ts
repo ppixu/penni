@@ -1,5 +1,6 @@
 import {
   AlvKoodi,
+  type AvoinEnnakko,
   type IsoDate,
   Maksutapa,
   type StoredTosite,
@@ -38,7 +39,7 @@ export interface LaskuTila {
   erapvm: IsoDate; // oletus laskupvm + 14 pv, vapaasti muokattava
   kumppani?: number; // Kumppani.id
   otsikko: string;
-  maksutapa: number; // Maksutapa.LASKU (oletus) | KATEINEN | KORTTIMAKSU
+  maksutapa: number; // Maksutapa.LASKU (oletus) | KATEINEN | KORTTIMAKSU | ENNAKKOLASKU
   alvVelvollinen: boolean;
   rivit: LomakeRivi[]; // aina ≥ 1
   /** Valinnainen laskutusjakso (spec 3.3); '' = ei täytetty. Molemmat tai ei kumpaakaan. */
@@ -54,6 +55,18 @@ export const MYYNTIKOODIT: readonly number[] = [
   AlvKoodi.YHTEISOMYYNTI_TAVARAT,
   AlvKoodi.YHTEISOMYYNTI_PALVELUT,
 ];
+
+/** Rivi on loppulaskun ennakonvähennys (viittaa ennakkolaskuun). Tunnistus kulkee `lisat`-kentän
+ *  kautta, jotta luonnoksesta ladattu vähennysrivi tunnistuu samoin kuin lomakkeella luotu. */
+export function onEnnakonVahennys(rivi: LomakeRivi): boolean {
+  return rivi.lisat?.ennakkoTosite !== undefined;
+}
+
+/** Ennakon vähennysrivit pois; vähintään yksi rivi jää (tyhjä oletusrivi, jos mitään ei jäänyt). */
+function ilmanVahennyksia(tila: LaskuTila): LomakeRivi[] {
+  const jaljella = tila.rivit.filter((r) => !onEnnakonVahennys(r));
+  return jaljella.length > 0 ? jaljella : [uusiRivi(tila.laskupvm, tila.alvVelvollinen)];
+}
 
 let seuraavaAvain = 0;
 /** Monotoninen paikallinen riviavain (React-avaimiin; vakaa muokkausten yli). */
@@ -156,6 +169,9 @@ export type LaskuAction =
   | { type: 'setMaksutapa'; maksutapa: number }
   | { type: 'setJaksoAlkaa'; pvm: IsoDate | '' }
   | { type: 'setJaksoLoppuu'; pvm: IsoDate | '' }
+  /** "Hyvitä ennakko": lisää vähennysrivin avoimen ennakon koko avoimella nettosummalla.
+   *  `tili` on LaskuEnnakkotili-asetuksen arvo (undefined = asetus puuttuu). */
+  | { type: 'lisaaEnnakonHyvitys'; ennakko: AvoinEnnakko; tili: number | undefined }
   | { type: 'setRivi'; avain: number; muutos: Partial<Omit<LomakeRivi, 'avain'>> }
   | { type: 'lisaaRivi' }
   | { type: 'poistaRivi'; avain: number };
@@ -169,17 +185,47 @@ export function laskuReducer(tila: LaskuTila, action: LaskuAction): LaskuTila {
     case 'setKumppani': {
       // exactOptionalPropertyTypes: valinnaista kenttää ei aseteta undefined-arvoon,
       // vaan avain jätetään pois kokonaan.
-      const { kumppani: _vanha, ...loput } = tila;
-      return action.kumppani === undefined ? loput : { ...loput, kumppani: action.kumppani };
+      const { kumppani: vanha, ...loput } = tila;
+      // Ennakot kuuluvat asiakkaalle: asiakkaan vaihto pudottaa vähennysrivit.
+      const seuraava =
+        vanha === action.kumppani ? loput : { ...loput, rivit: ilmanVahennyksia(tila) };
+      return action.kumppani === undefined ? seuraava : { ...seuraava, kumppani: action.kumppani };
     }
     case 'setOtsikko':
       return { ...tila, otsikko: action.otsikko };
     case 'setMaksutapa':
-      return { ...tila, maksutapa: action.maksutapa };
+      // Ennakkolaskulla ei vähennetä ennakkoa (vain loppulaskulla): vähennysrivit pudotetaan.
+      // Rivien omat tilit (`lisat.tili`) säilyvät, joten paluu LASKU-tapaan palauttaa ne.
+      return {
+        ...tila,
+        maksutapa: action.maksutapa,
+        ...(action.maksutapa === Maksutapa.ENNAKKOLASKU ? { rivit: ilmanVahennyksia(tila) } : {}),
+      };
     case 'setJaksoAlkaa':
       return { ...tila, jaksoAlkaa: action.pvm };
     case 'setJaksoLoppuu':
       return { ...tila, jaksoLoppuu: action.pvm };
+    case 'lisaaEnnakonHyvitys': {
+      const { ennakko, tili } = action;
+      // Yksi vähennysrivi per (ennakko, verokanta).
+      if (
+        tila.rivit.some(
+          (r) =>
+            r.lisat?.ennakkoTosite === ennakko.tosite && r.alvProsentti === ennakko.alvProsentti,
+        )
+      )
+        return tila;
+      const rivi: LomakeRivi = {
+        avain: uusiAvain(),
+        selite: `Ennakkolaskun ${ennakko.numero ?? ennakko.tosite} hyvitys`,
+        myyntiKpl: 1,
+        aNettoSnt: Euro.neg(ennakko.avoin),
+        alvKoodi: AlvKoodi.MYYNNIT_NETTO,
+        alvProsentti: ennakko.alvProsentti,
+        lisat: { ...(tili !== undefined ? { tili } : {}), ennakkoTosite: ennakko.tosite },
+      };
+      return { ...tila, rivit: [...tila.rivit, rivi] };
+    }
     case 'setRivi':
       return {
         ...tila,

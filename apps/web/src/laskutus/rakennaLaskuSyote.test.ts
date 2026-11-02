@@ -2,7 +2,11 @@ import { Maksutapa, type StoredTosite, nettoYhteensaCents } from '@penni/engine'
 import { Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import { alustaLaskuTila, alustaLaskuTilaLuonnoksesta, laskuReducer } from './laskuReducer.js';
-import { laskuLomakeVirhe, rakennaLaskuSyote } from './rakennaLaskuSyote.js';
+import {
+  laskuLomakeVirhe,
+  luonnoksenSailytettavat,
+  rakennaLaskuSyote,
+} from './rakennaLaskuSyote.js';
 
 const pohja = () => alustaLaskuTila({ laskupvm: '2026-06-01', alvVelvollinen: true });
 
@@ -214,5 +218,56 @@ describe('rakennaLaskuSyote', () => {
       expect(rakennaLaskuSyote(tila).rivit).toHaveLength(1);
       expect(rakennaLaskuSyote(tila).rivit[0]?.aNetto).toBe(0.004);
     });
+  });
+});
+
+describe('rakennaLaskuSyote — ennakon vähennysrivi', () => {
+  const luonnos = {
+    id: 9,
+    tila: 80,
+    tyyppi: 210,
+    pvm: '2026-06-03',
+    laskupvm: '2026-06-03',
+    erapvm: '2026-06-17',
+    kumppani: 4,
+    maksutapa: Maksutapa.LASKU,
+    sarja: '',
+    rivit: [
+      { myyntiKpl: 1, aNetto: 300, alvKoodi: 11, alvProsentti: 25.5, selite: 'Työ' },
+      {
+        myyntiKpl: 1,
+        aNetto: -100,
+        alvKoodi: 11,
+        alvProsentti: 25.5,
+        selite: 'Ennakkolaskun 3 hyvitys',
+        tili: 2861,
+        ennakkoTosite: 5,
+      },
+    ],
+  } as unknown as StoredTosite;
+
+  it('luonnoksen uudelleentallennus säilyttää ennakkoTosite- ja tili-kentät sekä negatiivisen hinnan', () => {
+    const tila = alustaLaskuTilaLuonnoksesta(luonnos, true);
+    const syote = rakennaLaskuSyote(tila, luonnoksenSailytettavat(luonnos));
+    expect(syote.rivit[1]).toEqual({
+      myyntiKpl: 1,
+      aNetto: -100,
+      alvKoodi: 11,
+      alvProsentti: 25.5,
+      selite: 'Ennakkolaskun 3 hyvitys',
+      tili: 2861,
+      ennakkoTosite: 5,
+    });
+  });
+
+  it('nollattu vähennysrivi (0 €) pudotetaan syötteestä', () => {
+    let tila = alustaLaskuTilaLuonnoksesta(luonnos, true);
+    tila = laskuReducer(tila, {
+      type: 'setRivi',
+      avain: tila.rivit[1]?.avain ?? 0,
+      muutos: { aNettoSnt: Euro.fromCents(0), alkuperainenANetto: 0 },
+    });
+    const syote = rakennaLaskuSyote(tila);
+    expect(syote.rivit).toHaveLength(1);
   });
 });

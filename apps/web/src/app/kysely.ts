@@ -5,6 +5,7 @@ import type {
   AlvErittely,
   AlvLaskelmaParams,
   AlvLaskelmaTulos,
+  AvoinEnnakko,
   BudjettiRivi,
   BudjettivertailuParams,
   BudjettivertailuRivi,
@@ -84,6 +85,7 @@ export const avaimet = {
   tuotteet: ['tuotteet'] as const,
   vakioviitteet: ['vakioviitteet'] as const,
   toistot: ['toistot'] as const,
+  ennakot: (kumppani: number | undefined) => ['ennakot', kumppani] as const,
   laskuluonnokset: ['laskuluonnokset'] as const,
   alvLaskelma: (params: AlvLaskelmaParams) => ['alvLaskelma', params] as const,
   alvErittely: (params: AlvLaskelmaParams) => ['alvErittely', params] as const,
@@ -483,6 +485,17 @@ export function useBudjettivertailu(params: BudjettivertailuParams, enabled = tr
   });
 }
 
+/** Asiakkaan avoimet ennakkolaskut loppulaskun "Hyvitä ennakko" -valintaan. Ei hakua ilman
+ *  asiakasta. Kirjattu lasku vanhentaa kyselyn (avaimen etuliite `['ennakot']`). */
+export function useAvoimetEnnakot(kumppani: number | undefined) {
+  const client = useKpClient();
+  return useQuery<AvoinEnnakko[]>({
+    queryKey: avaimet.ennakot(kumppani),
+    queryFn: () => client.haeAvoimetEnnakot(kumppani as number),
+    enabled: kumppani !== undefined,
+  });
+}
+
 /** Laskutuksen virhekartta (spec §8): ResourceError.code → suomi. Koodi-virhebody-
  *  interluden ansiosta koodit ovat identtiset InProcess- ja HTTP-transporteilla. */
 export function laskuVirheViesti(e: unknown): string {
@@ -573,6 +586,7 @@ export function useTallennaMyyntilasku() {
       void qc.invalidateQueries({ queryKey: ['menot'] });
       mitatoiKohdennustenToteuma(qc);
       void qc.invalidateQueries({ queryKey: avaimet.laskuluonnokset });
+      void qc.invalidateQueries({ queryKey: ['ennakot'] });
       // Luonnoksen päivitys: välimuistin vanha versio ei saa täyttää lomaketta uudelleen avattaessa.
       void qc.invalidateQueries({ queryKey: ['tosite'] });
     },
@@ -611,6 +625,7 @@ function mitatoiLaskuluonnoksenKyselyt(qc: ReturnType<typeof useQueryClient>) {
     ['saldot'],
     ['tulot'],
     ['menot'],
+    ['ennakot'],
   ]) {
     void qc.invalidateQueries({ queryKey });
   }
@@ -781,6 +796,8 @@ export function useTallennaHyvityslasku() {
       void qc.invalidateQueries({ queryKey: ['tulot'] });
       void qc.invalidateQueries({ queryKey: ['menot'] });
       mitatoiKohdennustenToteuma(qc);
+      // Hyvitetyn loppulaskun vähennykset eivät enää kuluta ennakkoa.
+      void qc.invalidateQueries({ queryKey: ['ennakot'] });
     },
   });
 

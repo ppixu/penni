@@ -1,6 +1,6 @@
 import { AlvKoodi, Maksutapa } from '@penni/engine';
-import type { StoredTosite } from '@penni/engine';
-import { Euro } from '@penni/euro';
+import type { AvoinEnnakko, StoredTosite } from '@penni/engine';
+import { type Cents, Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import {
   MYYNTIKOODIT,
@@ -167,5 +167,99 @@ describe('alustaLaskuTilaLuonnoksesta', () => {
     expect(tila.laskupvm).toBe('2026-06-03');
     expect(tila.rivit).toHaveLength(1);
     expect(tila.erapvm).toBe('');
+  });
+});
+
+describe('ennakon hyvitys (laskuReducer)', () => {
+  const pohja = () => alustaLaskuTila({ laskupvm: '2026-06-01', alvVelvollinen: true });
+  const ennakko = (muutos: Partial<AvoinEnnakko> = {}): AvoinEnnakko => ({
+    tosite: 5,
+    numero: '3',
+    alvProsentti: 25.5,
+    netto: 10_000 as Cents,
+    avoin: 8_000 as Cents,
+    ...muutos,
+  });
+
+  it('lisaaEnnakonHyvitys lisää vähennysrivin: selite, kpl 1, aNetto −avoin, MYYNNIT_NETTO, ennakkotili', () => {
+    const tila = laskuReducer(pohja(), {
+      type: 'lisaaEnnakonHyvitys',
+      ennakko: ennakko(),
+      tili: 2861,
+    });
+    const rivi = tila.rivit.at(-1);
+    expect(rivi).toMatchObject({
+      selite: 'Ennakkolaskun 3 hyvitys',
+      myyntiKpl: 1,
+      aNettoSnt: Euro.fromCents(-8_000),
+      alvKoodi: AlvKoodi.MYYNNIT_NETTO,
+      alvProsentti: 25.5,
+      lisat: { tili: 2861, ennakkoTosite: 5 },
+    });
+  });
+
+  it('sama (ennakko, kanta) lisätään vain kerran; eri kanta samasta ennakosta on oma rivinsä', () => {
+    let tila = laskuReducer(pohja(), {
+      type: 'lisaaEnnakonHyvitys',
+      ennakko: ennakko(),
+      tili: 2861,
+    });
+    tila = laskuReducer(tila, { type: 'lisaaEnnakonHyvitys', ennakko: ennakko(), tili: 2861 });
+    expect(tila.rivit.filter((r) => r.lisat?.ennakkoTosite === 5)).toHaveLength(1);
+    tila = laskuReducer(tila, {
+      type: 'lisaaEnnakonHyvitys',
+      ennakko: ennakko({ alvProsentti: 14 }),
+      tili: 2861,
+    });
+    expect(tila.rivit.filter((r) => r.lisat?.ennakkoTosite === 5)).toHaveLength(2);
+  });
+
+  it('ennakkoa ilman numeroa kuvataan tosite-id:llä', () => {
+    const { numero: _n, ...ilmanNumeroa } = ennakko();
+    const tila = laskuReducer(pohja(), {
+      type: 'lisaaEnnakonHyvitys',
+      ennakko: ilmanNumeroa,
+      tili: undefined,
+    });
+    const rivi = tila.rivit.at(-1);
+    expect(rivi?.selite).toBe('Ennakkolaskun 5 hyvitys');
+    expect(rivi?.lisat).toEqual({ ennakkoTosite: 5 });
+  });
+
+  it('asiakkaan vaihto pudottaa vähennysrivit (ennakot kuuluvat asiakkaalle), saman asiakkaan valinta ei', () => {
+    let tila = laskuReducer(pohja(), { type: 'setKumppani', kumppani: 1 });
+    tila = laskuReducer(tila, { type: 'lisaaEnnakonHyvitys', ennakko: ennakko(), tili: 2861 });
+    tila = laskuReducer(tila, { type: 'setKumppani', kumppani: 1 });
+    expect(tila.rivit.some((r) => r.lisat?.ennakkoTosite === 5)).toBe(true);
+    tila = laskuReducer(tila, { type: 'setKumppani', kumppani: 2 });
+    expect(tila.rivit.some((r) => r.lisat?.ennakkoTosite !== undefined)).toBe(false);
+    expect(tila.rivit.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ENNAKKOLASKU-maksutapa pudottaa vähennysrivit ja jättää muiden rivien tilin koskematta', () => {
+    let tila = pohja();
+    tila = laskuReducer(tila, {
+      type: 'setRivi',
+      avain: tila.rivit[0]?.avain ?? 0,
+      muutos: { lisat: { tili: 3010 }, aNettoSnt: Euro.fromCents(1_000) },
+    });
+    tila = laskuReducer(tila, { type: 'lisaaEnnakonHyvitys', ennakko: ennakko(), tili: 2861 });
+    tila = laskuReducer(tila, { type: 'setMaksutapa', maksutapa: Maksutapa.ENNAKKOLASKU });
+    expect(tila.maksutapa).toBe(Maksutapa.ENNAKKOLASKU);
+    expect(tila.rivit).toHaveLength(1);
+    expect(tila.rivit[0]?.lisat).toEqual({ tili: 3010 });
+    // Takaisin LASKU-tapaan: rivin oma tili on edelleen tallessa.
+    tila = laskuReducer(tila, { type: 'setMaksutapa', maksutapa: Maksutapa.LASKU });
+    expect(tila.rivit[0]?.lisat).toEqual({ tili: 3010 });
+  });
+
+  it('muu maksutapavaihto (KATEINEN) säilyttää vähennysrivit', () => {
+    let tila = laskuReducer(pohja(), {
+      type: 'lisaaEnnakonHyvitys',
+      ennakko: ennakko(),
+      tili: 2861,
+    });
+    tila = laskuReducer(tila, { type: 'setMaksutapa', maksutapa: Maksutapa.KATEINEN });
+    expect(tila.rivit.some((r) => r.lisat?.ennakkoTosite === 5)).toBe(true);
   });
 });

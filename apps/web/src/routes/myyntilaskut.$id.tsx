@@ -9,7 +9,7 @@ import { ToistoDialog } from '@/laskutus/ToistoDialog';
 import { lataaLaskuPdf } from '@/laskutus/lataaLaskuPdf';
 import { HyvitaVahvistus } from '@/ostolaskut/HyvitaVahvistus';
 import { EdellinenSeuraava, useLaskuNaapurit } from '@/tositteet/EdellinenSeuraava.js';
-import { TositeTyyppi, onLaskuluonnos } from '@penni/engine';
+import { Maksutapa, TositeTyyppi, onLaskuluonnos } from '@penni/engine';
 import { laskuMalli } from '@penni/lasku-pdf';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -138,14 +138,18 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
                 Toista
               </Button>
             )}
-            <Button
-              variant="sec"
-              type="button"
-              disabled={onHyvitys || !myyntirivi || myyntirivi.avoin !== myyntirivi.summa}
-              onClick={() => setHyvitysAuki(true)}
-            >
-              Hyvitä
-            </Button>
+            {/* Ennakkolaskusta ei tehdä hyvityslaskua (spec §6.1; moottori kieltäytyy koodilla
+                ENNAKKOLASKU): ennakko hyvitetään loppulaskulla, joten nappia ei näytetä. */}
+            {tosite.maksutapa !== Maksutapa.ENNAKKOLASKU && (
+              <Button
+                variant="sec"
+                type="button"
+                disabled={onHyvitys || !myyntirivi || myyntirivi.avoin !== myyntirivi.summa}
+                onClick={() => setHyvitysAuki(true)}
+              >
+                Hyvitä
+              </Button>
+            )}
             {pdfHuomio && (
               <output className="text-[12px] text-[var(--text-muted)]">{pdfHuomio}</output>
             )}

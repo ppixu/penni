@@ -2,10 +2,21 @@ import { Button } from '@/components/ui/button';
 import { AlvValitsin } from '@/editori/AlvValitsin';
 import { EuroInput } from '@/editori/EuroInput';
 import { KohdennusValitsin } from '@/kohdennukset/KohdennusValitsin';
-import { type IsoDate, type Kohdennus, bruttoYhteensa, normalisoiMerkkaukset } from '@penni/engine';
-import { muotoileEuro } from '@penni/euro';
-import { useState } from 'react';
-import { type LomakeRivi, MYYNTIKOODIT, type RiviAction } from './laskuReducer.js';
+import {
+  type AvoinEnnakko,
+  type IsoDate,
+  type Kohdennus,
+  bruttoYhteensa,
+  normalisoiMerkkaukset,
+} from '@penni/engine';
+import { type Cents, Euro, muotoileEuro } from '@penni/euro';
+import { type ReactNode, useState } from 'react';
+import {
+  type LomakeRivi,
+  MYYNTIKOODIT,
+  type RiviAction,
+  onEnnakonVahennys,
+} from './laskuReducer.js';
 import { riviTositeRiviksi } from './rakennaLaskuSyote.js';
 
 const OTSIKKO_LUOKKA =
@@ -73,11 +84,51 @@ function KplSyote({
 }
 
 /**
+ * Ennakon vähennysrivin määrä: positiivinen euromäärä (rivin aNetto on sen vastaluku). Määrän
+ * voi laskea nollaan mutta ei nostaa yli ennakon avoimen summan: liian suuri arvo kiinnittyy
+ * avoimeen. Kiinnityksessä `versio` pakottaa kentän näyttämään kiinnitetyn arvon, vaikka tila ei muutu.
+ */
+function VahennysSyote({
+  rivi,
+  indeksi,
+  enintaan,
+  dispatch,
+}: {
+  rivi: LomakeRivi;
+  indeksi: number;
+  enintaan: Cents | undefined;
+  dispatch: (action: RiviAction) => void;
+}) {
+  const [versio, setVersio] = useState(0);
+  return (
+    <EuroInput
+      key={versio}
+      arvo={Euro.neg(rivi.aNettoSnt)}
+      aria-label={`Ennakon vähennys, rivi ${indeksi + 1}`}
+      onCommit={(snt) => {
+        const maara = enintaan !== undefined && snt > enintaan ? enintaan : snt;
+        const aNettoSnt = maara === 0 ? Euro.fromCents(0) : Euro.neg(maara);
+        dispatch({
+          type: 'setRivi',
+          avain: rivi.avain,
+          muutos: { aNettoSnt, alkuperainenANetto: aNettoSnt / 100 },
+        });
+        if (maara !== snt) setVersio((v) => v + 1);
+      }}
+    />
+  );
+}
+
+/**
  * Laskurivien muokattava taulukko. Tavallinen tab-järjestys riittää lomakkeelle
  * (kevyempi kuin editorin useGridFocus — laskurivejä on vähän). Yhteensä-solu näyttää
  * rivin brutton samalla engine-funktiolla (bruttoYhteensa) kuin dokumentti.
  * Kohdennus-sarake (valitsin, voimassaolo laskun päivän `pvm` mukaan) näkyy vain, kun
  * `kohdennukset` annetaan ja siinä on ainakin yksi; ostolaskulomake ei anna sitä.
+ *
+ * `ennakkolasku`: rivien tili on Saadut ennakot (moottori ohittaa rivin oman tilin), joten
+ * Tili-sarake näytetään lukulukittuna. `ennakot`: asiakkaan avoimet ennakot, joista
+ * vähennysrivin enimmäismäärä johdetaan.
  */
 export function LaskuriviTaulukko({
   rivit,
@@ -85,12 +136,19 @@ export function LaskuriviTaulukko({
   dispatch,
   koodit = MYYNTIKOODIT,
   kohdennukset = [],
+  ennakkolasku = false,
+  ennakot = [],
+  lisatoiminnot,
 }: {
   rivit: readonly LomakeRivi[];
   pvm: IsoDate;
   dispatch: (action: RiviAction) => void;
   koodit?: readonly number[];
   kohdennukset?: readonly Kohdennus[] | undefined;
+  ennakkolasku?: boolean;
+  ennakot?: readonly AvoinEnnakko[];
+  /** Lisää rivi -napin viereen tulevat lomakekohtaiset toiminnot (esim. Hyvitä ennakko). */
+  lisatoiminnot?: ReactNode;
 }) {
   const kohdennusSarake = kohdennukset.length > 0;
   return (
@@ -102,6 +160,7 @@ export function LaskuriviTaulukko({
             {kohdennusSarake ? (
               <th className={`${OTSIKKO_LUOKKA} w-[190px] text-left`}>Kohdennus</th>
             ) : null}
+            {ennakkolasku && <th className={`${OTSIKKO_LUOKKA} w-[130px] text-left`}>Tili</th>}
             <th className={`${OTSIKKO_LUOKKA} w-[70px] text-right`}>Kpl</th>
             <th className={`${OTSIKKO_LUOKKA} w-[110px] text-right`}>À-hinta</th>
             <th className={`${OTSIKKO_LUOKKA} w-[160px] text-right`}>ALV</th>
@@ -110,93 +169,129 @@ export function LaskuriviTaulukko({
           </tr>
         </thead>
         <tbody>
-          {rivit.map((rivi, indeksi) => (
-            <tr key={rivi.avain} className="border-t border-[var(--border)]">
-              <td className="px-[10px] py-[6px]">
-                <input
-                  aria-label={`Selite, rivi ${indeksi + 1}`}
-                  value={rivi.selite}
-                  onChange={(e) =>
-                    dispatch({
-                      type: 'setRivi',
-                      avain: rivi.avain,
-                      muutos: { selite: e.target.value },
-                    })
-                  }
-                  className="w-full bg-transparent outline-none"
-                />
-              </td>
-              {kohdennusSarake ? (
-                <td className="relative px-[10px] py-[6px]">
-                  <KohdennusValitsin
-                    kohdennukset={kohdennukset}
-                    pvm={pvm}
-                    arvo={{
-                      ...(rivi.kohdennus !== undefined ? { kohdennus: rivi.kohdennus } : {}),
-                      ...(rivi.merkkaukset !== undefined ? { merkkaukset: rivi.merkkaukset } : {}),
-                    }}
-                    onMuuta={(arvo) =>
+          {rivit.map((rivi, indeksi) => {
+            const vahennys = onEnnakonVahennys(rivi);
+            return (
+              <tr key={rivi.avain} className="border-t border-[var(--border)]">
+                <td className="px-[10px] py-[6px]">
+                  <input
+                    aria-label={`Selite, rivi ${indeksi + 1}`}
+                    value={rivi.selite}
+                    readOnly={vahennys}
+                    onChange={(e) =>
                       dispatch({
                         type: 'setRivi',
                         avain: rivi.avain,
-                        muutos: {
-                          kohdennus: arvo.kohdennus || undefined,
-                          merkkaukset: normalisoiMerkkaukset(arvo.merkkaukset),
-                        },
+                        muutos: { selite: e.target.value },
                       })
                     }
-                    ariaLabel={`Kohdennus, rivi ${indeksi + 1}`}
+                    className="w-full bg-transparent outline-none"
                   />
                 </td>
-              ) : null}
-              <td className="px-[10px] py-[6px] text-right">
-                <KplSyote rivi={rivi} indeksi={indeksi} dispatch={dispatch} />
-              </td>
-              <td className="px-[10px] py-[6px]">
-                <EuroInput
-                  arvo={rivi.aNettoSnt}
-                  aria-label={`À-hinta, rivi ${indeksi + 1}`}
-                  onCommit={(snt) =>
-                    dispatch({ type: 'setRivi', avain: rivi.avain, muutos: { aNettoSnt: snt } })
-                  }
-                />
-              </td>
-              <td className="relative px-[10px] py-[6px] text-right">
-                <AlvValitsin
-                  rivi={indeksi + 1}
-                  alvKoodi={rivi.alvKoodi}
-                  alvProsentti={rivi.alvProsentti}
-                  pvm={pvm}
-                  koodit={koodit}
-                  ariaLabel={`ALV, rivi ${indeksi + 1}`}
-                  onValitse={(alvKoodi, alvProsentti) =>
-                    dispatch({
-                      type: 'setRivi',
-                      avain: rivi.avain,
-                      muutos: { alvKoodi, alvProsentti },
-                    })
-                  }
-                />
-              </td>
-              <td className="px-[10px] py-[6px] text-right tabular-nums">
-                {muotoileEuro(bruttoYhteensa(riviTositeRiviksi(rivi)))}
-              </td>
-              <td className="px-[10px] py-[6px] text-right">
-                <Button
-                  variant="ghost"
-                  size="compact"
-                  type="button"
-                  aria-label={`Poista rivi ${indeksi + 1}`}
-                  onClick={() => dispatch({ type: 'poistaRivi', avain: rivi.avain })}
-                >
-                  ✕
-                </Button>
-              </td>
-            </tr>
-          ))}
+                {kohdennusSarake ? (
+                  <td className="relative px-[10px] py-[6px]">
+                    {vahennys ? null : (
+                      <KohdennusValitsin
+                        kohdennukset={kohdennukset}
+                        pvm={pvm}
+                        arvo={{
+                          ...(rivi.kohdennus !== undefined ? { kohdennus: rivi.kohdennus } : {}),
+                          ...(rivi.merkkaukset !== undefined
+                            ? { merkkaukset: rivi.merkkaukset }
+                            : {}),
+                        }}
+                        onMuuta={(arvo) =>
+                          dispatch({
+                            type: 'setRivi',
+                            avain: rivi.avain,
+                            muutos: {
+                              kohdennus: arvo.kohdennus || undefined,
+                              merkkaukset: normalisoiMerkkaukset(arvo.merkkaukset),
+                            },
+                          })
+                        }
+                        ariaLabel={`Kohdennus, rivi ${indeksi + 1}`}
+                      />
+                    )}
+                  </td>
+                ) : null}
+                {ennakkolasku && (
+                  <td className="px-[10px] py-[6px] text-[var(--text-muted)]">Saadut ennakot</td>
+                )}
+                <td className="px-[10px] py-[6px] text-right">
+                  {vahennys ? (
+                    <span className="tabular-nums">1</span>
+                  ) : (
+                    <KplSyote rivi={rivi} indeksi={indeksi} dispatch={dispatch} />
+                  )}
+                </td>
+                <td className="px-[10px] py-[6px]">
+                  {vahennys ? (
+                    <VahennysSyote
+                      rivi={rivi}
+                      indeksi={indeksi}
+                      enintaan={
+                        ennakot.find(
+                          (e) =>
+                            e.tosite === rivi.lisat?.ennakkoTosite &&
+                            e.alvProsentti === rivi.alvProsentti,
+                        )?.avoin
+                      }
+                      dispatch={dispatch}
+                    />
+                  ) : (
+                    <EuroInput
+                      arvo={rivi.aNettoSnt}
+                      aria-label={`À-hinta, rivi ${indeksi + 1}`}
+                      onCommit={(snt) =>
+                        dispatch({ type: 'setRivi', avain: rivi.avain, muutos: { aNettoSnt: snt } })
+                      }
+                    />
+                  )}
+                </td>
+                <td className="relative px-[10px] py-[6px] text-right">
+                  {vahennys ? (
+                    <span className="tabular-nums text-[var(--text-muted)]">
+                      Alv {String(rivi.alvProsentti).replace('.', ',')} %
+                    </span>
+                  ) : (
+                    <AlvValitsin
+                      rivi={indeksi + 1}
+                      alvKoodi={rivi.alvKoodi}
+                      alvProsentti={rivi.alvProsentti}
+                      pvm={pvm}
+                      koodit={koodit}
+                      ariaLabel={`ALV, rivi ${indeksi + 1}`}
+                      onValitse={(alvKoodi, alvProsentti) =>
+                        dispatch({
+                          type: 'setRivi',
+                          avain: rivi.avain,
+                          muutos: { alvKoodi, alvProsentti },
+                        })
+                      }
+                    />
+                  )}
+                </td>
+                <td className="px-[10px] py-[6px] text-right tabular-nums">
+                  {muotoileEuro(bruttoYhteensa(riviTositeRiviksi(rivi)))}
+                </td>
+                <td className="px-[10px] py-[6px] text-right">
+                  <Button
+                    variant="ghost"
+                    size="compact"
+                    type="button"
+                    aria-label={`Poista rivi ${indeksi + 1}`}
+                    onClick={() => dispatch({ type: 'poistaRivi', avain: rivi.avain })}
+                  >
+                    ✕
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      <div className="mt-2">
+      <div className="mt-2 flex flex-wrap items-start gap-2">
         <Button
           variant="sec"
           size="compact"
@@ -205,6 +300,7 @@ export function LaskuriviTaulukko({
         >
           Lisää rivi
         </Button>
+        {lisatoiminnot}
       </div>
     </div>
   );
