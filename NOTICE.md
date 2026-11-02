@@ -58,7 +58,6 @@ with these terms:
 ## Third-party components
 
 - **Inter** typeface, copyright (c) The Inter Project Authors, licensed under the SIL Open Font
-  License 1.1. Licence texts: [`packages/lasku-pdf/fonts/OFL.txt`](packages/lasku-pdf/fonts/OFL.txt)
-  and [`docs/mockups/landing-assets/Inter-LICENSE.txt`](docs/mockups/landing-assets/Inter-LICENSE.txt).
+  License 1.1. Licence text: [`packages/lasku-pdf/fonts/OFL.txt`](packages/lasku-pdf/fonts/OFL.txt).
 - **npm dependencies** are installed from the npm registry and remain under their own licences.
   See each package's `package.json` and the `node_modules` tree after `pnpm install`.

@@ -12,12 +12,6 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@penni/web", "dev", "--port", "5174", "--strictPort"],
       "port": 5174
-    },
-    {
-      "name": "site",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8788", "-d", "docs/mockups/dist"],
-      "port": 8788
     }
   ]
 }

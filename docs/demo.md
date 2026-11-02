@@ -33,8 +33,10 @@ kirjanvaihto.
 pnpm --filter @penni/web dev:demo     # kehityspalvelin demotilassa
 pnpm demo:build                       # staattinen paketti: apps/web/dist-demo
 pnpm --filter @penni/web preview:demo # paketin esikatselu
-pnpm demo:deploy                      # build + wrangler pages deploy (projekti penni-demo)
 ```
+
+Julkaisu tehdään sivustorepossa [`penni-site`](https://github.com/ppixu/penni-site), joka kääntää
+demon tästä reposta (`../penni`) ja vie sen Pages-projektiin `penni-demo`: `pnpm demo:deploy`.
 
 Demotila kytkeytyy Viten moodista `demo` (tai `VITE_PENNI_DEMO=1`); tavallinen build ei
 sisällä demokoodia lainkaan.

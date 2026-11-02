@@ -7,6 +7,7 @@
 - **`docs/design/architecture.md`** — architecture + Tier‑0 core spec. **Read this first** for any engine/data work.
 - **`docs/design/ux-design.md`** — UX & visual design (style "A"; design tokens; the grid voucher editor).
 - **`docs/mockups/`** — visual mockups (HTML).
+- **Website** — penni.pro (landing page, Ohjeet help pages) and the demo deploy live in the sibling repo `../penni-site` (ppixu/penni-site, private). Demo-mode app code stays here in `apps/web/src/demo`.
 - **`kitsas-source/`** — the original Kitsas Qt/C++ code, the **reference** for the Finnish business logic. Read it to confirm rules (cite `file:line`); it is reference-only — do not modify it as part of Penni work. It is a git submodule (upstream `artoh/kitupiikki`, pinned); run `git submodule update --init` to fetch it. `docs/kitsas-reference.md` documents that codebase and holds the Finnish glossary.
 
 ## Locked decisions (see `docs/design/architecture.md` §2)

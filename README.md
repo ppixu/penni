@@ -40,7 +40,7 @@ Site and browser demo: <https://penni.pro>
 | `packages/*` | Domain engine, contract, storage adapters, PDF, import, assistant tools (`@penni/*`) |
 | `charts/` | Chart-of-accounts data (see [`NOTICE.md`](NOTICE.md)) |
 | `docs/design/` | Architecture and UX design documents |
-| `docs/mockups/` | Visual mockups and the landing page source |
+| `docs/mockups/` | Visual design mockups |
 | `docs/kitsas-reference.md` | Notes on the Kitsas codebase and the Finnish glossary |
 | `kitsas-source/` | Upstream Kitsas as a read-only git submodule (rules reference only) |
 

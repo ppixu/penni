@@ -22,7 +22,8 @@ const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"
 writeFileSync(join(here, 'penni-icon.svg'), icon);
 const desktop = join(root, 'apps/desktop/assets');
 const web = join(root, 'apps/web/public');
-const site = join(root, 'docs/mockups/landing-assets');
+// The website lives in the sibling repo penni-site (../penni-site); its icons are written there.
+const site = resolve(root, '../penni-site/landing-assets');
 for (const dir of [desktop, web, site]) mkdirSync(dir, { recursive: true });
 for (const path of [join(desktop, 'penni-icon.svg'), join(web, 'penni-icon.svg'), join(site, 'penni-icon.svg')]) writeFileSync(path, icon);
 for (const path of [join(web, 'penni-mark.svg'), join(site, 'penni-logo.svg')]) writeFileSync(path, logo);
