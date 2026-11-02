@@ -6,11 +6,13 @@ import {
   type AvoinEnnakko,
   type IsoDate,
   type Kohdennus,
+  type Tuote,
   bruttoYhteensa,
   normalisoiMerkkaukset,
+  riviTuotteesta,
 } from '@penni/engine';
 import { type Cents, Euro, muotoileEuro } from '@penni/euro';
-import { type ReactNode, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useId, useState } from 'react';
 import {
   type LomakeRivi,
   MYYNTIKOODIT,
@@ -18,6 +20,9 @@ import {
   onEnnakonVahennys,
 } from './laskuReducer.js';
 import { riviTositeRiviksi } from './rakennaLaskuSyote.js';
+
+/** Enintään näin monta tuoteehdotusta kerrallaan. */
+const EHDOTUKSIA = 8;
 
 const OTSIKKO_LUOKKA =
   'px-[10px] pb-[7px] text-[9px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]';
@@ -29,6 +34,174 @@ function jasennaKpl(teksti: string): number {
 
 function kelpaaKpl(kpl: number): boolean {
   return Number.isFinite(kpl) && kpl > 0;
+}
+
+/** Rivin kentät tuotteen poiminnan jälkeen. `aNetto` on euroina (voi olla alle sentin tarkka):
+ *  senttikenttä pyöristetään, mutta `alkuperainenANetto` kantaa tarkan hinnan tallennukseen.
+ *  Kpl säilyy; tuotteen kohdennus menee lomakkeen kohdennuskenttään (ilman sitä rivin valinta säilyy),
+ *  muut kuin lomakkeen omat kentät (yksikkö, tili, tuote) menevät `lisat`-kenttään. */
+function tuotteenMuutos(
+  tuote: Tuote,
+  pvm: IsoDate,
+  alvVelvollinen: boolean,
+): Partial<Omit<LomakeRivi, 'avain'>> {
+  const { selite, aNetto, alvKoodi, alvProsentti, kohdennus, ...lisat } = riviTuotteesta(
+    tuote,
+    pvm,
+    alvVelvollinen,
+  );
+  return {
+    selite: selite ?? tuote.nimike,
+    aNettoSnt: Euro.fromCents(Math.round((aNetto ?? 0) * 100)),
+    alkuperainenANetto: aNetto ?? 0,
+    alvKoodi: alvKoodi ?? 0,
+    alvProsentti: alvProsentti ?? 0,
+    ...(kohdennus ? { kohdennus } : {}),
+    lisat,
+  };
+}
+
+/** Tuotteet, joiden nimike tai koodi sisältää hakutekstin (kirjainkoosta riippumatta). */
+function ehdotukset(tuotteet: readonly Tuote[], haku: string): Tuote[] {
+  const hakusana = haku.trim().toLocaleLowerCase('fi');
+  if (hakusana === '') return [];
+  return tuotteet
+    .filter(
+      (t) =>
+        t.nimike.toLocaleLowerCase('fi').includes(hakusana) ||
+        (t.koodi ?? '').toLocaleLowerCase('fi').includes(hakusana),
+    )
+    .sort((a, b) => a.nimike.localeCompare(b.nimike, 'fi'))
+    .slice(0, EHDOTUKSIA);
+}
+
+/**
+ * Selite-solu tuoteehdotuksilla (spec §7). Ehdotukset aukeavat kirjoitettaessa; ArrowDown/ArrowUp
+ * liikuttavat korostusta, Enter valitsee korostetun (ilman korostusta Enter ei tee mitään, joten
+ * vapaa teksti pysyy vapaana), Escape sulkee ja jättää kirjoitetun tekstin. Fokus pysyy kentässä
+ * valinnan jälkeen. Ehdotuslista on `position: absolute` solun alla.
+ */
+function SeliteSolu({
+  rivi,
+  indeksi,
+  pvm,
+  alvVelvollinen,
+  tuotteet,
+  lukittu,
+  dispatch,
+}: {
+  rivi: LomakeRivi;
+  indeksi: number;
+  pvm: IsoDate;
+  alvVelvollinen: boolean;
+  tuotteet: readonly Tuote[] | undefined;
+  lukittu: boolean;
+  dispatch: (action: RiviAction) => void;
+}) {
+  const [auki, setAuki] = useState(false);
+  const [aktiivinen, setAktiivinen] = useState(-1);
+  const listaId = useId();
+  const osumat = auki && tuotteet ? ehdotukset(tuotteet, rivi.selite) : [];
+  const nayta = osumat.length > 0;
+
+  function sulje() {
+    setAuki(false);
+    setAktiivinen(-1);
+  }
+
+  function valitse(tuote: Tuote) {
+    dispatch({
+      type: 'setRivi',
+      avain: rivi.avain,
+      muutos: tuotteenMuutos(tuote, pvm, alvVelvollinen),
+    });
+    sulje();
+  }
+
+  function nappain(e: KeyboardEvent<HTMLInputElement>) {
+    if (!nayta) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setAktiivinen((i) => Math.min(i + 1, osumat.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setAktiivinen((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      const valittu = osumat[aktiivinen];
+      if (valittu) {
+        e.preventDefault();
+        valitse(valittu);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      sulje();
+    }
+  }
+
+  return (
+    <div className="relative">
+      <input
+        role="combobox"
+        aria-label={`Selite, rivi ${indeksi + 1}`}
+        aria-autocomplete="list"
+        aria-expanded={nayta}
+        aria-controls={nayta ? listaId : undefined}
+        aria-activedescendant={nayta && aktiivinen >= 0 ? `${listaId}-${aktiivinen}` : undefined}
+        autoComplete="off"
+        value={rivi.selite}
+        readOnly={lukittu}
+        onChange={(e) => {
+          setAuki(true);
+          setAktiivinen(-1);
+          dispatch({
+            type: 'setRivi',
+            avain: rivi.avain,
+            muutos: { selite: e.target.value },
+          });
+        }}
+        onKeyDown={nappain}
+        onBlur={sulje}
+        className="w-full bg-transparent outline-none"
+      />
+      {nayta && (
+        // biome-ignore lint/a11y/useFocusableInteractive: fokus pysyy tekstikentässä; korostus kulkee aria-activedescendantilla
+        <div
+          id={listaId}
+          // biome-ignore lint/a11y/useSemanticElements: tyylitelty ehdotuslista vaatii <div>:n listbox-roolilla; <select> ei salli vapaata tekstiä
+          role="listbox"
+          aria-label={`Tuoteehdotukset, rivi ${indeksi + 1}`}
+          className="absolute left-0 top-full z-10 mt-1 w-max min-w-full max-w-[420px] rounded border border-[var(--border)] bg-[var(--surface)] p-1 shadow-[var(--shadow-pop)]"
+        >
+          {osumat.map((t, i) => (
+            <button
+              type="button"
+              key={t.id}
+              id={`${listaId}-${i}`}
+              // biome-ignore lint/a11y/useSemanticElements: tyylitelty valintalista vaatii <button>:n option-roolilla (kuten AlvValitsin)
+              role="option"
+              tabIndex={-1}
+              aria-selected={i === aktiivinen}
+              // mousedown + preventDefault: kenttä ei menetä fokusta (blur sulkisi listan ennen klikkausta)
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => valitse(t)}
+              className={`flex w-full items-baseline justify-between gap-4 whitespace-nowrap rounded px-2 py-1 text-left ${
+                i === aktiivinen ? 'bg-[var(--track)]' : 'hover:bg-[var(--track)]'
+              }`}
+            >
+              <span>
+                {t.nimike}
+                {t.koodi ? <span className="ml-2 text-[var(--text-subtle)]">{t.koodi}</span> : null}
+              </span>
+              <span className="tabular-nums text-[var(--text-muted)]">
+                {muotoileEuro(Euro.fromCents(Math.round(t.aNetto * 100)))}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -139,6 +312,8 @@ export function LaskuriviTaulukko({
   ennakkolasku = false,
   ennakot = [],
   lisatoiminnot,
+  tuotteet,
+  alvVelvollinen = true,
 }: {
   rivit: readonly LomakeRivi[];
   pvm: IsoDate;
@@ -149,6 +324,10 @@ export function LaskuriviTaulukko({
   ennakot?: readonly AvoinEnnakko[];
   /** Lisää rivi -napin viereen tulevat lomakekohtaiset toiminnot (esim. Hyvitä ennakko). */
   lisatoiminnot?: ReactNode;
+  /** Tuoterekisteri: kun annettu, selitekenttä ehdottaa tuotteita kirjoitettaessa (myyntilasku). */
+  tuotteet?: readonly Tuote[] | undefined;
+  /** Kirja on alv-velvollinen: tuotteen alv kopioituu riville vain silloin. */
+  alvVelvollinen?: boolean;
 }) {
   const kohdennusSarake = kohdennukset.length > 0;
   return (
@@ -174,18 +353,14 @@ export function LaskuriviTaulukko({
             return (
               <tr key={rivi.avain} className="border-t border-[var(--border)]">
                 <td className="px-[10px] py-[6px]">
-                  <input
-                    aria-label={`Selite, rivi ${indeksi + 1}`}
-                    value={rivi.selite}
-                    readOnly={vahennys}
-                    onChange={(e) =>
-                      dispatch({
-                        type: 'setRivi',
-                        avain: rivi.avain,
-                        muutos: { selite: e.target.value },
-                      })
-                    }
-                    className="w-full bg-transparent outline-none"
+                  <SeliteSolu
+                    rivi={rivi}
+                    indeksi={indeksi}
+                    pvm={pvm}
+                    alvVelvollinen={alvVelvollinen}
+                    tuotteet={vahennys ? undefined : tuotteet}
+                    lukittu={vahennys}
+                    dispatch={dispatch}
                   />
                 </td>
                 {kohdennusSarake ? (

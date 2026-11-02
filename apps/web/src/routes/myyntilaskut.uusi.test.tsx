@@ -26,6 +26,30 @@ const SEED = {
 };
 
 describe('Uusi myyntilasku -lomake', () => {
+  it('selitekenttä ehdottaa rekisterin tuotteita ja valinta täyttää rivin ja summat', async () => {
+    const { user } = await renderRoute('/myyntilaskut/uusi', {
+      seed: SEED,
+      arrange: async (c) => {
+        await c.tallennaTuote({
+          nimike: 'Työtunti',
+          koodi: 'TT',
+          unKoodi: 'HUR',
+          aNetto: 100,
+          alvKoodi: 11,
+          alvProsentti: 25.5,
+          tili: 3000,
+        });
+      },
+    });
+    await screen.findByLabelText('laskulomake');
+    const selite = screen.getByLabelText('Selite, rivi 1');
+    await user.type(selite, 'tt');
+    await user.click(await screen.findByRole('option', { name: /Työtunti/ }));
+    expect(selite).toHaveValue('Työtunti');
+    expect(screen.getByLabelText('À-hinta, rivi 1')).toHaveValue('100,00');
+    expect(screen.getByLabelText('summat')).toHaveTextContent('125,50 €');
+  });
+
   it('luo laskun pikaluodulla asiakkaalla, näyttää live-summat ja navigoi dokumenttiin', async () => {
     const { user, client } = await renderRoute('/myyntilaskut/uusi', { seed: SEED });
     await screen.findByLabelText('laskulomake');

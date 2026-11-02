@@ -7,6 +7,7 @@ import {
   usePoistaLaskuluonnos,
   useTallennaMyyntilasku,
   useTallennaRyhmalasku,
+  useTuotteet,
 } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,7 @@ export function LaskuLomake({
   );
   const { data: kumppanit } = useKumppanit();
   const { data: kohdennukset } = useKohdennukset();
+  const { data: tuotteet } = useTuotteet();
   const { data: init } = useInit();
   const ennakkoTili = init ? tiliAsetuksesta(init.asetukset, 'LaskuEnnakkotili') : undefined;
   const { data: avoimetEnnakot } = useAvoimetEnnakot(ryhmalasku ? undefined : tila.kumppani);
@@ -331,6 +333,8 @@ export function LaskuLomake({
           dispatch={dispatch}
           kohdennukset={kohdennukset}
           ennakkolasku={onEnnakkolasku}
+          tuotteet={tuotteet}
+          alvVelvollinen={tila.alvVelvollinen}
           ennakot={avoimetEnnakot ?? []}
           lisatoiminnot={
             !ryhmalasku && valittavatEnnakot.length > 0 ? (

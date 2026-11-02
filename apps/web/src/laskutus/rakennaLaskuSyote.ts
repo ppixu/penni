@@ -29,8 +29,11 @@ export function riviHinnaton(rivi: LomakeRivi): boolean {
  */
 export function riviTositeRiviksi(rivi: LomakeRivi): TositeRivi {
   const merkkaukset = normalisoiMerkkaukset(rivi.merkkaukset);
+  // Kohdennus ja merkkaukset ovat lomakkeen omia kenttiä: lisat-kentän arvot eivät saa ohittaa
+  // lomakkeella tyhjennettyä valintaa.
+  const { kohdennus: _kohdennus, merkkaukset: _merkkaukset, ...lisat } = rivi.lisat ?? {};
   return {
-    ...rivi.lisat,
+    ...lisat,
     myyntiKpl: rivi.myyntiKpl,
     aNetto: rivinANetto(rivi),
     alvKoodi: rivi.alvKoodi,
