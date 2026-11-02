@@ -1,4 +1,4 @@
-import type { PalkkaHenkilo } from '@penni/engine';
+import type { IsoDate, PalkkaHenkilo } from '@penni/engine';
 import type { Tyontekija } from '@penni/palkat';
 import { describe, expect, it } from 'vitest';
 import {
@@ -179,5 +179,46 @@ describe('palkkalaskelmanNimi', () => {
     expect(palkkalaskelmanNimi('Åström Olli', '2026-10-31')).toBe(
       'palkkalaskelma-astrom-2026-10-31.pdf',
     );
+  });
+
+  it('taittaa muut aksentit: Müller -> muller, Šimek -> simek', () => {
+    expect(palkkalaskelmanNimi('Müller Hans', '2026-10-31')).toBe(
+      'palkkalaskelma-muller-2026-10-31.pdf',
+    );
+    expect(palkkalaskelmanNimi('Šimek Jan', '2026-10-31')).toBe(
+      'palkkalaskelma-simek-2026-10-31.pdf',
+    );
+  });
+
+  it('hylkää virheellisen maksupäivän', () => {
+    for (const pvm of ['2026-13-01', '../x', '2026-02-30', '']) {
+      expect(() => palkkalaskelmanNimi('Testi Työntekijä', pvm as IsoDate)).toThrow(
+        'Palkkalaskelma: virheellinen maksupäivä',
+      );
+    }
+  });
+});
+
+describe('palkkalaskelmaMalli: henkilön täsmäys', () => {
+  it('heittää, kun tilannekuvan tyontekijaId ei vastaa työntekijää (ei henkilötietoja viestissä)', () => {
+    const { henkilo, ajo } = tapausA();
+    const vaarin = () =>
+      palkkalaskelmaMalli({
+        henkilo,
+        ajo,
+        maksupaiva: '2026-10-31',
+        tyontekija: { ...TYONTEKIJA, id: 't2' },
+        tyonantaja: TYONANTAJA,
+        vuodenAlusta: VUODEN_ALUSTA,
+      });
+    expect(vaarin).toThrow('Palkkalaskelma: työntekijä ei vastaa palkkatapahtumaa');
+    try {
+      vaarin();
+    } catch (e) {
+      const viesti = (e as Error).message;
+      expect(viesti).not.toContain(TYONTEKIJA.nimi);
+      expect(viesti).not.toContain(HETU);
+      expect(viesti).not.toContain('t2');
+    }
   });
 });

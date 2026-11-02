@@ -1,4 +1,11 @@
-import type { IsoDate, PalkkaAjo, PalkkaHenkilo, PalkkaLaji, PalkkaRivi } from '@penni/engine';
+import {
+  type IsoDate,
+  type PalkkaAjo,
+  type PalkkaHenkilo,
+  type PalkkaLaji,
+  type PalkkaRivi,
+  onkoPvmValidi,
+} from '@penni/engine';
 import { type Cents, muotoileEuro, muotoilePvm } from '@penni/euro';
 import { type Tyontekija, syntymapaiva } from '@penni/palkat';
 
@@ -153,6 +160,9 @@ function syntymaaikaTekstina(t: Tyontekija): string {
 
 export function palkkalaskelmaMalli(p: PalkkalaskelmaLahtotiedot): PalkkalaskelmaMalli {
   const { henkilo: h, ajo, tyontekija: t } = p;
+  if (h.tyontekijaId !== t.id) {
+    throw new Error('Palkkalaskelma: työntekijä ei vastaa palkkatapahtumaa');
+  }
   const rivit: PalkkalaskelmaRivi[] = h.rivit.map(ajoRivi);
 
   const vahennys = (selite: string, sentit: Cents) => {
@@ -200,11 +210,14 @@ export function palkkalaskelmaMalli(p: PalkkalaskelmaLahtotiedot): Palkkalaskelm
 
 /** 'palkkalaskelma-<sukunimi ascii-pienaakkosin>-<pvm>.pdf'; sukunimi on nimen ensimmäinen sana. */
 export function palkkalaskelmanNimi(nimi: string, maksupaiva: IsoDate): string {
+  if (!onkoPvmValidi(maksupaiva)) throw new Error('Palkkalaskelma: virheellinen maksupäivä');
   const sukunimi =
     (nimi.trim().split(/\s+/)[0] ?? '')
       .toLowerCase()
       .replace(/[äå]/g, 'a')
       .replace(/ö/g, 'o')
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
       .replace(/[^a-z0-9]/g, '') || 'tyontekija';
   return `palkkalaskelma-${sukunimi}-${maksupaiva}.pdf`;
 }
