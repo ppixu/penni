@@ -49,6 +49,7 @@ import {
   encodeMyyntilaskuSyote,
   encodeOstolaskuSyote,
   encodePoistotSyote,
+  encodeRyhmalaskuSyote,
   encodeSuoritusSyote,
   encodeTilikausi,
   encodeTilinavausSyote,
@@ -107,6 +108,7 @@ import {
   type RaporttiParams,
   type RaporttiRivi,
   ResourceError,
+  type RyhmalaskuSyote,
   type SaldotParams,
   type SaldotTulos,
   type StoredTosite,
@@ -268,6 +270,16 @@ export class HttpClient implements KpClient {
     });
     if (r.status === 200 || r.status === 201)
       return decodeTosite(r.body as Parameters<typeof decodeTosite>[0]) as StoredTosite;
+    throw virhe(r.status, r.body);
+  }
+  async tallennaRyhmalasku(syote: RyhmalaskuSyote): Promise<StoredTosite[]> {
+    const r = await this.tsr.luoRyhmalasku({
+      body: encodeRyhmalaskuSyote(syote) as Parameters<Tsr['luoRyhmalasku']>[0]['body'],
+    });
+    if (r.status === 200 || r.status === 201)
+      return (r.body as Parameters<typeof decodeTosite>[0][]).map(
+        (t) => decodeTosite(t) as StoredTosite,
+      );
     throw virhe(r.status, r.body);
   }
   async listaaMyyntilaskut(suodatin: MyyntilaskuSuodatin): Promise<MyyntilaskuRivi[]> {

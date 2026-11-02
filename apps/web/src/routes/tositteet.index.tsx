@@ -409,6 +409,9 @@ function Selaus() {
               <Link to="/myyntilaskut/uusi">+ Myyntilasku</Link>
             </Button>
             <Button variant="sec" size="compact" asChild>
+              <Link to="/myyntilaskut/ryhma">Uusi ryhmälasku</Link>
+            </Button>
+            <Button variant="sec" size="compact" asChild>
               <Link to="/ostolaskut/uusi">+ Ostolasku</Link>
             </Button>
             <Button size="compact" asChild>

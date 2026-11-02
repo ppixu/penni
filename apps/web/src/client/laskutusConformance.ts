@@ -452,5 +452,36 @@ export function runLaskutusClientConformance(name: string, makeClient: MakeClien
         expect(await c.haeAvoimetEnnakot(asiakas.id)).toEqual([]);
       });
     });
+
+    describe('ryhmälasku', () => {
+      it('luo luonnoksen per vastaanottaja, ohittaa kaksoiskappaleet ja listautuu ryhmänä', async () => {
+        const c = await fresh();
+        const a = await c.tallennaKumppani({ nimi: 'Ryhmä A Oy' });
+        const b = await c.tallennaKumppani({ nimi: 'Ryhmä B Oy' });
+        const luotu = await c.tallennaRyhmalasku({
+          pvm: '2026-06-01',
+          otsikko: 'Jäsenmaksu',
+          jakso: { alkaa: '2026-05-01', loppuu: '2026-05-31' },
+          rivit,
+          kumppanit: [b.id, a.id, b.id],
+          ryhma: 'ryhma-uuid',
+        });
+        expect(luotu.map((t) => t.kumppani)).toEqual([b.id, a.id]);
+        expect(luotu.every((t) => t.tila === 80 && t.numero === undefined)).toBe(true);
+        expect(luotu.every((t) => t.ryhma === 'ryhma-uuid')).toBe(true);
+        expect(luotu[0]?.jakso).toEqual({ alkaa: '2026-05-01', loppuu: '2026-05-31' });
+
+        const lista = await c.listaaLaskuluonnokset();
+        expect(lista).toHaveLength(2);
+        expect(lista.every((r) => r.ryhma === 'ryhma-uuid')).toBe(true);
+      });
+
+      it('tyhjä vastaanottajalista → EIVASTAANOTTAJIA', async () => {
+        const c = await fresh();
+        await expect(
+          c.tallennaRyhmalasku({ pvm: '2026-06-01', rivit, kumppanit: [], ryhma: 'r' }),
+        ).rejects.toMatchObject({ code: 'EIVASTAANOTTAJIA' });
+      });
+    });
   });
 }

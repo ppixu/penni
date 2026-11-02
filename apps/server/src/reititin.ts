@@ -13,6 +13,7 @@ import {
   decodeMyyntilaskuSyote,
   decodeOstolaskuSyote,
   decodePoistotSyote,
+  decodeRyhmalaskuSyote,
   decodeSuoritusSyote,
   decodeTili,
   decodeTilikausi,
@@ -65,6 +66,7 @@ import type {
   WireMyyntilaskuMuutokset,
   WireMyyntilaskuSyote,
   WireOstolaskuSyote,
+  WireRyhmalaskuSyote,
   WireSuoritusSyote,
   WireTilinavausSyote,
   WireTosite,
@@ -143,6 +145,7 @@ import {
   tallennaMyyntilasku,
   tallennaOstolasku,
   tallennaPoistot,
+  tallennaRyhmalasku,
   tallennaSuoritus,
   tallennaToisto,
   tallennaTosite,
@@ -239,6 +242,13 @@ export function luoKasittelijat(storage: Storage, kello: () => string) {
     luoMyyntilasku: async ({ body }: { body: WireMyyntilaskuSyote }) => ({
       status: 201 as const,
       body: encodeTosite(await tallennaMyyntilasku(storage, decodeMyyntilaskuSyote(body), env())),
+    }),
+
+    luoRyhmalasku: async ({ body }: { body: WireRyhmalaskuSyote }) => ({
+      status: 201 as const,
+      body: (await tallennaRyhmalasku(storage, decodeRyhmalaskuSyote(body), env())).map(
+        encodeTosite,
+      ),
     }),
 
     listaaMyyntilaskut: async ({ query }: { query: Record<string, string | undefined> }) => ({

@@ -2,6 +2,7 @@ import type {
   MaksumuistutusSyote,
   MyyntilaskuRivi,
   MyyntilaskuSyote,
+  RyhmalaskuSyote,
   SuoritusSyote,
 } from '@penni/engine';
 import { type Cents, Euro } from '@penni/euro';
@@ -10,9 +11,11 @@ import { decodeMaksumuistutusSyote, encodeMaksumuistutusSyote } from './maksumui
 import {
   decodeMyyntilaskuRivi,
   decodeMyyntilaskuSyote,
+  decodeRyhmalaskuSyote,
   decodeSuoritusSyote,
   encodeMyyntilaskuRivi,
   encodeMyyntilaskuSyote,
+  encodeRyhmalaskuSyote,
   encodeSuoritusSyote,
 } from './myyntilasku.js';
 import { decodeRivi, encodeRivi } from './rivi.js';
@@ -70,6 +73,35 @@ describe('myyntilasku syote codec', () => {
     expect(back.maksutapa).toBe(1);
     expect(back.rivit).toHaveLength(1);
     expect(back.rivit[0]?.aNetto).toBe(100);
+  });
+});
+
+describe('ryhmalasku syote codec', () => {
+  it('round-trips the template, recipients and group id without kumppani', () => {
+    const syote: RyhmalaskuSyote = {
+      pvm: '2026-06-01',
+      erapvm: '2026-06-15',
+      otsikko: 'Jäsenmaksu',
+      jakso: { alkaa: '2026-05-01', loppuu: '2026-05-31' },
+      rivit: [{ myyntiKpl: 1, aNetto: 100, alvKoodi: 11, alvProsentti: 25.5 }],
+      kumppanit: [3, 5],
+      ryhma: 'r-1',
+    };
+    const wire = encodeRyhmalaskuSyote(syote);
+    expect(wire.kumppani).toBeUndefined();
+    expect(wire.kumppanit).toEqual([3, 5]);
+    const back = decodeRyhmalaskuSyote(wire);
+    expect(back).toMatchObject({
+      pvm: '2026-06-01',
+      erapvm: '2026-06-15',
+      otsikko: 'Jäsenmaksu',
+      kumppanit: [3, 5],
+      ryhma: 'r-1',
+      jakso: { alkaa: '2026-05-01', loppuu: '2026-05-31' },
+    });
+    expect(back.rivit).toHaveLength(1);
+    expect(back).not.toHaveProperty('kumppani');
+    expect(back).not.toHaveProperty('luonnos');
   });
 });
 

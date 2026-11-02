@@ -44,6 +44,7 @@ import type {
   RahavirtaSuodatin,
   RaporttiParams,
   RaporttiRivi,
+  RyhmalaskuSyote,
   SaldotParams,
   SaldotTulos,
   StoredTosite,
@@ -100,6 +101,8 @@ export interface KpClient {
   haeTosite(id: number): Promise<StoredTosite | null>;
   luoTosite(syote: TositeSyote): Promise<StoredTosite>;
   tallennaMyyntilasku(syote: MyyntilaskuSyote): Promise<StoredTosite>;
+  /** Ryhmälasku: yksi luonnos per vastaanottaja samasta pohjasta, vastaanottajien järjestyksessä. */
+  tallennaRyhmalasku(syote: RyhmalaskuSyote): Promise<StoredTosite[]>;
   listaaMyyntilaskut(suodatin: MyyntilaskuSuodatin): Promise<MyyntilaskuRivi[]>;
   // laskuluonnokset (tila 50-99)
   listaaLaskuluonnokset(): Promise<LaskuluonnosRivi[]>;

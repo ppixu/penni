@@ -2,6 +2,7 @@ import type {
   LaskuluonnosRivi,
   MyyntilaskuRivi,
   MyyntilaskuSyote,
+  RyhmalaskuSyote,
   SuoritusSyote,
 } from '@penni/engine';
 import { centsToWire, wireToCents } from '../wire/euro.js';
@@ -89,6 +90,20 @@ export function decodeMyyntilaskuSyote(w: WireMyyntilaskuSyote): MyyntilaskuSyot
     pvm: String(w.pvm),
     rivit: Array.isArray(w.rivit) ? w.rivit.map(decodeRivi) : [],
   };
+}
+
+/** POST /ryhmalaskut body: the invoice template (no kumppani/luonnos/id) + recipients + group id. */
+export type WireRyhmalaskuSyote = WireMyyntilaskuSyote & { kumppanit: number[]; ryhma: string };
+
+export function encodeRyhmalaskuSyote(s: RyhmalaskuSyote): WireRyhmalaskuSyote {
+  const { kumppanit, ...pohja } = s;
+  const { kumppani: _kumppani, ...w } = encodeMyyntilaskuSyote(pohja);
+  return { ...w, kumppanit, ryhma: s.ryhma };
+}
+
+export function decodeRyhmalaskuSyote(w: WireRyhmalaskuSyote): RyhmalaskuSyote {
+  const { kumppani: _kumppani, luonnos: _luonnos, id: _id, ...pohja } = decodeMyyntilaskuSyote(w);
+  return { ...pohja, kumppanit: w.kumppanit.map(Number), ryhma: String(w.ryhma) };
 }
 
 /** The wire shape of one sales-invoice list row. summa/avoin are canonical "N.NN". */

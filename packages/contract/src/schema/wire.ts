@@ -101,6 +101,13 @@ export const WireMyyntilaskuSyoteSchema = z
   })
   .passthrough();
 
+/** POST /ryhmalaskut body: invoice template + recipient customer ids + the group id (spec §6.2). */
+export const WireRyhmalaskuSyoteSchema = WireMyyntilaskuSyoteSchema.omit({
+  kumppani: true,
+  luonnos: true,
+  id: true,
+}).extend({ kumppanit: z.array(z.number()), ryhma: z.string() });
+
 /** POST /myyntilaskut/:id/kirjaa body: like the invoice body, every field optional. */
 export const WireMyyntilaskuMuutoksetSchema = WireMyyntilaskuSyoteSchema.partial();
 

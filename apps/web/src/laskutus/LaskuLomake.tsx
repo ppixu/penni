@@ -6,6 +6,7 @@ import {
   useKumppanit,
   usePoistaLaskuluonnos,
   useTallennaMyyntilasku,
+  useTallennaRyhmalasku,
 } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,13 @@ import { useMemo, useReducer, useState } from 'react';
 import { KumppaniDialog } from './KumppaniDialog.js';
 import { KumppaniValitsin } from './KumppaniValitsin.js';
 import { LaskuriviTaulukko } from './LaskuriviTaulukko.js';
-import { alustaLaskuTila, alustaLaskuTilaLuonnoksesta, laskuReducer } from './laskuReducer.js';
+import { VastaanottajaLista } from './VastaanottajaLista.js';
+import {
+  type LaskuTila,
+  alustaLaskuTila,
+  alustaLaskuTilaLuonnoksesta,
+  laskuReducer,
+} from './laskuReducer.js';
 import {
   laskuLomakeVirhe,
   luonnoksenSailytettavat,
@@ -27,6 +34,11 @@ import {
   riviHinnaton,
   riviTositeRiviksi,
 } from './rakennaLaskuSyote.js';
+
+/** Muutosseurannan vertailuprojektio: laskulomake + ryhmälaskun vastaanottajat. */
+function lomakeVertailuun(x: { tila: LaskuTila; vastaanottajat: number[] }) {
+  return { tila: laskuVertailuun(x.tila), vastaanottajat: x.vastaanottajat };
+}
 
 const LABEL_LUOKKA =
   'flex flex-col gap-1 text-[9.5px] font-semibold uppercase tracking-[0.6px] text-[var(--text-subtle)]';
@@ -61,6 +73,9 @@ export interface LuonnosToiminnot {
  * rahalaskentaa. Moottori numeroi (numero, viite) ja generoi viennit vasta kirjauksessa.
  *
  * Uusi lasku: "Tallenna luonnokseksi" (ei numeroa, ei vientejä) tai "Tallenna ja kirjaa".
+ * Ryhmälasku (`ryhmalasku`, spec §6.2): asiakasvalitsimen tilalla on vastaanottajalista ja lomake
+ * tallennetaan yhtenä luonnoksena per vastaanottaja (`tallennaRyhmalasku`); kirjaus tehdään
+ * Lähtevät-välilehdellä. Ennakon hyvitys ei ole tarjolla, koska ennakko on asiakaskohtainen.
  * Muokkaustila (`luonnos`): Tallenna, Kirjaa ja lataa PDF, Poista. Luonnos tallennetaan ja
  * kirjataan aina lomakkeen laskupäivällä (`laskupvm` lähtee eksplisiittisesti), jottei
  * luonnokseen jäänyt vanha päivä päädy kirjattuun laskuun.
@@ -70,6 +85,8 @@ export function LaskuLomake({
   alvVelvollinen,
   onTallennettu,
   onLuonnosTallennettu,
+  ryhmalasku = false,
+  onRyhmaTallennettu,
   luonnos,
 }: {
   alkupaiva: string;
@@ -78,6 +95,10 @@ export function LaskuLomake({
   onTallennettu?: (id: number) => void;
   /** Uusi lasku tallennettu luonnokseksi. */
   onLuonnosTallennettu?: (id: number) => void;
+  /** Uusi ryhmälasku: vastaanottajalista asiakasvalitsimen tilalla, vain luonnoksina. */
+  ryhmalasku?: boolean;
+  /** Ryhmälaskun luonnokset tallennettu. */
+  onRyhmaTallennettu?: (luonnokset: StoredTosite[]) => void;
   luonnos?: LuonnosToiminnot;
 }) {
   const [tila, dispatch] = useReducer(
@@ -90,14 +111,21 @@ export function LaskuLomake({
   const { data: kohdennukset } = useKohdennukset();
   const { data: init } = useInit();
   const ennakkoTili = init ? tiliAsetuksesta(init.asetukset, 'LaskuEnnakkotili') : undefined;
-  const { data: avoimetEnnakot } = useAvoimetEnnakot(tila.kumppani);
+  const { data: avoimetEnnakot } = useAvoimetEnnakot(ryhmalasku ? undefined : tila.kumppani);
+  const [vastaanottajat, setVastaanottajat] = useState<number[]>([]);
   const { tallenna, virheviesti, tallentaa } = useTallennaMyyntilasku();
+  const {
+    tallenna: tallennaRyhma,
+    virheviesti: ryhmaVirhe,
+    tallentaa: tallentaaRyhmaa,
+  } = useTallennaRyhmalasku();
   const { kirjaa, virheviesti: kirjausVirhe, kirjaamassa } = useKirjaaLaskuluonnos();
   const { poista, virheviesti: poistoVirhe, poistaa } = usePoistaLaskuluonnos();
   const [huomio, setHuomio] = useState<string | null>(null);
   const [dialogiAuki, setDialogiAuki] = useState(false);
   const [ennakkoValintaAuki, setEnnakkoValintaAuki] = useState(false);
-  const { onkoLikainen, asetaPohja } = useMuutosseuranta(tila, laskuVertailuun);
+  const seurattava = useMemo(() => ({ tila, vastaanottajat }), [tila, vastaanottajat]);
+  const { onkoLikainen, asetaPohja } = useMuutosseuranta(seurattava, lomakeVertailuun);
   const varoitus = useTallentamatonVaroitus(onkoLikainen);
 
   const summat = useMemo(() => laskuSummat(tila.rivit.map(riviTositeRiviksi)), [tila.rivit]);
@@ -125,10 +153,11 @@ export function LaskuLomake({
           ),
       );
   const lomakeVirhe = laskuLomakeVirhe(tila);
-  const tyossa = tallentaa || kirjaamassa || poistaa;
+  const tyossa = tallentaa || tallentaaRyhmaa || kirjaamassa || poistaa;
   // Luonnos on keskeneräinen työ: se tarvitsee vain summallisen rivin ja kelvollisen jakson.
   // Kirjaus vaatii lisäksi asiakkaan ja eräpäivän.
   const luonnosEstetty = eiSummaa || lomakeVirhe !== null || tyossa;
+  const ryhmaEstetty = luonnosEstetty || vastaanottajat.length === 0;
   const estetty = luonnosEstetty || asiakasPuuttuu || erapvmPuuttuu;
 
   const sailytettavat = useMemo(
@@ -145,7 +174,7 @@ export function LaskuLomake({
       luonnos: true,
       ...(luonnos ? { id: luonnos.tosite.id } : {}),
     });
-    if (stored) asetaPohja(tila); // puhdas ennen navigointia, ettei tallennus laukaise varoitusta
+    if (stored) asetaPohja({ tila, vastaanottajat }); // puhdas ennen navigointia, ettei tallennus laukaise varoitusta
     return stored;
   }
 
@@ -156,10 +185,24 @@ export function LaskuLomake({
     else onLuonnosTallennettu?.(stored.id);
   }
 
+  /** Ryhmälasku: yksi luonnos per vastaanottaja; `ryhma` tulee selaimelta, jotta moottori on deterministinen. */
+  async function lahetaRyhmalasku() {
+    setHuomio(null);
+    const { kumppani: _kumppani, luonnos: _luonnos, id: _id, ...pohja } = rakennaLaskuSyote(tila);
+    const luodut = await tallennaRyhma({
+      ...pohja,
+      kumppanit: vastaanottajat,
+      ryhma: crypto.randomUUID(),
+    });
+    if (!luodut) return;
+    asetaPohja({ tila, vastaanottajat });
+    onRyhmaTallennettu?.(luodut);
+  }
+
   async function lahetaKirjaus() {
     const stored = await tallenna(rakennaLaskuSyote(tila));
     if (!stored) return;
-    asetaPohja(tila);
+    asetaPohja({ tila, vastaanottajat });
     onTallennettu?.(stored.id);
   }
 
@@ -178,15 +221,17 @@ export function LaskuLomake({
     if (!luonnos) return;
     if (!window.confirm('Poistetaanko laskuluonnos? Poisto kirjataan tositelokiin.')) return;
     if (!(await poista(luonnos.tosite.id))) return;
-    asetaPohja(tila);
+    asetaPohja({ tila, vastaanottajat });
     luonnos.onPoistettu();
   }
 
-  const virhe = lomakeVirhe ?? virheviesti ?? kirjausVirhe ?? poistoVirhe;
+  const virhe = lomakeVirhe ?? virheviesti ?? ryhmaVirhe ?? kirjausVirhe ?? poistoVirhe;
 
   return (
     <>
-      <TopBar otsikko={luonnos ? 'Lasku (luonnos)' : 'Uusi lasku'} />
+      <TopBar
+        otsikko={luonnos ? 'Lasku (luonnos)' : ryhmalasku ? 'Uusi ryhmälasku' : 'Uusi lasku'}
+      />
       <section
         aria-label="laskulomake"
         className="flex flex-1 flex-col gap-4 overflow-auto px-[22px] py-5"
@@ -245,16 +290,18 @@ export function LaskuLomake({
           </p>
         </div>
         <div className="grid max-w-3xl grid-cols-2 gap-3">
-          <div className={LABEL_LUOKKA}>
-            Asiakas
-            <KumppaniValitsin
-              kumppanit={kumppanit ?? []}
-              arvo={tila.kumppani}
-              ariaLabel="Asiakas"
-              onValitse={(id) => dispatch({ type: 'setKumppani', kumppani: id })}
-              onUusiAsiakas={() => setDialogiAuki(true)}
-            />
-          </div>
+          {ryhmalasku ? null : (
+            <div className={LABEL_LUOKKA}>
+              Asiakas
+              <KumppaniValitsin
+                kumppanit={kumppanit ?? []}
+                arvo={tila.kumppani}
+                ariaLabel="Asiakas"
+                onValitse={(id) => dispatch({ type: 'setKumppani', kumppani: id })}
+                onUusiAsiakas={() => setDialogiAuki(true)}
+              />
+            </div>
+          )}
           <label className={LABEL_LUOKKA}>
             Otsikko
             <input
@@ -267,6 +314,17 @@ export function LaskuLomake({
           </label>
         </div>
 
+        {ryhmalasku && (
+          <div className="flex max-w-3xl flex-col gap-1">
+            <div className={LABEL_LUOKKA}>Vastaanottajat</div>
+            <VastaanottajaLista
+              kumppanit={kumppanit ?? []}
+              valitut={vastaanottajat}
+              onMuutos={setVastaanottajat}
+            />
+          </div>
+        )}
+
         <LaskuriviTaulukko
           rivit={tila.rivit}
           pvm={tila.laskupvm}
@@ -275,7 +333,7 @@ export function LaskuLomake({
           ennakkolasku={onEnnakkolasku}
           ennakot={avoimetEnnakot ?? []}
           lisatoiminnot={
-            valittavatEnnakot.length > 0 ? (
+            !ryhmalasku && valittavatEnnakot.length > 0 ? (
               <div className="relative">
                 <Button
                   variant="sec"
@@ -375,6 +433,10 @@ export function LaskuLomake({
                   Kirjaa ja lataa PDF
                 </Button>
               </>
+            ) : ryhmalasku ? (
+              <Button type="button" disabled={ryhmaEstetty} onClick={() => void lahetaRyhmalasku()}>
+                Tallenna luonnoksiksi
+              </Button>
             ) : (
               <>
                 <Button

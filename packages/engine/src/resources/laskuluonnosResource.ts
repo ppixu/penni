@@ -3,7 +3,11 @@ import { laskuSummat } from '../laskutus/laskuSummat.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { IsoDate } from '../vouchers/types.js';
 import { type MaksumuistutusMuutokset, kirjaaMaksumuistutus } from './maksumuistutusResource.js';
-import { type MyyntilaskuSyote, kirjaaMyyntilaskuYdin } from './myyntilaskuResource.js';
+import {
+  type MyyntilaskuSyote,
+  kirjaaMyyntilaskuYdin,
+  tallennaMyyntilasku,
+} from './myyntilaskuResource.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
 import { paivitaToistoKirjatusta } from './toistoResource.js';
 
@@ -83,6 +87,39 @@ export async function kirjaaLaskuluonnos(
   );
   await paivitaToistoKirjatusta(storage, kirjattu);
   return kirjattu;
+}
+
+/** Ryhmälaskun pohja: myyntilaskun syöte ilman yksittäistä asiakasta, luonnosmerkintää ja id:tä. */
+export type RyhmalaskuSyote = Omit<MyyntilaskuSyote, 'kumppani' | 'luonnos' | 'id'> & {
+  kumppanit: number[];
+  ryhma: string;
+};
+
+/**
+ * Ryhmälasku (spec §6.2): yksi luonnos jokaiselle vastaanottajalle samasta pohjasta, kaikilla sama
+ * `ryhma`. Kaksoiskappaleet ohitetaan (ensimmäinen esiintymä ratkaisee järjestyksen); tyhjä lista →
+ * EIVASTAANOTTAJIA. Pohja tarkistetaan luonnoksen tavalliset tarkistukset läpikäyvällä ensimmäisellä
+ * tallennuksella, joten virheellinen pohja ei jätä luonnoksia. Luonnokset kirjataan erikseen, ja
+ * kukin saa oman numeronsa ja viitteensä vasta kirjattaessa. Palauttaa luonnokset vastaanottajien
+ * järjestyksessä.
+ */
+export async function tallennaRyhmalasku(
+  storage: Storage,
+  syote: RyhmalaskuSyote,
+  env: ResourceEnv,
+): Promise<StoredTosite[]> {
+  const { kumppanit, ...pohja } = syote;
+  const vastaanottajat = [...new Set(kumppanit)];
+  if (vastaanottajat.length === 0)
+    throw new ResourceError(
+      'EIVASTAANOTTAJIA',
+      'Ryhmälaskulla on oltava vähintään yksi vastaanottaja',
+    );
+
+  const luodut: StoredTosite[] = [];
+  for (const kumppani of vastaanottajat)
+    luodut.push(await tallennaMyyntilasku(storage, { ...pohja, kumppani, luonnos: true }, env));
+  return luodut;
 }
 
 export interface LaskuluonnosRivi {

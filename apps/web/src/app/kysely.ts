@@ -34,6 +34,7 @@ import type {
   RahavirtaSuodatin,
   RaporttiParams,
   RaporttiRivi,
+  RyhmalaskuSyote,
   SaldotParams,
   SaldotTulos,
   StoredTosite,
@@ -535,6 +536,8 @@ export function laskuVirheViesti(e: unknown): string {
         return e.message;
       case 'EILUONNOS':
         return 'Laskuluonnosta ei löydy (se on jo kirjattu tai poistettu)';
+      case 'EIVASTAANOTTAJIA':
+        return 'Valitse ryhmälaskulle vähintään yksi vastaanottaja';
       case 'EIJAKSO':
         return 'Laskutusjakson päivät ovat virheelliset';
       case 'EIMUISTUTETTAVA':
@@ -607,6 +610,34 @@ export function useTallennaMyyntilasku() {
   return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
 }
 
+/** Tallenna ryhmälasku: yksi luonnos per vastaanottaja. Palauttaa luodut luonnokset tai undefined
+ *  virheessä (virheviesti kertoo syyn). Luonnokset ilmestyvät Lähtevät-listaan. */
+export function useTallennaRyhmalasku() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [virheviesti, setVirheviesti] = useState<string | null>(null);
+
+  const mutaatio = useMutation<StoredTosite[], unknown, RyhmalaskuSyote>({
+    mutationFn: (syote) => client.tallennaRyhmalasku(syote),
+    onSuccess: () => {
+      for (const queryKey of [avaimet.laskuluonnokset, ['tositteet'], ['tulot'], ['myyntilaskut']])
+        void qc.invalidateQueries({ queryKey });
+    },
+  });
+
+  async function tallenna(syote: RyhmalaskuSyote): Promise<StoredTosite[] | undefined> {
+    setVirheviesti(null);
+    try {
+      return await mutaatio.mutateAsync(syote);
+    } catch (e) {
+      setVirheviesti(laskuVirheViesti(e));
+      return undefined;
+    }
+  }
+
+  return { tallenna, virheviesti, tallentaa: mutaatio.isPending };
+}
+
 /** Kirjaa suoritus laskun erälle. Invalidoi laskulistan, tositteet ja saldot. */
 /** Laskuluonnokset (tila 50–99: myyntilasku ja maksumuistutus) Tulot-näkymän Lähtevät-välilehteen. */
 export function useLaskuluonnokset(enabled = true) {
@@ -662,6 +693,41 @@ export function useKirjaaLaskuluonnos() {
   }
 
   return { kirjaa, virheviesti, kirjaamassa: mutaatio.isPending };
+}
+
+/** Tulos ryhmän "Kirjaa kaikki" -ajosta: kirjattujen määrä ja mahdollinen ensimmäinen virhe. */
+export interface KirjausAjo {
+  kirjattu: number;
+  epaonnistui?: { id: number; viesti: string };
+}
+
+/** Kirjaa luonnokset annetussa järjestyksessä (`kirjaaLaskuluonnos` kullekin) ja pysähtyy
+ *  ensimmäiseen virheeseen; jo kirjatut jäävät kirjatuiksi. Kukin lasku saa oman numeronsa. */
+export function useKirjaaLuonnokset() {
+  const client = useKpClient();
+  const qc = useQueryClient();
+  const [kirjaamassa, setKirjaamassa] = useState(false);
+
+  async function kirjaaKaikki(idt: readonly number[]): Promise<KirjausAjo> {
+    setKirjaamassa(true);
+    let kirjattu = 0;
+    try {
+      for (const id of idt) {
+        try {
+          await client.kirjaaLaskuluonnos(id);
+          kirjattu += 1;
+        } catch (e) {
+          return { kirjattu, epaonnistui: { id, viesti: laskuVirheViesti(e) } };
+        }
+      }
+      return { kirjattu };
+    } finally {
+      mitatoiLaskuluonnoksenKyselyt(qc);
+      setKirjaamassa(false);
+    }
+  }
+
+  return { kirjaaKaikki, kirjaamassa };
 }
 
 /** Luo maksumuistutusluonnokset erääntyneistä laskuista. Palauttaa luodut luonnokset tai

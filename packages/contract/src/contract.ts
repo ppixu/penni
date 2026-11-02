@@ -36,6 +36,7 @@ import {
   WirePoistotSyoteSchema,
   WireRahavirtaRiviSchema,
   WireRaporttiRiviSchema,
+  WireRyhmalaskuSyoteSchema,
   WireSaldotSchema,
   WireSuoritusSyoteSchema,
   WireTiliSchema,
@@ -210,6 +211,13 @@ export const contract = c.router({
     path: '/myyntilaskut',
     body: WireMyyntilaskuSyoteSchema,
     responses: { 200: WireTositeSchema, 201: WireTositeSchema },
+  },
+  /** Ryhmälasku: yksi luonnos per vastaanottaja samasta pohjasta (spec §6.2). */
+  luoRyhmalasku: {
+    method: 'POST',
+    path: '/ryhmalaskut',
+    body: WireRyhmalaskuSyoteSchema,
+    responses: { 200: z.array(WireTositeSchema), 201: z.array(WireTositeSchema) },
   },
   listaaMyyntilaskut: {
     method: 'GET',

@@ -9,6 +9,7 @@ import {
   kirjaaLaskuluonnos,
   listaaLaskuluonnokset,
   onLaskuluonnos,
+  tallennaRyhmalasku,
 } from './laskuluonnosResource.js';
 import { tallennaMyyntilasku } from './myyntilaskuResource.js';
 import type { Storage } from './storage.js';
@@ -286,5 +287,74 @@ describe('listaaLaskuluonnokset', () => {
       summa: 1445,
       alkuperainenTosite: a.id,
     });
+  });
+});
+
+describe('ryhmälasku', () => {
+  const jakso = { alkaa: '2026-05-01', loppuu: '2026-05-31' };
+
+  it('luo yhden luonnoksen per asiakas samasta pohjasta ja ohittaa kaksoiskappaleet', async () => {
+    const s = seed();
+    const a = await s.saveKumppani({ nimi: 'Asiakas A' });
+    const b = await s.saveKumppani({ nimi: 'Asiakas B' });
+    const luotu = await tallennaRyhmalasku(
+      s,
+      {
+        pvm: '2026-06-01',
+        erapvm: '2026-06-15',
+        otsikko: 'Jäsenmaksu',
+        jakso,
+        rivit: [rivi],
+        kumppanit: [b.id, a.id, b.id],
+        ryhma: 'ryhma-1',
+      },
+      env,
+    );
+    expect(luotu.map((t) => t.kumppani)).toEqual([b.id, a.id]);
+    for (const t of luotu) {
+      expect(t.tila).toBe(80);
+      expect(t.numero).toBeUndefined();
+      expect(t.viite).toBeUndefined();
+      expect(t.viennit).toEqual([]);
+      expect(t.ryhma).toBe('ryhma-1');
+      expect(t.jakso).toEqual(jakso);
+      expect(t.otsikko).toBe('Jäsenmaksu');
+      expect(t.rivit).toHaveLength(1);
+    }
+    expect(new Set(luotu.map((t) => t.id)).size).toBe(2);
+    const lista = await listaaLaskuluonnokset(s);
+    expect(lista).toHaveLength(2);
+    expect(lista.every((r) => r.ryhma === 'ryhma-1')).toBe(true);
+  });
+
+  it('tyhjä vastaanottajalista → EIVASTAANOTTAJIA', async () => {
+    const s = seed();
+    await expect(
+      tallennaRyhmalasku(s, { pvm: '2026-06-01', rivit: [rivi], kumppanit: [], ryhma: 'r' }, env),
+    ).rejects.toMatchObject({ code: 'EIVASTAANOTTAJIA' });
+  });
+
+  it('virheellinen pohja hylätään eikä jätä luonnoksia', async () => {
+    const s = seed();
+    const a = await s.saveKumppani({ nimi: 'Asiakas A' });
+    await expect(
+      tallennaRyhmalasku(s, { pvm: '2026-06-01', rivit: [], kumppanit: [a.id], ryhma: 'r' }, env),
+    ).rejects.toMatchObject({ code: 'EIRIVEJA' });
+    expect(await listaaLaskuluonnokset(s)).toEqual([]);
+  });
+
+  it('luonnokset kirjataan erikseen omilla numeroillaan', async () => {
+    const s = seed();
+    const a = await s.saveKumppani({ nimi: 'Asiakas A' });
+    const b = await s.saveKumppani({ nimi: 'Asiakas B' });
+    const [x, y] = await tallennaRyhmalasku(
+      s,
+      { pvm: '2026-06-01', rivit: [rivi], kumppanit: [a.id, b.id], ryhma: 'r' },
+      env,
+    );
+    const kx = await kirjaaLaskuluonnos(s, x?.id as number, env);
+    const ky = await kirjaaLaskuluonnos(s, y?.id as number, env);
+    expect([kx.numero, ky.numero]).toEqual(['1', '2']);
+    expect(kx.ryhma).toBe('r');
   });
 });

@@ -44,6 +44,7 @@ import {
   type RaporttiParams,
   type RaporttiRivi,
   type ResourceEnv,
+  type RyhmalaskuSyote,
   type SaldotParams,
   type SaldotTulos,
   type Storage,
@@ -139,6 +140,7 @@ import {
   tallennaMyyntilasku,
   tallennaOstolasku,
   tallennaPoistot,
+  tallennaRyhmalasku,
   tallennaSuoritus,
   tallennaToisto,
   tallennaTosite,
@@ -189,6 +191,9 @@ export class InProcessClient implements KpClient {
   }
   tallennaMyyntilasku(syote: MyyntilaskuSyote): Promise<StoredTosite> {
     return tallennaMyyntilasku(this.storage, syote, this.env());
+  }
+  tallennaRyhmalasku(syote: RyhmalaskuSyote): Promise<StoredTosite[]> {
+    return tallennaRyhmalasku(this.storage, syote, this.env());
   }
   listaaMyyntilaskut(suodatin: MyyntilaskuSuodatin): Promise<MyyntilaskuRivi[]> {
     return listaaMyyntilaskut(this.storage, suodatin);
