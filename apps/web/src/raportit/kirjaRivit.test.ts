@@ -107,3 +107,22 @@ describe('kirjaRivit — selite', () => {
     expect(rivit.map((r) => r.selite)).toEqual(['MATTI JUHANI MEIKÄLÄINEN', 'Yksityissijoitus']);
   });
 });
+
+describe('kirjaRivit — kohdennus', () => {
+  it('kuljettaa viennin kohdennuksen ja merkkaukset; puuttuva kohdennus on 0', () => {
+    const t = tosite(1, '2026-03-01', [
+      [1900, 100, 0],
+      [3000, 0, 100],
+    ]);
+    const v0 = t.viennit[0];
+    if (v0) {
+      v0.kohdennus = 4;
+      v0.merkkaukset = [7];
+    }
+    const rivit = kirjaRivit([t], '2026-01-01', '2026-12-31');
+    expect(rivit.map((r) => [r.kohdennus, r.merkkaukset])).toEqual([
+      [4, [7]],
+      [0, undefined],
+    ]);
+  });
+});

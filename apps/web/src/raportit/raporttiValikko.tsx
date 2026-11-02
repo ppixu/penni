@@ -23,7 +23,7 @@ export interface Raportti {
   kaava?: 'tase' | 'tulos';
   /** "Näytä tilit" -valinta (kaavaraportin tilikohtaiset erittelyt). */
   tiliValinta?: boolean;
-  /** Tuloslaskelman Kohdennus-suodatin (näkyy vain, kun kirjassa on kohdennuksia). */
+  /** Kohdennus-suodatin: tuloslaskelma, päiväkirja ja pääkirja (näkyy vain, kun kirjassa on kohdennuksia). */
   kohdennussuodatin?: boolean;
   /** Näkyy valikossa vain, kun kirjassa on tämän tyypin kohdennus. */
   vaatii?: typeof KohdennusTyyppi.KUSTANNUSPAIKKA | typeof KohdennusTyyppi.PROJEKTI;
@@ -48,6 +48,7 @@ export const RAPORTIT: readonly Raportti[] = [
     nimi: 'Päiväkirja',
     selite:
       'Kaikki kirjaukset aikajärjestyksessä tosite kerrallaan: päivä, tosite, tilit ja summat. Kirjanpitolain vaatima peruskirja, josta näet mitä milloinkin on kirjattu.',
+    kohdennussuodatin: true,
     Nakyma: Paivakirja,
   },
   {
@@ -56,6 +57,7 @@ export const RAPORTIT: readonly Raportti[] = [
     selite:
       'Kirjaukset tileittäin: jokaisen tilin tapahtumat ja saldo. Tästä näet, mistä tilin saldo koostuu, esim. kun pankkitilin saldo ei täsmää tiliotteeseen. Tilikartan kirja-kuvake avaa pääkirjan yhdelle tilille.',
     tilirajaus: true,
+    kohdennussuodatin: true,
     Nakyma: Paakirja,
   },
   {

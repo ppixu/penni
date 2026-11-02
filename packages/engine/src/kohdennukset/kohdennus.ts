@@ -185,3 +185,20 @@ export function kohdennusSuodatin(
   }
   return { kohdennukset: [id] };
 }
+
+/**
+ * Onko vienti kohdennussuodattimessa (`kohdennusSuodatin`n tulos)? Samat säännöt kuin
+ * tallennuskerroksen saldokyselyssä: puuttuva kohdennus = Yleinen (0), merkkaus löytyy viennin
+ * merkkauksista; tyhjä suodatin päästää kaiken läpi. Raportit, jotka rakentavat rivit
+ * asiakaspuolella (päiväkirja, pääkirja), käyttävät tätä saldokyselyn sijaan.
+ */
+export function vientiSuodattimessa(
+  suodatin: { kohdennukset?: number[]; merkkaus?: number },
+  vienti: { kohdennus?: number | undefined; merkkaukset?: readonly number[] | undefined },
+): boolean {
+  if (suodatin.kohdennukset !== undefined && !suodatin.kohdennukset.includes(vienti.kohdennus ?? 0))
+    return false;
+  if (suodatin.merkkaus !== undefined && !(vienti.merkkaukset ?? []).includes(suodatin.merkkaus))
+    return false;
+  return true;
+}

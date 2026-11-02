@@ -15,6 +15,7 @@ import {
   onVoimassaValilla,
   tilinOletusKohdennus,
   validoiKohdennus,
+  vientiSuodattimessa,
 } from './kohdennus.js';
 
 const { KUSTANNUSPAIKKA, PROJEKTI, MERKKAUS } = KohdennusTyyppi;
@@ -288,6 +289,27 @@ describe('kohdennusSuodatin', () => {
   });
   it('tuntematon id => vain se', () => {
     expect(kohdennusSuodatin(KAIKKI, 42)).toEqual({ kohdennukset: [42] });
+  });
+});
+
+describe('vientiSuodattimessa', () => {
+  it('kohdennusjoukko: puuttuva kohdennus on 0', () => {
+    const suodatin = { kohdennukset: [0, 4] };
+    expect(vientiSuodattimessa(suodatin, {})).toBe(true);
+    expect(vientiSuodattimessa(suodatin, { kohdennus: 4 })).toBe(true);
+    expect(vientiSuodattimessa(suodatin, { kohdennus: 5 })).toBe(false);
+  });
+  it('kohdennusjoukko ilman nollaa ei päästä läpi kohdentamatonta', () => {
+    expect(vientiSuodattimessa({ kohdennukset: [4] }, {})).toBe(false);
+  });
+  it('merkkaus: vienti, jolla merkkaus on; merkkaukseton ei', () => {
+    expect(vientiSuodattimessa({ merkkaus: 7 }, { merkkaukset: [3, 7] })).toBe(true);
+    expect(vientiSuodattimessa({ merkkaus: 7 }, { merkkaukset: [3] })).toBe(false);
+    expect(vientiSuodattimessa({ merkkaus: 7 }, {})).toBe(false);
+  });
+  it('tyhjä suodatin päästää kaiken läpi', () => {
+    expect(vientiSuodattimessa({}, {})).toBe(true);
+    expect(vientiSuodattimessa({}, { kohdennus: 9, merkkaukset: [1] })).toBe(true);
   });
 });
 
