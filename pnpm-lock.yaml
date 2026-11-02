@@ -203,6 +203,9 @@ importers:
       '@penni/euro':
         specifier: workspace:*
         version: link:../../packages/euro
+      '@penni/palkat':
+        specifier: workspace:*
+        version: link:../../packages/palkat
       '@penni/storage-memory':
         specifier: workspace:*
         version: link:../../packages/storage-memory

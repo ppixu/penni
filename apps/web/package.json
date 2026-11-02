@@ -26,6 +26,7 @@
     "@penni/contract": "workspace:*",
     "@penni/engine": "workspace:*",
     "@penni/euro": "workspace:*",
+    "@penni/palkat": "workspace:*",
     "@penni/storage-memory": "workspace:*",
     "@penni/storage-opfs": "workspace:*",
     "@penni/tuonti": "workspace:*",
