@@ -61,7 +61,7 @@ function Raportit() {
   // Tilikohtaiset erittelyt (Kitsas: "Tulosta tilikohtaiset erittelyt").
   const [naytaTilit, setNaytaTilit] = useState(true);
   const { data: kohdennukset } = useKohdennukset();
-  // Tuloslaskelman kohdennussuodatin; undefined = Kaikki. Säilyy raportin vaihdon yli.
+  // Kohdennussuodatin (tuloslaskelma, päiväkirja ja pääkirja); undefined = Kaikki. Säilyy raportin vaihdon yli.
   const [kohdennus, setKohdennus] = useState<number | undefined>();
 
   // Kaavaraportti näkyy valikossa vain, jos kirjassa on sen lajin kaava, ja kohdennusraportti vain,

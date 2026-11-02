@@ -615,3 +615,73 @@ describe('TositeEditori — kohdennussarake', () => {
     expect(johdaViennit(tallennettu.rows, CHART, tallennettu.paiva)).toEqual(viennit);
   });
 });
+
+describe('TositeEditori — tilin oletuskohdennus', () => {
+  const KOHDENNUKSET: Kohdennus[] = [
+    { id: 1, tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA, nimi: { fi: 'Nuorisotoiminta' } },
+    { id: 2, tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA, nimi: { fi: 'Kerhotalo' } },
+    {
+      id: 4,
+      tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA,
+      nimi: { fi: 'Vanha toiminta' },
+      paattyy: '2026-01-31',
+    },
+  ];
+  // 4000: voimassa oleva oletus (1); 7800: päättynyt oletus (4) eli ei esitäytetä.
+  const OLETUSCHART = CHART.map((t) =>
+    t.numero === 4000
+      ? { ...t, data: { ...t.data, kohdennus: 1 } }
+      : t.numero === 7800
+        ? { ...t, data: { ...t.data, kohdennus: 4 } }
+        : t,
+  );
+  const renderoi = (onMuutos = vi.fn()) =>
+    renderReitittimessa(
+      <TositeEditori
+        chart={OLETUSCHART}
+        alkupaiva="2026-06-01"
+        kohdennukset={KOHDENNUKSET}
+        onMuutos={onMuutos}
+      />,
+    );
+
+  it('tulostilin valinta esitäyttää voimassa olevan oletuskohdennuksen; päättynyttä ei', async () => {
+    const onMuutos = vi.fn();
+    const { user } = await renderoi(onMuutos);
+    await valitseTili(user, 1, '4000');
+    expect(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' })).toHaveValue(
+      'Nuorisotoiminta',
+    );
+    await valitseTili(user, 1, '7800');
+    expect(onMuutos).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        rows: [expect.objectContaining({ tili: 7800, kohdennus: 1 })],
+      }),
+    );
+  });
+
+  it('päättynyt oletuskohdennus ei esitäytä riviä', async () => {
+    const onMuutos = vi.fn();
+    const { user } = await renderoi(onMuutos);
+    await valitseTili(user, 1, '7800');
+    const rivi = (onMuutos.mock.lastCall?.[0] as TositeEditoriTila).rows[0];
+    expect(rivi?.tili).toBe(7800);
+    expect(rivi?.kohdennus).toBeUndefined();
+  });
+
+  it('saman tilin uudelleenvalinta ei korvaa käsin valittua kohdennusta oletuksella', async () => {
+    const onMuutos = vi.fn();
+    const { user } = await renderoi(onMuutos);
+    await valitseTili(user, 1, '4000');
+    await user.click(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' }));
+    await user.click(screen.getByRole('option', { name: 'Kerhotalo' }));
+    expect(onMuutos).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rows: [expect.objectContaining({ tili: 4000, kohdennus: 2 })] }),
+    );
+    // Enter tili-solussa vahvistaa korostetun nykyisen tilin uudelleen.
+    await valitseTili(user, 1, '4000');
+    expect(onMuutos).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rows: [expect.objectContaining({ tili: 4000, kohdennus: 2 })] }),
+    );
+  });
+});

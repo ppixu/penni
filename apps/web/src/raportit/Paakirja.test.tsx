@@ -162,11 +162,19 @@ describe('Pääkirja', () => {
     };
 
     it('ilman kohdennuksia ei Kohdennus-saraketta', async () => {
-      const { user } = await renderRoute('/raportit', { seed: SEED });
+      const { user } = await renderRoute('/raportit', {
+        seed: SEED,
+        arrange: async (c) => {
+          await kirjaa(c, '2026-02-05', 1900, 3000, 100_000, 'Myynti pankkiin');
+        },
+      });
       const valitsin = await screen.findByLabelText('Raportti');
       await within(valitsin).findByRole('option', { name: 'Pääkirja' });
       await user.selectOptions(valitsin, 'Pääkirja');
-      expect(await screen.findByText('Jaksolla ei ole kirjauksia.')).toBeInTheDocument();
+      await valitseTilikausi(user, '2026');
+      const taulu = await screen.findByRole('table', { name: 'Pääkirja' });
+      expect(within(taulu).getByText('1900 Pankki')).toBeInTheDocument();
+      expect(within(taulu).queryByRole('columnheader', { name: 'Kohdennus' })).toBeNull();
       expect(screen.queryByLabelText('Kohdennus')).not.toBeInTheDocument();
     });
 

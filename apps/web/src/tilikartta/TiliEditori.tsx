@@ -1,6 +1,5 @@
 import { useKohdennukset, usePoistaTili, useTallennaTili, useViennit } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
-import { kohdennusSolunTeksti } from '@/kohdennukset/kohdennusTeksti';
 import {
   KohdennusTyyppi,
   Luonne,
@@ -78,7 +77,8 @@ export function TiliEditori({
   // kustannuspaikka tai projekti (Kitsas tilinmuokkausdialog.cpp:280-281).
   const tulostili = tyyppi !== '' && onko(tyyppiKoodilla(tyyppi).luonne, Luonne.TULOS);
   const naytaOletusKohdennus = tulostili && valittavat.length > 0;
-  // Tallentamaton (tai merkkaukseksi jäänyt) id pidetään valittavana, ettei se katoa huomaamatta.
+  // Tallentamaton (tai merkkaukseksi jäänyt) id pidetään valittavana, ettei se katoa huomaamatta;
+  // nimeä ei näytetä, koska merkkaus ei kelpaa oletukseksi.
   const tuntematonId =
     oletusKohdennus !== '' && !valittavat.some((k) => String(k.id) === oletusKohdennus)
       ? Number(oletusKohdennus)
@@ -197,9 +197,7 @@ export function TiliEditori({
                   </option>
                 ))}
                 {tuntematonId !== undefined && (
-                  <option value={String(tuntematonId)}>
-                    {kohdennusSolunTeksti(tuntematonId, undefined, kohdennukset ?? [])}
-                  </option>
+                  <option value={String(tuntematonId)}>{`Tuntematon (${tuntematonId})`}</option>
                 )}
               </select>
             </label>

@@ -119,4 +119,36 @@ describe('TiliEditori — Oletuskohdennus', () => {
       expect(init.tilit.find((t) => t.numero === 3100)?.kohdennus).toBe(99);
     });
   });
+  it('merkkauksen id oletuksena ei paljasta merkkauksen nimeä vaan näkyy "Tuntematon (n)"', async () => {
+    let merkkausId = 0;
+    const { user, client } = await renderRoute('/tilikartta', {
+      seed: { ...SEED, tilit: [{ numero: 3000, tyyppi: 'CL', nimi: { fi: 'Myynti' } }] },
+      arrange: async (c) => {
+        await siemen(c);
+        const m = await c.tallennaKohdennus({
+          tyyppi: KohdennusTyyppi.MERKKAUS,
+          nimi: { fi: 'Avustus' },
+        });
+        merkkausId = m.id;
+        await c.tallennaTili(3000, {
+          numero: 3000,
+          tyyppi: 'CL',
+          nimi: { fi: 'Myynti' },
+          kohdennus: m.id,
+        });
+      },
+    });
+    const dialogi = await avaa(user, 'Myynti');
+    const valinta = await within(dialogi).findByLabelText('Oletuskohdennus');
+    expect(
+      within(valinta).getByRole('option', { name: `Tuntematon (${merkkausId})` }),
+    ).toBeInTheDocument();
+    expect(within(valinta).queryByRole('option', { name: 'Avustus' })).not.toBeInTheDocument();
+    expect(valinta).toHaveValue(String(merkkausId));
+    await user.click(within(dialogi).getByRole('button', { name: 'Tallenna' }));
+    await waitFor(async () => {
+      const init = await client.haeInit();
+      expect(init.tilit.find((t) => t.numero === 3000)?.kohdennus).toBe(merkkausId);
+    });
+  });
 });

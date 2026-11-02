@@ -92,6 +92,28 @@ describe('saldotParametrit', () => {
   });
 });
 
+describe('saldotParametrit: kohdennukset ja merkkaus', () => {
+  it('jäsentää pilkkulistan ja merkkauksen; tyhjä merkkijono on tyhjä joukko', () => {
+    expect(saldotParametrit({ pvm: '2026-12-31', kohdennukset: '0, 3,4', merkkaus: '9' })).toEqual({
+      pvm: '2026-12-31',
+      kohdennukset: [0, 3, 4],
+      merkkaus: 9,
+    });
+    expect(saldotParametrit({ pvm: '2026-12-31', kohdennukset: '' })).toEqual({
+      pvm: '2026-12-31',
+      kohdennukset: [],
+    });
+  });
+  it('pudottaa kelvottomat alkiot ja kelvottoman merkkauksen', () => {
+    expect(saldotParametrit({ pvm: '2026-12-31', kohdennukset: '1,x,2', merkkaus: 'abc' })).toEqual(
+      {
+        pvm: '2026-12-31',
+        kohdennukset: [1, 2],
+      },
+    );
+  });
+});
+
 describe('kohdennusparametrit', () => {
   it('raportin kohdennus 0 (Yleinen) säilyy, kelvoton pudotetaan', () => {
     const q = { muoto: 'tulos/yleinen', pvm: '2026-12-31' };

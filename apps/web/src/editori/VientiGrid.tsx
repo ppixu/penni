@@ -124,7 +124,10 @@ export function VientiGrid({
                         ? tilinAlvOletus(uusi, pvm)
                         : undefined;
                     // Tulostilin oletuskohdennus samalle päivälle kuin KohdennusValitsimen voimassaolo.
-                    const kohdennus = tilinOletusKohdennus(uusi, kohdennukset, pvm);
+                    // Vain tilin vaihtuessa: saman tilin uudelleenvalinta (Enter tili-solussa)
+                    // ei saa korvata käsin valittua kohdennusta oletuksella.
+                    const kohdennus =
+                      numero !== r.tili ? tilinOletusKohdennus(uusi, kohdennukset, pvm) : undefined;
                     dispatch({
                       type: 'setTili',
                       avain: r.avain,
