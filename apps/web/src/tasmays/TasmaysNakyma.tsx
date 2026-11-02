@@ -1,5 +1,5 @@
 import { useKpClient } from '@/app/KpClientProvider';
-import { useInit, usePaivitaAsetukset } from '@/app/kysely';
+import { useInit, useKohdennukset, usePaivitaAsetukset } from '@/app/kysely';
 import { Pudotusalue } from '@/components/Pudotusalue';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
@@ -273,6 +273,8 @@ export function TasmaysNakyma(): React.ReactElement {
 function TasmaysSisalto(): React.ReactElement {
   const client = useKpClient();
   const { data: init } = useInit();
+  // Meno- ja tulorivit saavat tilinsä oletuskohdennuksen (TositeAsetukset.kohdennukset).
+  const { data: kohdennukset } = useKohdennukset();
   const paivitaAsetukset = usePaivitaAsetukset();
   const { kirjaa, kaynnissa } = useKirjaaRivit();
 
@@ -557,7 +559,10 @@ function TasmaysSisalto(): React.ReactElement {
   async function kirjaaValitut() {
     const valitut = rivit.filter((r) => r.valittu);
     if (valitut.length === 0) return;
-    const tositeAsetukset = tyolistanTositeAsetukset(pankkitili, saannot);
+    const tositeAsetukset = {
+      ...tyolistanTositeAsetukset(pankkitili, saannot),
+      ...(kohdennukset ? { kohdennukset } : {}),
+    };
     const tulos = await kirjaa(valitut, chart, tositeAsetukset, omatLiitteet);
     setTulokset(tulos);
     let uudet = rivit;
@@ -623,7 +628,10 @@ function TasmaysSisalto(): React.ReactElement {
       <KasinKirjaus
         rivi={kasinRivi}
         chart={chart}
-        asetukset={tyolistanTositeAsetukset(pankkitili, saannot)}
+        asetukset={{
+          ...tyolistanTositeAsetukset(pankkitili, saannot),
+          ...(kohdennukset ? { kohdennukset } : {}),
+        }}
         pankkitili={pankkitili}
         omatLiitteet={omatLiitteet[kasinRivi.avain] ?? []}
         onTakaisin={() => setKasinAvain(null)}

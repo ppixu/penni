@@ -208,6 +208,8 @@ function UusiTositeLomake({
     const asetukset = {
       menotiliSaannot: lueTasmaysSaannot(init.asetukset).menotiliSaannot,
       ...(pankkitili !== undefined ? { pankkitili } : {}),
+      // Menorivi saa tilinsä oletuskohdennuksen.
+      ...(kohdennukset ? { kohdennukset } : {}),
     };
     const lukittu = init.asetukset.TilitPaatetty ?? '';
     tayttoNro.current += 1;
@@ -225,7 +227,7 @@ function UusiTositeLomake({
         }),
     });
     luku.kuittaa();
-  }, [luku.tila, luku.kuittaa, init, chart, pankkitili, alvVelvollinen]);
+  }, [luku.tila, luku.kuittaa, init, chart, pankkitili, alvVelvollinen, kohdennukset]);
 
   /** Liite tallennetaan luonnokselle heti (luonnos luodaan tarvittaessa). Heittää virheen. */
   async function lataaLiite(l: LadattavaLiite) {
