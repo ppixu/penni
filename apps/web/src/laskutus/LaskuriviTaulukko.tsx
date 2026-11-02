@@ -86,7 +86,7 @@ function KplSyote({
 /**
  * Ennakon vähennysrivin määrä: positiivinen euromäärä (rivin aNetto on sen vastaluku). Määrän
  * voi laskea nollaan mutta ei nostaa yli ennakon avoimen summan: liian suuri arvo kiinnittyy
- * avoimeen. Kiinnityksessä `versio` pakottaa kentän näyttämään kiinnitetyn arvon, vaikka tila ei muutu.
+ * avoimeen (tai rivin nykyiseen määrään, jos avointa ei tunneta). Kiinnityksessä `versio` pakottaa kentän näyttämään kiinnitetyn arvon, vaikka tila ei muutu.
  */
 function VahennysSyote({
   rivi,
@@ -96,7 +96,7 @@ function VahennysSyote({
 }: {
   rivi: LomakeRivi;
   indeksi: number;
-  enintaan: Cents | undefined;
+  enintaan: Cents;
   dispatch: (action: RiviAction) => void;
 }) {
   const [versio, setVersio] = useState(0);
@@ -106,7 +106,7 @@ function VahennysSyote({
       arvo={Euro.neg(rivi.aNettoSnt)}
       aria-label={`Ennakon vähennys, rivi ${indeksi + 1}`}
       onCommit={(snt) => {
-        const maara = enintaan !== undefined && snt > enintaan ? enintaan : snt;
+        const maara = snt > enintaan ? enintaan : snt;
         const aNettoSnt = maara === 0 ? Euro.fromCents(0) : Euro.neg(maara);
         dispatch({
           type: 'setRivi',
@@ -235,7 +235,10 @@ export function LaskuriviTaulukko({
                           (e) =>
                             e.tosite === rivi.lisat?.ennakkoTosite &&
                             e.alvProsentti === rivi.alvProsentti,
-                        )?.avoin
+                        )?.avoin ??
+                        // Ennakkoa ei löydy ladatuista (kysely latautuu tai luonnoksen ennakko on
+                        // jo kulutettu): määrää saa laskea mutta ei nostaa.
+                        Euro.neg(rivi.aNettoSnt)
                       }
                       dispatch={dispatch}
                     />

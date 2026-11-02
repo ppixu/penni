@@ -358,6 +358,107 @@ describe('ennakon hyvitys loppulaskulla', () => {
   });
 });
 
+describe('ennakon vähennysrivien tarkistus kirjattaessa (EIENNAKKOA)', () => {
+  const loppu = (s: Storage, kumppani: number, rivit: TositeRivi[]) =>
+    tallennaMyyntilasku(s, { pvm: '2026-05-01', kumppani, rivit }, env);
+
+  it('toisen asiakkaan ennakkoa ei voi vähentää eikä numeroa kuluteta', async () => {
+    const s = seed();
+    const a = await asiakas(s, 'A Oy');
+    const b = await asiakas(s, 'B Oy');
+    const e = await ennakko(s, a.id);
+    await expect(loppu(s, b.id, [rivi(2000), vahennys(e.id)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+      message: expect.stringContaining('toisen asiakkaan'),
+    });
+    expect((await loppu(s, b.id, [rivi(500)])).numero).toBe('2');
+  });
+
+  it('tavallinen lasku ei kelpaa ennakoksi', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const tavallinen = await tallennaMyyntilasku(
+      s,
+      { pvm: '2026-03-01', kumppani: k.id, rivit: [rivi(1000)] },
+      env,
+    );
+    await expect(loppu(s, k.id, [rivi(2000), vahennys(tavallinen.id)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+      message: expect.stringContaining('ei ole ennakkolasku'),
+    });
+  });
+
+  it('olematon ja poistettu ennakko hylätään', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    await expect(loppu(s, k.id, [rivi(2000), vahennys(9999)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+    });
+    const e = await ennakko(s, k.id);
+    await s.saveTosite({ ...e, tila: TositeTila.POISTETTU }, env);
+    await expect(loppu(s, k.id, [rivi(2000), vahennys(e.id)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+    });
+  });
+
+  it('vähennys yli ennakon avoimen -> EIENNAKKOA', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const e = await ennakko(s, k.id);
+    await expect(loppu(s, k.id, [rivi(5000), vahennys(e.id, -1500)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+      message: expect.stringContaining('1000,00'),
+    });
+  });
+
+  it('kaksi riviä samalle ennakolle, summa yli avoimen -> EIENNAKKOA', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const e = await ennakko(s, k.id);
+    await expect(
+      loppu(s, k.id, [rivi(5000), vahennys(e.id, -600), vahennys(e.id, -600)]),
+    ).rejects.toMatchObject({ code: 'EIENNAKKOA' });
+  });
+
+  it('aiemmin vähennetty ennakko pienentää avointa; jäännös menee läpi', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const e = await ennakko(s, k.id);
+    await loppu(s, k.id, [rivi(5000), vahennys(e.id, -600)]);
+    await expect(loppu(s, k.id, [rivi(5000), vahennys(e.id, -500)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+    });
+    const ok = await loppu(s, k.id, [rivi(5000), vahennys(e.id, -400)]);
+    expect(ok.tila).toBe(TositeTila.KIRJANPIDOSSA);
+    expect(await haeAvoimetEnnakot(s, k.id)).toEqual([]);
+  });
+
+  it('tuotua Kitsas-ennakkoa ei voi vähentää', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const e = await ennakko(s, k.id);
+    await s.saveTosite(
+      { ...e, viennit: e.viennit.map((v) => (v.tili === 2861 ? { ...v, era: -12 } : v)) },
+      env,
+    );
+    await expect(loppu(s, k.id, [rivi(2000), vahennys(e.id)])).rejects.toMatchObject({
+      code: 'EIENNAKKOA',
+    });
+  });
+
+  it('kaksi riviä kahdelle ennakolle ja osavähennys kirjautuu', async () => {
+    const s = seed();
+    const k = await asiakas(s);
+    const e1 = await ennakko(s, k.id);
+    const e2 = await ennakko(s, k.id);
+    const l = await loppu(s, k.id, [rivi(5000), vahennys(e1.id, -1000), vahennys(e2.id, -300)]);
+    expect(l.tila).toBe(TositeTila.KIRJANPIDOSSA);
+    expect((await haeAvoimetEnnakot(s, k.id)).map((a) => [a.tosite, a.avoin])).toEqual([
+      [e2.id, 70000],
+    ]);
+  });
+});
+
 describe('haeAvoimetEnnakot', () => {
   it('avoin = netto − loppulaskujen vähennykset; täysin vähennetty ennakko poistuu', async () => {
     const s = seed();

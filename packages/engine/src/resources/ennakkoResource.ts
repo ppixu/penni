@@ -1,7 +1,8 @@
 import type { Cents } from '@penni/euro';
-import { Maksutapa, TositeTyyppi } from '../vouchers/enums.js';
+import { Maksutapa, TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import { nettoYhteensaCents } from '../vouchers/rivi.js';
-import type { Storage, StoredTosite } from './storage.js';
+import type { TositeRivi } from '../vouchers/types.js';
+import { ResourceError, type Storage, type StoredTosite } from './storage.js';
 
 /** Asiakkaan ennakkolaskun avoin (vielä loppulaskulla hyvittämätön) netto yhdellä verokannalla. */
 export interface AvoinEnnakko {
@@ -73,4 +74,60 @@ export async function haeAvoimetEnnakot(
   }
   tulos.sort((a, b) => a.tosite - b.tosite || a.alvProsentti - b.alvProsentti);
   return tulos;
+}
+
+/**
+ * Loppulaskun ennakon vähennysrivien tarkistus kirjattaessa (spec §6.1), ennen laskunumeron
+ * lukemista. Jokaisen `ennakkoTosite`-rivin on viitattava kirjattuun, poistamattomaan
+ * ennakkolaskuun samalta asiakkaalta, eikä yhden ennakon (kannoittain) vähennysten summa tällä
+ * laskulla saa ylittää ennakon avointa nettoa. Tuotu Kitsas-ennakko ei ole avoimissa, joten sitä
+ * ei voi vähentää. Rikkomus -> `EIENNAKKOA`.
+ */
+export async function tarkistaEnnakonVahennykset(
+  storage: Storage,
+  kumppani: number | undefined,
+  rivit: readonly TositeRivi[],
+): Promise<void> {
+  const vahennysrivit = rivit.filter((r) => r.ennakkoTosite != null);
+  if (vahennysrivit.length === 0) return;
+
+  const vahennetty = new Map<string, { tosite: number; alvProsentti: number; summa: number }>();
+  for (const r of vahennysrivit) {
+    const id = r.ennakkoTosite as number;
+    const e = await storage.getTosite(id);
+    if (e === null || e.tila === TositeTila.POISTETTU)
+      throw new ResourceError('EIENNAKKOA', `Ennakkolaskua ${id} ei löydy`);
+    const nimi = e.numero !== undefined ? `Lasku ${e.numero}` : `Tosite ${id}`;
+    if (e.tyyppi !== TositeTyyppi.MYYNTILASKU || e.maksutapa !== Maksutapa.ENNAKKOLASKU)
+      throw new ResourceError('EIENNAKKOA', `${nimi} ei ole ennakkolasku`);
+    if (e.tila < TositeTila.KIRJANPIDOSSA)
+      throw new ResourceError('EIENNAKKOA', `${nimi} ei ole kirjattu`);
+    if (kumppani === undefined || e.kumppani !== kumppani)
+      throw new ResourceError('EIENNAKKOA', `${nimi} on toisen asiakkaan ennakko`);
+    const netto = nettoYhteensaCents(r);
+    if (netto >= 0)
+      throw new ResourceError('EIENNAKKOA', `${nimi}: vähennysrivin summan on oltava negatiivinen`);
+    const k = avain(id, r.alvProsentti);
+    const tama = vahennetty.get(k) ?? { tosite: id, alvProsentti: r.alvProsentti, summa: 0 };
+    tama.summa -= netto;
+    vahennetty.set(k, tama);
+  }
+
+  const avoimet = new Map(
+    (await haeAvoimetEnnakot(storage, kumppani as number)).map((a) => [
+      avain(a.tosite, a.alvProsentti),
+      a,
+    ]),
+  );
+  for (const [k, v] of vahennetty) {
+    const avoin = avoimet.get(k)?.avoin ?? 0;
+    if (v.summa > avoin) {
+      const e = await storage.getTosite(v.tosite);
+      const nimi = e?.numero !== undefined ? `Lasku ${e.numero}` : `Tosite ${v.tosite}`;
+      throw new ResourceError(
+        'EIENNAKKOA',
+        `${nimi}: ennakkoa on avoinna vain ${(avoin / 100).toFixed(2).replace('.', ',')} € (alv ${v.alvProsentti} %), vähennys on ${(v.summa / 100).toFixed(2).replace('.', ',')} €`,
+      );
+    }
+  }
 }

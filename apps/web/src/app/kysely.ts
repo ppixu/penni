@@ -531,6 +531,8 @@ export function laskuVirheViesti(e: unknown): string {
         return 'Ennakkolaskusta ei voi tehdä hyvityslaskua — hyvitä ennakko loppulaskulla';
       case 'EIKUMPPANIA':
         return 'Ennakkolaskulla on oltava asiakas';
+      case 'EIENNAKKOA':
+        return e.message;
       case 'EILUONNOS':
         return 'Laskuluonnosta ei löydy (se on jo kirjattu tai poistettu)';
       case 'EIJAKSO':

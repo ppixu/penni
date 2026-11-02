@@ -1,11 +1,12 @@
 import { OSTOKOODIT } from '@/ostolaskut/ostolaskuReducer';
 import { type Kohdennus, KohdennusTyyppi } from '@penni/engine';
+import { Euro } from '@penni/euro';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { useReducer } from 'react';
 import { describe, expect, it } from 'vitest';
 import { LaskuriviTaulukko } from './LaskuriviTaulukko.js';
-import { alustaLaskuTila, laskuReducer } from './laskuReducer.js';
+import { type LomakeRivi, alustaLaskuTila, laskuReducer } from './laskuReducer.js';
 
 describe('LaskuriviTaulukko koodit-propti', () => {
   it('tarjoaa annetut ALV-koodit (ostokoodit)', async () => {
@@ -87,5 +88,61 @@ describe('LaskuriviTaulukko kohdennus-sarake', () => {
     const tyhja = JSON.parse(screen.getByLabelText('rivi-tila').textContent ?? '{}');
     expect(tyhja.kohdennus).toBeUndefined();
     expect(tyhja.merkkaukset).toEqual([2]);
+  });
+});
+
+describe('LaskuriviTaulukko ennakon vähennysrivi ilman tunnettua ennakkoa', () => {
+  const vahennysRivi = (): LomakeRivi => ({
+    avain: 1,
+    selite: 'Ennakkolaskun 1 hyvitys',
+    myyntiKpl: 1,
+    aNettoSnt: Euro.fromCents(-4000),
+    alvKoodi: 1,
+    alvProsentti: 25.5,
+    lisat: { ennakkoTosite: 7, tili: 2861 },
+  });
+
+  const muutokset = (): { aNettoSnt?: number }[] => [];
+
+  it('määrää ei voi nostaa nykyisestä, kun ennakkoa ei löydy ladatuista', async () => {
+    const user = userEvent.setup();
+    const kirjatut = muutokset();
+    render(
+      <LaskuriviTaulukko
+        rivit={[vahennysRivi()]}
+        pvm="2026-06-10"
+        ennakot={[]}
+        dispatch={(a) => {
+          if (a.type === 'setRivi') kirjatut.push(a.muutos);
+        }}
+      />,
+    );
+    const kentta = screen.getByLabelText('Ennakon vähennys, rivi 1');
+    expect(kentta).toHaveValue('40,00');
+    await user.clear(kentta);
+    await user.type(kentta, '900');
+    await user.tab();
+    expect(kirjatut.at(-1)?.aNettoSnt).toBe(-4000);
+    expect(await screen.findByLabelText('Ennakon vähennys, rivi 1')).toHaveValue('40,00');
+  });
+
+  it('määrän voi laskea', async () => {
+    const user = userEvent.setup();
+    const kirjatut = muutokset();
+    render(
+      <LaskuriviTaulukko
+        rivit={[vahennysRivi()]}
+        pvm="2026-06-10"
+        ennakot={[]}
+        dispatch={(a) => {
+          if (a.type === 'setRivi') kirjatut.push(a.muutos);
+        }}
+      />,
+    );
+    const kentta = screen.getByLabelText('Ennakon vähennys, rivi 1');
+    await user.clear(kentta);
+    await user.type(kentta, '10');
+    await user.tab();
+    expect(kirjatut.at(-1)?.aNettoSnt).toBe(-1000);
   });
 });

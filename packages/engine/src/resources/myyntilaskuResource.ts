@@ -15,6 +15,7 @@ import {
 } from '../vouchers/enums.js';
 import type { IsoDate, Tosite, TositeRivi, TositeVienti } from '../vouchers/types.js';
 import { onkoMaksuperusteinenAlv } from './context.js';
+import { tarkistaEnnakonVahennykset } from './ennakkoResource.js';
 import { ENNAKKO_ALV_LYKATTY, tunnistaVeroVienti } from './maksuperusteinenTunnistus.js';
 import {
   type Asetukset,
@@ -290,6 +291,7 @@ export async function kirjaaMyyntilaskuYdin(
   if (id !== undefined) await haeMyyntilaskuluonnos(storage, id);
   if (maksutapa === Maksutapa.ENNAKKOLASKU && syote.kumppani === undefined)
     throw new ResourceError('EIKUMPPANIA', 'Ennakkolaskulla on oltava asiakas');
+  await tarkistaEnnakonVahennykset(storage, syote.kumppani, syote.rivit);
 
   // Invoice number + reference (mirrors tositeroute.cpp:235-265).
   const numero = lueSeuraavaLaskunumero(asetukset);

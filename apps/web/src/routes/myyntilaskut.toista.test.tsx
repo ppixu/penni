@@ -43,6 +43,10 @@ describe('Toista-toiminto laskunäkymässä', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/toistot'));
     const [toisto] = await client.haeToistot();
     expect(toisto).toMatchObject({ lahdeTosite: 1, kuukausia: 1, seuraava: '2026-07-01' });
+    // Reitin tila vaihtuu ennen kuin Toistuvat laskut -sivu (lazy-chunk) on piirretty, ja vanha
+    // laskunäkymä näyttää hetken saman asiakasnimen. Odota ensin uuden sivun oma elementti,
+    // muuten findByText voi osua vanhan sivun nimeen, joka irtoaa DOMista ennen väitettä.
+    await screen.findByRole('button', { name: 'Luo erääntyneet nyt' });
     expect(await screen.findByText('Asiakas Oy')).toBeInTheDocument();
   });
 
