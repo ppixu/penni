@@ -18,7 +18,15 @@ function Tyontekijat() {
   const { tyontekijat, rikkinaiset, virhe, ladataan, tallenna, tallentaa } = useTyontekijat();
   const [lomake, setLomake] = useState<Lomake>(null);
   const [tallennusVirhe, setTallennusVirhe] = useState<string | null>(null);
-  const idt = useMemo(() => new Set(tyontekijat.map((t) => t.id)), [tyontekijat]);
+  // Myös rikkinäisten tietueiden tunnukset: uusi tunnus ei saa koskaan ylikirjoittaa niitä.
+  const idt = useMemo(
+    () =>
+      new Set([
+        ...tyontekijat.map((t) => t.id),
+        ...rikkinaiset.flatMap((r) => (r.id !== undefined ? [r.id] : [])),
+      ]),
+    [tyontekijat, rikkinaiset],
+  );
   const toiminimi = init?.asetukset.muoto === 'tmi';
 
   async function talleta(t: Tyontekija): Promise<boolean> {

@@ -7,6 +7,7 @@ import {
   type PalkatAsetukset,
   type PalkkaKoodi,
   type Palkkatilit,
+  TAULUKKO_KENTAT,
   type TaulukkoKentta,
   type TaulukkoOhitus,
   type Tyontekija,
@@ -42,6 +43,8 @@ function siistiSyy(e: unknown): string {
 /** Rikkinäinen tallennettu tietue: järjestysnumero (1 alkaen) ja nimi, jos se on luettavissa. */
 export interface RikkinainenTyontekija {
   jarjestys: number;
+  /** Tietueen tunnus, jos luettavissa: uusia tunnuksia ei saa valita tämän päälle. */
+  id?: string;
   nimi?: string;
   syy: string;
 }
@@ -80,8 +83,10 @@ export function lueTyontekijatTurvallisesti(asetukset: Asetukset): TyontekijaLuk
       if (t) tyontekijat.push(t);
     } catch (e) {
       const nimi = onOlio(tietue) && typeof tietue.nimi === 'string' ? tietue.nimi : undefined;
+      const id = onOlio(tietue) && typeof tietue.id === 'string' ? tietue.id : undefined;
       rikkinaiset.push({
         jarjestys: i + 1,
+        ...(id !== undefined ? { id } : {}),
         ...(nimi !== undefined && nimi !== '' ? { nimi } : {}),
         syy: siistiSyy(e),
       });
@@ -186,6 +191,7 @@ function lueOhitus(teksti: string | undefined): TaulukkoOhitus {
     if (!/^\d{4}$/.test(vuosi) || !onOlio(kentat)) throw new Error('virheellinen vuosi');
     const rivi: Partial<Record<TaulukkoKentta, number>> = {};
     for (const [k, v] of Object.entries(kentat)) {
+      if (!(TAULUKKO_KENTAT as readonly string[]).includes(k)) throw new Error('tuntematon kenttä');
       if (typeof v !== 'number' || !Number.isInteger(v) || v < 0)
         throw new Error('virheellinen arvo');
       rivi[k as TaulukkoKentta] = v;

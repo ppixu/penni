@@ -1,7 +1,7 @@
 import { renderRoute } from '@/test/renderRoute';
 import { type Tyontekija, lueTyontekijat } from '@penni/palkat';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Synteettiset tunnukset: yksilönumero 900-999 (ei oikeita henkilöitä), kelvollinen tarkistemerkki.
 const HETU = '010190-900P';
@@ -200,5 +200,77 @@ describe('/palkat/tyontekijat', () => {
     expect(screen.getByText(/toiminimi/i)).toBeInTheDocument();
     const lomake = screen.getByLabelText('työntekijälomake');
     expect(within(lomake).getByText(/yksityisnostoja/)).toBeInTheDocument();
+  });
+
+  it('uusi tunnus ei koskaan ylikirjoita rikkinäisen tietueen tunnusta', async () => {
+    const rikki = { ...tyontekija({ id: 'rikki001', nimi: 'Rikkinen Rauni' }), hetu: 'EI-HETU' };
+    // Ensimmäinen arvonta tuottaa täsmälleen rikkinäisen tietueen tunnuksen (r,i,k,k,i,0,0,1 base36).
+    const kolikko = [27, 18, 20, 20, 18, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+    const muut = [5, 6, 7, 8, 9, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0];
+    const taytto = (kohde: Uint8Array, lahde: number[]) => {
+      kohde.set(lahde);
+      return kohde;
+    };
+    const arvonta = vi
+      .spyOn(globalThis.crypto, 'getRandomValues')
+      .mockImplementationOnce(((k: Uint8Array) => taytto(k, kolikko)) as never)
+      .mockImplementation(((k: Uint8Array) => taytto(k, muut)) as never);
+    const { user, client } = await renderRoute('/palkat/tyontekijat', {
+      seed: siemenellaTyontekijat([rikki]),
+    });
+    await user.click(await screen.findByRole('button', { name: '+ Lisää työntekijä' }));
+    await user.type(await screen.findByLabelText('Nimi'), 'Toinen Toivo');
+    await user.type(screen.getByLabelText('Henkilötunnus'), HETU_2);
+    await user.type(screen.getByLabelText('Ammattikoodi (TK10)'), '12345');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(async () => {
+      const raaka = JSON.parse((await client.haeAsetukset()).PalkatTyontekijat ?? '[]');
+      expect(raaka).toHaveLength(2);
+    });
+    expect(arvonta).toHaveBeenCalled();
+    const raaka = JSON.parse((await client.haeAsetukset()).PalkatTyontekijat ?? '[]');
+    expect(raaka[0]).toMatchObject({ id: 'rikki001', hetu: 'EI-HETU' });
+    expect(raaka[1].id).not.toBe('rikki001');
+  });
+
+  it('virheellinen euroteksti (kuukausipalkka) estää tallennuksen eikä tallenna vanhaa arvoa', async () => {
+    const { user, client } = await renderRoute('/palkat/tyontekijat', { seed: SEED });
+    await user.click(await screen.findByRole('button', { name: '+ Lisää työntekijä' }));
+    await user.type(await screen.findByLabelText('Nimi'), 'Testinen Tuula');
+    await user.type(screen.getByLabelText('Henkilötunnus'), HETU);
+    await user.type(screen.getByLabelText('Ammattikoodi (TK10)'), '12345');
+    await user.type(screen.getByLabelText('Kuukausipalkka'), '3000');
+    await user.tab(); // vahvistaa 3000 €
+    const palkka = screen.getByLabelText('Kuukausipalkka');
+    await user.clear(palkka);
+    await user.type(palkka, '30x0');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByText(/Tarkista euromäärät/)).toBeInTheDocument();
+    expect((await client.haeAsetukset()).PalkatTyontekijat).toBeUndefined();
+
+    // Korjaus poistaa virheen ja tallennus onnistuu uudella arvolla
+    await user.clear(palkka);
+    await user.type(palkka, '3100');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(async () => expect(await luettu(client)).toHaveLength(1));
+    expect((await luettu(client))[0]?.kuukausipalkka).toBe(310000);
+  });
+
+  it('virheellinen euroteksti verokortin tulorajassa estää tallennuksen', async () => {
+    const { user, client } = await renderRoute('/palkat/tyontekijat', { seed: SEED });
+    await user.click(await screen.findByRole('button', { name: '+ Lisää työntekijä' }));
+    await user.type(await screen.findByLabelText('Nimi'), 'Testinen Tuula');
+    await user.type(screen.getByLabelText('Henkilötunnus'), HETU);
+    await user.type(screen.getByLabelText('Ammattikoodi (TK10)'), '12345');
+    await user.click(screen.getByRole('button', { name: '+ Lisää verokortti' }));
+    await user.type(screen.getByLabelText('Verokortti 1: perusprosentti'), '20');
+    await user.type(screen.getByLabelText('Verokortti 1: tuloraja'), 'abc');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByText(/Tarkista euromäärät/)).toBeInTheDocument();
+    expect((await client.haeAsetukset()).PalkatTyontekijat).toBeUndefined();
+    // Kortin poisto poistaa myös virhetilan
+    await user.click(screen.getByRole('button', { name: 'Poista verokortti 1' }));
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(async () => expect(await luettu(client)).toHaveLength(1));
   });
 });

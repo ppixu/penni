@@ -11,11 +11,27 @@ import {
   type PalkatAsetukset,
   type PalkkaKoodi,
   type Palkkatilit,
+  type TaulukkoOhitus,
   haeTaulukko,
 } from '@penni/palkat';
+import { muotoileYtunnus, tarkistaYtunnus } from '@penni/validator';
 import { useMemo, useState } from 'react';
 
 const MUU = 'muu';
+
+/** Taulukon oletus-TyEL-prosentti tekstinä. Ei koskaan heitä: tallennettu data ei saa kaataa sivua. */
+function tyelOletus(
+  vuosi: number,
+  ohitus: TaulukkoOhitus,
+  kentta: 'tyelOletusKokonaisBp' | 'tyelTilapainenKokonaisBp',
+): string {
+  try {
+    const haku = haeTaulukko(vuosi, ohitus, [kentta]);
+    return haku.ok ? muotoileBp(haku.taulukko[kentta]) : 'ei taulukossa';
+  } catch {
+    return 'ei taulukossa';
+  }
+}
 
 function virheTeksti(e: unknown): string {
   return e instanceof Error ? e.message : 'Tallennus epäonnistui.';
@@ -51,8 +67,7 @@ export function TyonantajaLomake({ vuosi }: { vuosi: number }) {
 
   // Oletusprosentti taulukosta (tilapäisellä työnantajalla oma arvo), mukana käyttäjän omat arvot.
   const oletusKentta = tilapainen ? 'tyelTilapainenKokonaisBp' : 'tyelOletusKokonaisBp';
-  const haku = haeTaulukko(vuosi, ohitus, [oletusKentta]);
-  const oletus = haku.ok ? muotoileBp(haku.taulukko[oletusKentta]) : 'ei taulukossa';
+  const oletus = tyelOletus(vuosi, ohitus, oletusKentta);
 
   async function laheta() {
     setTallennettu(false);
@@ -68,14 +83,46 @@ export function TyonantajaLomake({ vuosi }: { vuosi: number }) {
       tyelKokonaisBp[v] = bp;
     }
     const yhtio = (yhtioValinta === MUU ? muuKoodi : yhtioValinta).trim();
+    const sopimusSiisti = sopimus.trim();
+    // Sama ehto kuin Tulorekisterin XML:n rakentajalla (tyelTiedot): tunnus 2 tai 5 numeroa,
+    // vakuutusnumero alkaa tunnuksella ja on enintään 11 merkkiä.
+    if (yhtio !== '' || sopimusSiisti !== '') {
+      if (!/^(\d{2}|\d{5})$/.test(yhtio)) {
+        setVirhe(
+          'Valitse TyEL-vakuutusyhtiö (tai anna eläkelaitoksen koodi, 2 tai 5 numeroa) vakuutusnumeron kanssa.',
+        );
+        return;
+      }
+      if (!sopimusSiisti.startsWith(yhtio) || sopimusSiisti.length > 11) {
+        setVirhe(
+          sopimusSiisti.length > 11
+            ? 'Vakuutusnumero saa olla enintään 11 merkkiä.'
+            : `Vakuutusnumeron pitää alkaa eläkelaitoksen tunnuksella (${yhtio}).`,
+        );
+        return;
+      }
+    }
+    // Tapaturmavakuutus ilmoitetaan vain, kun molemmat tiedot on annettu (Y-tunnus kelvollinen).
+    const tapaturmaTunnus = tapaturmaYhtio.trim();
+    const tapaturmaNumero = tapaturmaSopimus.trim();
+    if (tapaturmaTunnus !== '' || tapaturmaNumero !== '') {
+      if (tapaturmaTunnus === '' || !tarkistaYtunnus(tapaturmaTunnus)) {
+        setVirhe('Tarkista tapaturmavakuutusyhtiön Y-tunnus.');
+        return;
+      }
+      if (tapaturmaNumero === '') {
+        setVirhe('Anna tapaturmavakuutuksen numero tai tyhjennä Y-tunnus.');
+        return;
+      }
+    }
     const uusi: PalkatAsetukset = {
       tilapainenTyonantaja: tilapainen,
       tvrVapautus,
       ...(yhtio !== '' ? { tyelYhtio: yhtio } : {}),
-      ...(sopimus.trim() !== '' ? { tyelSopimus: sopimus.trim() } : {}),
+      ...(sopimusSiisti !== '' ? { tyelSopimus: sopimusSiisti } : {}),
       ...(Object.keys(tyelKokonaisBp).length > 0 ? { tyelKokonaisBp } : {}),
-      ...(tapaturmaYhtio.trim() !== '' ? { tapaturmaYhtio: tapaturmaYhtio.trim() } : {}),
-      ...(tapaturmaSopimus.trim() !== '' ? { tapaturmaSopimus: tapaturmaSopimus.trim() } : {}),
+      ...(tapaturmaTunnus !== '' ? { tapaturmaYhtio: muotoileYtunnus(tapaturmaTunnus) } : {}),
+      ...(tapaturmaNumero !== '' ? { tapaturmaSopimus: tapaturmaNumero } : {}),
       ...(yhteysNimi.trim() !== '' || yhteysPuhelin.trim() !== ''
         ? { yhteyshenkilo: { nimi: yhteysNimi.trim(), puhelin: yhteysPuhelin.trim() } }
         : {}),

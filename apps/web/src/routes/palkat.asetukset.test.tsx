@@ -60,7 +60,7 @@ describe('/palkat/asetukset — työnantajan tiedot', () => {
     const { user, client } = await renderRoute('/palkat/asetukset', { seed: MAKSUTILILLA });
     const osio = await screen.findByLabelText('työnantajan tiedot');
     await user.selectOptions(within(osio).getByLabelText('TyEL-vakuutusyhtiö'), '55');
-    await user.type(within(osio).getByLabelText('TyEL-sopimusnumero'), '1234567');
+    await user.type(within(osio).getByLabelText('TyEL-sopimusnumero'), '5512345');
     await user.selectOptions(await screen.findByLabelText('Vuosi'), '2026');
     // Oletus näkyy taulukosta (2026: 24,85 %), ei tallennettuna arvona
     expect(within(osio).getByLabelText('TyEL-kokonaismaksu (%)')).toHaveAttribute(
@@ -78,7 +78,7 @@ describe('/palkat/asetukset — työnantajan tiedot', () => {
     const a = JSON.parse((await client.haeAsetukset()).PalkatAsetukset ?? '{}');
     expect(a).toMatchObject({
       tyelYhtio: '55',
-      tyelSopimus: '1234567',
+      tyelSopimus: '5512345',
       tyelKokonaisBp: { '2026': 2510 },
       tilapainenTyonantaja: false,
       tvrVapautus: true,
@@ -96,6 +96,47 @@ describe('/palkat/asetukset — työnantajan tiedot', () => {
       'placeholder',
       '25,85',
     );
+  });
+
+  it('vakuutusnumeron on alettava eläkelaitoksen tunnuksella', async () => {
+    const { user, client } = await renderRoute('/palkat/asetukset', { seed: MAKSUTILILLA });
+    const osio = await screen.findByLabelText('työnantajan tiedot');
+    await user.selectOptions(within(osio).getByLabelText('TyEL-vakuutusyhtiö'), '55');
+    await user.type(within(osio).getByLabelText('TyEL-sopimusnumero'), '1234567');
+    await user.click(within(osio).getByRole('button', { name: 'Tallenna työnantajan tiedot' }));
+    expect(await within(osio).findByRole('alert')).toHaveTextContent(
+      'Vakuutusnumeron pitää alkaa eläkelaitoksen tunnuksella (55)',
+    );
+    expect((await client.haeAsetukset()).PalkatAsetukset).toBeUndefined();
+  });
+
+  it('vakuutusnumero ilman eläkelaitosta ei tallennu', async () => {
+    const { user, client } = await renderRoute('/palkat/asetukset', { seed: MAKSUTILILLA });
+    const osio = await screen.findByLabelText('työnantajan tiedot');
+    await user.type(within(osio).getByLabelText('TyEL-sopimusnumero'), '5512345');
+    await user.click(within(osio).getByRole('button', { name: 'Tallenna työnantajan tiedot' }));
+    expect(await within(osio).findByRole('alert')).toHaveTextContent('Valitse TyEL-vakuutusyhtiö');
+    expect((await client.haeAsetukset()).PalkatAsetukset).toBeUndefined();
+  });
+
+  it('tapaturmavakuutusyhtiön Y-tunnus tarkistetaan ja tallennetaan muotoiltuna', async () => {
+    const { user, client } = await renderRoute('/palkat/asetukset', { seed: MAKSUTILILLA });
+    const osio = await screen.findByLabelText('työnantajan tiedot');
+    await user.type(within(osio).getByLabelText('Tapaturmavakuutusyhtiön Y-tunnus'), '1234567-2');
+    await user.type(within(osio).getByLabelText('Tapaturmavakuutuksen numero'), 'AB123');
+    await user.click(within(osio).getByRole('button', { name: 'Tallenna työnantajan tiedot' }));
+    expect(await within(osio).findByRole('alert')).toHaveTextContent('Y-tunnus');
+    expect((await client.haeAsetukset()).PalkatAsetukset).toBeUndefined();
+
+    const tunnus = within(osio).getByLabelText('Tapaturmavakuutusyhtiön Y-tunnus');
+    await user.clear(tunnus);
+    await user.type(tunnus, '12345671'); // kelvollinen tarkiste, ilman väliviivaa
+    await user.click(within(osio).getByRole('button', { name: 'Tallenna työnantajan tiedot' }));
+    await waitFor(async () => expect((await client.haeAsetukset()).PalkatAsetukset).toBeDefined());
+    expect(JSON.parse((await client.haeAsetukset()).PalkatAsetukset ?? '{}')).toMatchObject({
+      tapaturmaYhtio: '1234567-1',
+      tapaturmaSopimus: 'AB123',
+    });
   });
 
   it('virheellinen TyEL-prosentti ei tallennu', async () => {
@@ -151,6 +192,33 @@ describe('/palkat/asetukset — palkkataulukko', () => {
     await user.click(within(osio).getByRole('button', { name: 'Tallenna taulukon omat arvot' }));
     await waitFor(async () =>
       expect(JSON.parse((await client.haeAsetukset()).PalkatTaulukot ?? 'null')).toEqual({}),
+    );
+  });
+});
+
+describe('/palkat/asetukset — viallinen tallennettu taulukko', () => {
+  it('tuntematon kenttä PalkatTaulukot-asetuksessa näyttää virheen eikä kaada sivua', async () => {
+    const { user, client } = await renderRoute('/palkat/asetukset', {
+      seed: {
+        ...MAKSUTILILLA,
+        asetukset: {
+          ...MAKSUTILILLA.asetukset,
+          PalkatTaulukot: JSON.stringify({ '2027': { foo: 1 } }),
+        },
+      },
+    });
+    const osio = await screen.findByLabelText('palkkataulukko');
+    expect(await within(osio).findByRole('alert')).toHaveTextContent('PalkatTaulukot');
+    // Muut osiot renderöityvät edelleen, myös valitulle vuodelle
+    await user.selectOptions(await screen.findByLabelText('Vuosi'), '2027');
+    const tyonantaja = await screen.findByLabelText('työnantajan tiedot');
+    expect(within(tyonantaja).getByLabelText('TyEL-kokonaismaksu (%)')).toBeInTheDocument();
+    const taulukko = await screen.findByLabelText('palkkataulukko');
+    expect(
+      within(taulukko).getByRole('button', { name: 'Tallenna taulukon omat arvot' }),
+    ).toBeDisabled();
+    expect((await client.haeAsetukset()).PalkatTaulukot).toBe(
+      JSON.stringify({ '2027': { foo: 1 } }),
     );
   });
 });

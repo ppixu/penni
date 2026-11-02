@@ -126,6 +126,17 @@ export function TyontekijaLomake({
   const [hetuKosketettu, setHetuKosketettu] = useState(false);
   const [ibanKosketettu, setIbanKosketettu] = useState(false);
   const [yritetty, setYritetty] = useState(false);
+  // Euro-kentät, joiden teksti on virheellinen (ei ole vielä tallennettu arvoksi).
+  const [euroVirheet, setEuroVirheet] = useState<ReadonlySet<string>>(new Set());
+  const euroVirhe = (tunnus: string) => (virhe: boolean) =>
+    setEuroVirheet((nyt) => {
+      if (nyt.has(tunnus) === virhe) return nyt;
+      const uusi = new Set(nyt);
+      if (virhe) uusi.add(tunnus);
+      else uusi.delete(tunnus);
+      return uusi;
+    });
+  const euroVirheita = euroVirheet.size > 0;
 
   const hetuVirhe = !tarkistaHetu(normalisoiHetu(hetu)) ? 'Tarkista henkilötunnus' : null;
   const ibanVirhe =
@@ -144,7 +155,16 @@ export function TyontekijaLomake({
 
   function laheta() {
     setYritetty(true);
-    if (nimiVirhe || hetuVirhe || ibanVirhe || koodiVirhe || korttiVirheet.length > 0) return;
+    if (
+      nimiVirhe ||
+      hetuVirhe ||
+      ibanVirhe ||
+      koodiVirhe ||
+      korttiVirheet.length > 0 ||
+      euroVirheita
+    ) {
+      return;
+    }
     const {
       osoite: _osoite,
       iban: _iban,
@@ -333,6 +353,7 @@ export function TyontekijaLomake({
               aria-label="Kuukausipalkka"
               arvo={kuukausipalkka}
               onCommit={setKuukausipalkka}
+              onVirheMuuttui={euroVirhe('kuukausipalkka')}
               className={`${KENTTA_LUOKKA} text-right tabular-nums`}
             />
           </div>
@@ -343,6 +364,7 @@ export function TyontekijaLomake({
               aria-label="Tuntipalkka"
               arvo={tuntipalkka}
               onCommit={setTuntipalkka}
+              onVirheMuuttui={euroVirhe('tuntipalkka')}
               className={`${KENTTA_LUOKKA} text-right tabular-nums`}
             />
           </div>
@@ -422,6 +444,7 @@ export function TyontekijaLomake({
                     aria-label={`Verokortti ${n}: tuloraja`}
                     arvo={k.tuloraja}
                     onCommit={(tuloraja) => paivitaKortti(i, { tuloraja })}
+                    onVirheMuuttui={euroVirhe(`tuloraja-${n}`)}
                     className={`${KENTTA_LUOKKA} text-right tabular-nums`}
                   />
                 </div>
@@ -431,6 +454,7 @@ export function TyontekijaLomake({
                     aria-label={`Verokortti ${n}: aiemmin maksettu`}
                     arvo={k.aiemmin}
                     onCommit={(aiemmin) => paivitaKortti(i, { aiemmin })}
+                    onVirheMuuttui={euroVirhe(`aiemmin-${n}`)}
                     className={`${KENTTA_LUOKKA} text-right tabular-nums`}
                   />
                 </div>
@@ -476,6 +500,11 @@ export function TyontekijaLomake({
         Aktiivinen (näkyy uusissa palkka-ajoissa; työntekijää ei koskaan poisteta)
       </label>
 
+      {yritetty && euroVirheita && (
+        <p role="alert" className={VIRHE_LUOKKA}>
+          Tarkista euromäärät: punaisella merkityssä kentässä on virheellinen summa.
+        </p>
+      )}
       {virhe && (
         <p role="alert" className={VIRHE_LUOKKA}>
           {virhe}
