@@ -82,6 +82,12 @@ export interface TuontiRaportti {
   ohitetut: Record<string, number>;
   /** Kitsas change-history rows carried over. */
   loki: number;
+  /** Cost centres, projects and tags stored. */
+  kohdennukset: number;
+  /** Ledger rows carrying at least one tag (merkkaus). */
+  merkkaukset: number;
+  /** Budget rows written (rows for fiscal years the book lacks are skipped). */
+  budjettirivit: number;
   /** Human-readable Finnish warnings (unknown tyyppi, unexpected KpVersio, ...). */
   varoitukset: string[];
 }

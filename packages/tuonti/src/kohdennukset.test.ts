@@ -210,6 +210,34 @@ describe('Kitsas-tuonti: kohdennukset, merkkaukset ja budjetit', () => {
     expect(raportti.varoitukset).toEqual([]);
   });
 
+  it('raportoi kohdennusten, merkattujen vientien ja budjettirivien määrät', async () => {
+    const raportti = await kirjoitaKirja(lueKitsas(polku), createMemoryStorage(), { aika: AIKA });
+    // 2 kustannuspaikkaa + 2 projektia + 2 merkkausta; vienneistä 2 ja 4 on merkattu;
+    // budjetteja 4 + 2 riviä (nollarivi pudotetaan).
+    expect(raportti.kohdennukset).toBe(6);
+    expect(raportti.merkkaukset).toBe(2);
+    expect(raportti.budjettirivit).toBe(6);
+  });
+
+  it('raportoi nollat kirjalle ilman kohdennuksia', async () => {
+    const raportti = await kirjoitaKirja(lueKitsas(vanhaPolku), createMemoryStorage(), {
+      aika: AIKA,
+    });
+    expect([raportti.kohdennukset, raportti.merkkaukset, raportti.budjettirivit]).toEqual([
+      0, 0, 0,
+    ]);
+  });
+
+  it('ei laske budjettirivejä tilikaudelle jota ei ole', async () => {
+    const kirja = lueKitsas(polku);
+    kirja.budjetit.push({
+      tilikausi: '2030-01-01',
+      rivit: [{ kohdennus: 0, tili: 3000, sentit: 100 as never }],
+    });
+    const raportti = await kirjoitaKirja(kirja, createMemoryStorage(), { aika: AIKA });
+    expect(raportti.budjettirivit).toBe(6);
+  });
+
   it('tuo uudelleen ajettuna saman tuloksen (idempotentti)', async () => {
     const storage = createMemoryStorage();
     await kirjoitaKirja(lueKitsas(polku), storage, { aika: AIKA });
