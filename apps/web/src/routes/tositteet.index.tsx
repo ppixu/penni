@@ -405,6 +405,11 @@ function Selaus() {
                 <Link to="/toistot">Toistuvat laskut</Link>
               </Button>
             )}
+            {lahtevat && (
+              <Button variant="sec" size="compact" asChild>
+                <Link to="/vakioviitteet">Vakioviitteet</Link>
+              </Button>
+            )}
             <Button variant="sec" size="compact" asChild>
               <Link to="/myyntilaskut/uusi">+ Myyntilasku</Link>
             </Button>
