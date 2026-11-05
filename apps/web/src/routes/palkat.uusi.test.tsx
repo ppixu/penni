@@ -120,3 +120,40 @@ describe('/palkat/uusi', () => {
     expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
   });
 });
+
+describe('/palkat/uusi — virhetilanteet', () => {
+  it('aiempien palkka-ajojen haun virhe: ilmoitus, ei esikatselua, tallennus estetty', async () => {
+    await renderRoute('/palkat/uusi', {
+      seed: palkkaSiemen(VAIN_A),
+      arrange: async (c) => {
+        c.listaaTositteet = async () => {
+          throw new Error('verkkovirhe');
+        };
+      },
+    });
+    const viesti = await screen.findByRole('alert', { name: 'Aiemmat palkka-ajot puuttuvat' });
+    expect(viesti).toHaveTextContent('Aiempien palkka-ajojen haku epäonnistui');
+    expect(within(viesti).getByRole('button', { name: 'Yritä uudelleen' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Laskelma')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
+  });
+
+  it('erän tallennus epäonnistuu luonnin jälkeen: linkki luotuun ajoon, ei uutta tallennusta', async () => {
+    const { user, client } = await renderRoute('/palkat/uusi', { seed: palkkaSiemen(VAIN_A) });
+    await screen.findByLabelText('Maksupäivä');
+    asetaPaivat('2026-10-31', '2026-10-01', '2026-10-31');
+    client.paivitaTosite = async () => {
+      throw new Error('yhteys katkesi');
+    };
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+
+    const viesti = await screen.findByRole('alert', { name: 'Tallennus kesken' });
+    expect(viesti).toHaveTextContent('tositteeksi P 1');
+    expect(within(viesti).getByRole('link', { name: 'Avaa palkanmaksu' })).toHaveAttribute(
+      'href',
+      '/palkat/1',
+    );
+    expect(screen.getByRole('button', { name: 'Tallenna' })).toBeDisabled();
+    expect(await client.listaaTositteet({})).toHaveLength(1);
+  });
+});

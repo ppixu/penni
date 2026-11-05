@@ -85,7 +85,7 @@ describe('tallennaPalkkaAjo', () => {
     const { nimi, xml } = await palkkatietoilmoitus(client, t);
     expect(nimi).toBe('palkkatietoilmoitus-2026-10-31.xml');
 
-    await merkitseLahetetyksi(client, t.id, () => NYT2);
+    await merkitseLahetetyksi(client, t.id, await sha256Hex(xml), () => NYT2);
     const merkitty = await client.haeTosite(t.id);
     expect(merkitty?.palkka?.ilmoitus).toEqual({
       lahetetty: '2026-11-02',
@@ -112,9 +112,43 @@ describe('tallennaPalkkaAjo', () => {
     await expect(tallennaPalkkaAjo(client, luonnosA(), t.id, () => NYT2)).rejects.toMatchObject({
       koodi: 'LAHETETTY',
     });
-    await expect(merkitseLahetetyksi(client, t.id, () => NYT2)).rejects.toBeInstanceOf(
-      PalkkaAjoVirhe,
+    await expect(
+      merkitseLahetetyksi(client, t.id, await sha256Hex(xml), () => NYT2),
+    ).rejects.toBeInstanceOf(PalkkaAjoVirhe);
+  });
+
+  it('merkintä hylätään, jos XML on muuttunut ladatusta: ei liitteitä eikä ilmoitusta', async () => {
+    const { client } = kirja();
+    const t = await tallennaPalkkaAjo(client, luonnosA(), undefined, () => NYT);
+    const ladattu = await sha256Hex((await palkkatietoilmoitus(client, t)).xml);
+    // Yhteyshenkilön puhelinnumero muuttuu latauksen jälkeen -> XML eroaa ladatusta
+    await client.paivitaAsetukset({
+      PalkatAsetukset: JSON.stringify({
+        ...PALKAT_ASETUKSET,
+        yhteyshenkilo: { nimi: 'Testi Teuvo', puhelin: '0409999999' },
+      }),
+    });
+    await expect(merkitseLahetetyksi(client, t.id, ladattu, () => NYT2)).rejects.toMatchObject({
+      koodi: 'XML_MUUTTUNUT',
+      message: expect.stringContaining('Lataa XML uudelleen'),
+    });
+    expect((await client.haeTosite(t.id))?.palkka?.ilmoitus).toBeUndefined();
+    expect(await client.haeLiitteet(t.id)).toHaveLength(0);
+  });
+
+  it('jos erän tallennus epäonnistuu luonnin jälkeen, virhe kertoo luodun tositteen', async () => {
+    const { client } = kirja();
+    client.paivitaTosite = async () => {
+      throw new Error('yhteys katkesi');
+    };
+    const virhe = await tallennaPalkkaAjo(client, luonnosA(), undefined, () => NYT).catch(
+      (e: unknown) => e,
     );
+    expect(virhe).toBeInstanceOf(PalkkaAjoVirhe);
+    expect(virhe).toMatchObject({ koodi: 'KESKEN', tositeId: 1 });
+    expect((virhe as Error).message).toContain('tositteeksi P 1');
+    expect((virhe as Error).message).toContain('Älä tallenna lomaketta uudelleen');
+    expect(await client.listaaTositteet({})).toHaveLength(1);
   });
 
   it('toinen palkka-ajo samalla verokortilla laskee ensimmäisen tulokertymään', async () => {

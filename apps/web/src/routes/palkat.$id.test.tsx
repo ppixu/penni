@@ -1,5 +1,5 @@
 import { tallennaPalkkaAjo } from '@/palkat/tallennaPalkkaAjo';
-import { luonnosA, palkkaSiemen } from '@/test/palkkaFikstuuri';
+import { PALKAT_ASETUKSET, luonnosA, palkkaSiemen } from '@/test/palkkaFikstuuri';
 import { renderRoute } from '@/test/renderRoute';
 import type { KpClient } from '@penni/asiakas';
 import { TositeTila } from '@penni/engine';
@@ -88,11 +88,17 @@ describe('/palkat/$id', () => {
 
   it('Merkitse lähetetyksi: tiiviste ja liitteet, sen jälkeen vain lataukset', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
+    seuraaLatauksia();
     const { user, client } = await renderRoute('/palkat/1', {
       seed: palkkaSiemen(),
       arrange: ajoA,
     });
-    await user.click(await screen.findByRole('button', { name: 'Merkitse lähetetyksi' }));
+    // Merkintä vaatii, että XML on ladattu tässä näkymässä
+    const merkitse = await screen.findByRole('button', { name: 'Merkitse lähetetyksi' });
+    expect(merkitse).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Lataa XML' }));
+    await waitFor(() => expect(merkitse).toBeEnabled());
+    await user.click(merkitse);
 
     expect(await screen.findByText(/^Lähetetty \d+\.\d+\.\d{4}$/)).toBeInTheDocument();
     const t = await client.haeTosite(1);
@@ -103,6 +109,33 @@ describe('/palkat/$id', () => {
     expect(screen.queryByRole('button', { name: 'Merkitse lähetetyksi' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lataa XML' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lataa palkkalaskelmat' })).toBeInTheDocument();
+  });
+
+  it('XML muuttunut latauksen jälkeen: merkintä hylätään ja pyydetään lataamaan uudelleen', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    seuraaLatauksia();
+    const { user, client } = await renderRoute('/palkat/1', {
+      seed: palkkaSiemen(),
+      arrange: ajoA,
+    });
+    await user.click(await screen.findByRole('button', { name: 'Lataa XML' }));
+    const merkitse = screen.getByRole('button', { name: 'Merkitse lähetetyksi' });
+    await waitFor(() => expect(merkitse).toBeEnabled());
+    await client.paivitaAsetukset({
+      PalkatAsetukset: JSON.stringify({
+        ...PALKAT_ASETUKSET,
+        yhteyshenkilo: { nimi: 'Testi Teuvo', puhelin: '0409999999' },
+      }),
+    });
+    await user.click(merkitse);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Lataa XML uudelleen');
+    expect((await client.haeTosite(1))?.palkka?.ilmoitus).toBeUndefined();
+    expect(await client.haeLiitteet(1)).toHaveLength(0);
+    // Uusi lataus ottaa uuden tiivisteen käyttöön
+    await user.click(screen.getByRole('button', { name: 'Lataa XML' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Merkitse lähetetyksi' }));
+    expect(await screen.findByText(/^Lähetetty \d+\.\d+\.\d{4}$/)).toBeInTheDocument();
   });
 
   it('Poista poistaa tositteen pehmeästi vahvistuksen jälkeen', async () => {
@@ -155,11 +188,16 @@ describe('/palkat/$id/muokkaa', () => {
 
   it('lähetetyksi merkittyä ajoa ei voi muokata', async () => {
     const { merkitseLahetetyksi } = await import('@/palkat/tallennaPalkkaAjo');
+    const { palkkatietoilmoitus } = await import('@/palkat/palkkaAjonTiedostot');
+    const { sha256Hex } = await import('@penni/palkat');
     await renderRoute('/palkat/1/muokkaa', {
       seed: palkkaSiemen(),
       arrange: async (c) => {
         await ajoA(c);
-        await merkitseLahetetyksi(c, 1, () => NYT);
+        const t = await c.haeTosite(1);
+        if (!t) throw new Error('tosite puuttuu');
+        const sha = await sha256Hex((await palkkatietoilmoitus(c, t)).xml);
+        await merkitseLahetetyksi(c, 1, sha, () => NYT);
       },
     });
     expect(await screen.findByText(/merkitty lähetetyksi/)).toBeInTheDocument();

@@ -170,6 +170,8 @@ export function PalkkaAjoLomake({
     <Lomake
       tiedot={luku.tiedot}
       ajot={ajot.data ?? []}
+      ajotVirhe={ajot.isError}
+      haeAjotUudelleen={() => void ajot.refetch()}
       tilit={tilit}
       {...(alku ? { alku } : {})}
       {...(olemassaOlevaId !== undefined ? { olemassaOlevaId } : {})}
@@ -203,12 +205,17 @@ function alkutila(alku: PalkkaAjoLuonnos | undefined, tiedot: KirjanPalkkatiedot
 function Lomake({
   tiedot,
   ajot,
+  ajotVirhe,
+  haeAjotUudelleen,
   tilit,
   alku,
   olemassaOlevaId,
 }: {
   tiedot: KirjanPalkkatiedot;
   ajot: readonly AiempiAjo[];
+  /** Aiempien ajojen haku epäonnistui: kertymät olisivat väärät, joten tallennus on estetty. */
+  ajotVirhe: boolean;
+  haeAjotUudelleen: () => void;
   tilit: readonly Tili[];
   alku?: PalkkaAjoLuonnos;
   olemassaOlevaId?: number;
@@ -219,6 +226,8 @@ function Lomake({
   const [tila, setTila] = useState<Tila>(() => alkutila(alku, tiedot));
   const [tallentaa, setTallentaa] = useState(false);
   const [virhe, setVirhe] = useState<string | null>(null);
+  /** Tosite luotiin, mutta tallennus jäi kesken: ei uutta tallennusta (kaksoiskappale). */
+  const [kesken, setKesken] = useState<{ id: number; viesti: string } | null>(null);
   const oletusKulutili = useMemo(() => viimeisinKulutili(ajot), [ajot]);
 
   // Valittavissa: aktiiviset + ajossa jo olevat (muokattaessa myös käytöstä poistetut).
@@ -299,7 +308,12 @@ function Lomake({
   const kaikkiLaskettu = tulokset.length > 0 && lasketut.length === tulokset.length;
   const negatiivinen = lasketut.some((h) => h.tulos.nettopalkka < 0);
   const voiTallentaa =
-    !tallentaa && tiedot.palkkatilit !== undefined && kaikkiLaskettu && !negatiivinen;
+    !tallentaa &&
+    !ajotVirhe &&
+    !kesken &&
+    tiedot.palkkatilit !== undefined &&
+    kaikkiLaskettu &&
+    !negatiivinen;
 
   function asetaPaiva(kentta: 'maksupaiva' | 'kausiAlkaa' | 'kausiLoppuu', arvo: string) {
     setTila((t) => ({ ...t, [kentta]: arvo }));
@@ -332,7 +346,12 @@ function Lomake({
     try {
       tallennettu = await tallennaPalkkaAjo(client, luonnos, olemassaOlevaId);
     } catch (e) {
-      setVirhe(virheTeksti(e));
+      if (e instanceof PalkkaAjoVirhe && e.koodi === 'KESKEN' && e.tositeId !== undefined) {
+        setKesken({ id: e.tositeId, viesti: e.message });
+        await qc.invalidateQueries({ queryKey: ['tositteet'] });
+      } else {
+        setVirhe(virheTeksti(e));
+      }
       setTallentaa(false);
       return;
     }
@@ -359,6 +378,20 @@ function Lomake({
           </Link>
           .
         </p>
+      ) : null}
+
+      {ajotVirhe ? (
+        <div
+          role="alert"
+          aria-label="Aiemmat palkka-ajot puuttuvat"
+          className="rounded-[8px] border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-[13px] text-[var(--text)]"
+        >
+          Aiempien palkka-ajojen haku epäonnistui, joten verokortin tulokertymää ei voida laskea
+          oikein. Tallennus on estetty.{' '}
+          <Button variant="sec" size="compact" type="button" onClick={haeAjotUudelleen}>
+            Yritä uudelleen
+          </Button>
+        </div>
       ) : null}
 
       <fieldset className="flex flex-wrap items-end gap-4">
@@ -458,13 +491,13 @@ function Lomake({
               oletusKulutili={oletusKulutili}
               onMuutos={(rivit) => setTila((s) => ({ ...s, rivit: { ...s.rivit, [t.id]: rivit } }))}
             />
-            {t.henkilo && !puuttuva ? <HenkilonLaskelma henkilo={t.henkilo} /> : null}
+            {t.henkilo && !puuttuva && !ajotVirhe ? <HenkilonLaskelma henkilo={t.henkilo} /> : null}
             {t.virhe && !puuttuva ? <p className={VIRHE_LUOKKA}>{t.virhe}</p> : null}
           </section>
         );
       })}
 
-      {kaikkiLaskettu && !puuttuva ? (
+      {kaikkiLaskettu && !puuttuva && !ajotVirhe ? (
         <div className="border-t border-[var(--border-strong)] pt-4">
           <AjonSummat henkilot={lasketut} />
         </div>
@@ -483,6 +516,18 @@ function Lomake({
         {virhe ? (
           <p role="alert" className={VIRHE_LUOKKA}>
             {virhe}
+          </p>
+        ) : null}
+        {kesken ? (
+          <p role="alert" aria-label="Tallennus kesken" className={VIRHE_LUOKKA}>
+            {kesken.viesti}{' '}
+            <Link
+              to="/palkat/$id"
+              params={{ id: String(kesken.id) }}
+              className="font-semibold underline"
+            >
+              Avaa palkanmaksu
+            </Link>
           </p>
         ) : null}
       </div>

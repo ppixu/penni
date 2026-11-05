@@ -131,7 +131,19 @@ export async function tallennaPalkkaAjo(
   if (vanha) return client.paivitaTosite(vanha.id, { ...perus, viennit: viennit(vanha.id) });
   // Erä on tositteen id, joka tiedetään vasta ensimmäisen tallennuksen jälkeen.
   const luotu = await client.luoTosite({ ...perus, viennit: viennit() });
-  return client.paivitaTosite(luotu.id, { ...perus, viennit: viennit(luotu.id) });
+  try {
+    return await client.paivitaTosite(luotu.id, { ...perus, viennit: viennit(luotu.id) });
+  } catch (e) {
+    // Tosite on jo kirjattu (ilman erää): uusi tallennus loisi kaksoiskappaleen. Ohjataan
+    // korjaamaan sama ajo (Muokkaa tallentaa erän).
+    const nro = `${luotu.sarja} ${luotu.tunniste}`.trim();
+    const syy = e instanceof Error && e.message ? ` (${e.message})` : '';
+    throw new PalkkaAjoVirhe(
+      'KESKEN',
+      `Palkka-ajo tallennettiin tositteeksi ${nro}, mutta OmaVero-erän merkintä epäonnistui${syy}. Älä tallenna lomaketta uudelleen: avaa palkanmaksu ja tallenna se Muokkaa-toiminnolla.`,
+      luotu.id,
+    );
+  }
 }
 
 /** Ensimmäinen vapaa nimi: nimi.pdf, sitten nimi-2.pdf, -3, … (kuten laskun PDF). */
@@ -148,16 +160,27 @@ function vapaaNimi(nimi: string, olemassa: ReadonlySet<string>): string {
  * (deterministinen), sen SHA-256 ja DeliveryId tallennetaan tositteelle, ja palkkalaskelmat
  * liitetään tositteeseen vain-lisäävästi (sama sha jo liitteenä → ei uutta). Liitteet lisätään
  * ennen merkintää, jotta keskeytynyt merkintä voidaan toistaa.
+ *
+ * `ladattuSha` on käyttäjän lataaman XML:n SHA-256. Jos uudelleen muodostettu XML eroaa siitä
+ * (rekisteriä tai asetuksia muutettu latauksen jälkeen), merkintä hylätään eikä mitään kirjoiteta:
+ * tositteelle saa tallentua vain lähetetyn tiedoston tiiviste.
  */
 export async function merkitseLahetetyksi(
   client: KpClient,
   tositeId: number,
+  ladattuSha: string,
   nyt: () => string = nykyhetki,
 ): Promise<void> {
   const tosite = await haeMuokattava(client, tositeId);
   const palkka = structuredClone(tosite.palkka as PalkkaAjo);
   const { xml } = await palkkatietoilmoitus(client, tosite);
   const sha256 = await sha256Hex(xml);
+  if (sha256 !== ladattuSha) {
+    throw new PalkkaAjoVirhe(
+      'XML_MUUTTUNUT',
+      'Palkkatietoilmoitus on muuttunut lataamisen jälkeen (työntekijän tietoja tai palkka-asetuksia on muutettu). Lataa XML uudelleen, lataa se Tulorekisteriin ja merkitse sitten lähetetyksi.',
+    );
+  }
 
   const hetki = nyt();
   const olemassa = await client.haeLiitteet(tosite.id);

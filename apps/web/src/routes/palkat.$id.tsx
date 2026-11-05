@@ -9,7 +9,12 @@ import { palkkalaskelmat, palkkatietoilmoitus } from '@/palkat/palkkaAjonTiedost
 import { merkitseLahetetyksi } from '@/palkat/tallennaPalkkaAjo';
 import { ResourceError, type StoredTosite, TositeTila, TositeTyyppi } from '@penni/engine';
 import { type Cents, muotoileEuro, muotoilePvm } from '@penni/euro';
-import { PalkatVirhe, omaVeroEraPaiva, palkkatietoilmoituksenMaarapaiva } from '@penni/palkat';
+import {
+  PalkatVirhe,
+  omaVeroEraPaiva,
+  palkkatietoilmoituksenMaarapaiva,
+  sha256Hex,
+} from '@penni/palkat';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
@@ -45,6 +50,9 @@ function tiedostoVirhe(e: unknown): ReactNode {
       </>
     );
   }
+  if (e instanceof PalkkaAjoVirhe && (e.koodi === 'XML_MUUTTUNUT' || e.koodi === 'LAHETETTY')) {
+    return e.message;
+  }
   if (e instanceof PalkatVirhe || e instanceof PalkkaAjoVirhe) {
     return (
       <>
@@ -78,7 +86,8 @@ function Palkanmaksu({ id }: { id: number }) {
   const navigate = useNavigate();
   const [tyossa, setTyossa] = useState(false);
   const [virhe, setVirhe] = useState<ReactNode>(null);
-  const [xmlLadattu, setXmlLadattu] = useState(false);
+  /** Tässä näkymässä viimeksi ladatun XML:n SHA-256: merkintä tallentaa vain lähetetyn tiedoston tiivisteen. */
+  const [ladattuSha, setLadattuSha] = useState<string | null>(null);
 
   if (isLoading) {
     return <p className="px-[22px] py-5 text-[13.5px] text-[var(--text-muted)]">Ladataan…</p>;
@@ -126,7 +135,7 @@ function Palkanmaksu({ id }: { id: number }) {
       try {
         const { nimi, xml } = await palkkatietoilmoitus(client, t);
         lataaTiedosto(xml, nimi, 'application/xml');
-        setXmlLadattu(true);
+        setLadattuSha(await sha256Hex(xml));
       } catch (e) {
         setVirhe(tiedostoVirhe(e));
       }
@@ -145,6 +154,7 @@ function Palkanmaksu({ id }: { id: number }) {
 
   const merkitse = () =>
     tee(async () => {
+      if (!ladattuSha) return;
       if (
         !window.confirm(
           'Merkitäänkö palkkatietoilmoitus lähetetyksi? Palkkalaskelmat liitetään tositteeseen, eikä palkka-ajoa voi sen jälkeen muuttaa Pennissä.',
@@ -152,7 +162,7 @@ function Palkanmaksu({ id }: { id: number }) {
       )
         return;
       try {
-        await merkitseLahetetyksi(client, t.id);
+        await merkitseLahetetyksi(client, t.id, ladattuSha);
       } catch (e) {
         setVirhe(
           e instanceof PalkatVirhe || e instanceof PalkkaAjoVirhe
@@ -222,7 +232,12 @@ function Palkanmaksu({ id }: { id: number }) {
                 <Button variant="sec" type="button" disabled={tyossa} onClick={() => void poista()}>
                   Poista
                 </Button>
-                <Button type="button" disabled={tyossa} onClick={() => void merkitse()}>
+                <Button
+                  type="button"
+                  disabled={tyossa || !ladattuSha}
+                  title={ladattuSha ? undefined : 'Lataa ensin XML ja vie se Tulorekisteriin.'}
+                  onClick={() => void merkitse()}
+                >
                   Merkitse lähetetyksi
                 </Button>
               </>
@@ -253,7 +268,7 @@ function Palkanmaksu({ id }: { id: number }) {
             asiointipalvelussa.
           </p>
         ) : !poistettu ? (
-          <p className={`${OHJE} ${xmlLadattu ? 'font-semibold text-[var(--text)]' : ''}`}>
+          <p className={`${OHJE} ${ladattuSha ? 'font-semibold text-[var(--text)]' : ''}`}>
             Kun olet ladannut XML:n Tulorekisterin lataus- ja tallennuspalveluun, merkitse ilmoitus
             lähetetyksi. Jo lähetetyn ilmoituksen korjaukset tehdään Tulorekisterin
             asiointipalvelussa.

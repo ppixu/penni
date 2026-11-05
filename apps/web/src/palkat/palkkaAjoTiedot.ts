@@ -44,12 +44,16 @@ export type PalkkaAjoVirheKoodi =
   | 'EI_PALKKA_AJO' // tosite ei ole (voimassa oleva) palkka-ajo
   | 'LAHETETTY' // ilmoitus on merkitty lähetetyksi: ajo on vain luku
   | 'YTUNNUS' // kirjalta puuttuu Y-tunnus (XML)
-  | 'YHTEYSHENKILO'; // palkka-asetuksista puuttuu yhteyshenkilö (XML)
+  | 'YHTEYSHENKILO' // palkka-asetuksista puuttuu yhteyshenkilö (XML)
+  | 'XML_MUUTTUNUT' // ilmoitus on muuttunut ladatusta: lataa uudelleen ennen merkintää
+  | 'KESKEN'; // tosite luotiin, mutta erän merkintä epäonnistui (`tositeId`)
 
 export class PalkkaAjoVirhe extends Error {
   constructor(
     readonly koodi: PalkkaAjoVirheKoodi,
     viesti: string,
+    /** KESKEN: jo luodun tositteen id (käyttöliittymä ohjaa sinne, ei uutta tallennusta). */
+    readonly tositeId?: number,
   ) {
     super(viesti);
     this.name = 'PalkkaAjoVirhe';
