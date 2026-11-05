@@ -3,6 +3,7 @@
   "files": {
     "ignore": [
       "dist",
+      "dist-demo",
       "node_modules",
       ".turbo",
       ".wrangler",
