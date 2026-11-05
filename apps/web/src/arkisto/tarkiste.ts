@@ -34,10 +34,18 @@ export async function tarkistaArkisto(
   zip: Uint8Array,
   listanNimi = 'arkisto.sha256',
 ): Promise<ArkistonTarkistus> {
+  return tarkistaPurettu(pura(zip), listanNimi);
+}
+
+/** Kuten `tarkistaArkisto`, mutta jo puretulle zipille (polku zipissä → tavut). */
+export async function tarkistaPurettu(
+  purettu: ReadonlyMap<string, Uint8Array>,
+  listanNimi = 'arkisto.sha256',
+): Promise<ArkistonTarkistus> {
   const virheet: string[] = [];
   const tiedostot = new Map<string, Uint8Array>();
   const juuret = new Set<string>();
-  for (const [polku, data] of pura(zip)) {
+  for (const [polku, data] of purettu) {
     const i = polku.indexOf('/');
     if (i < 0) {
       // Juuren ulkopuolinen tiedosto ei kuulu arkistoon, eikä se saa varjostaa juurikansion tiedostoa.

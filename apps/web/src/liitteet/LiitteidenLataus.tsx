@@ -15,7 +15,7 @@ export interface LadattavaLiite {
  * jsdom (testiympäristö) ei toteuta jälkimmäistä — FileReader toimii sekä selaimessa
  * että jsdomissa.
  */
-function lueTavut(tiedosto: File): Promise<Uint8Array> {
+export function lueTavut(tiedosto: File): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const lukija = new FileReader();
     lukija.onload = () => {
