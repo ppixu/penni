@@ -1,5 +1,6 @@
 import { useInit } from '@/app/kysely';
 import { LaskuLomake } from '@/laskutus/LaskuLomake';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import { asetusPaalla } from '@penni/engine';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
@@ -15,7 +16,7 @@ function UusiLasku() {
   // tositteet.uusi.tsx:22-28), ettei moottori heitä EITILIKAUTTA. new Date() kelpaa
   // UI-oletukseksi (ei rahaa eikä auditointikelloa); käyttäjä voi vaihtaa.
   const kausi = init.tilikaudet.at(-1);
-  const tanaan = new Date().toISOString().slice(0, 10);
+  const tanaan = paikallinenTanaan();
   const alkupaiva = kausi
     ? tanaan >= kausi.alkaa && tanaan <= kausi.loppuu
       ? tanaan

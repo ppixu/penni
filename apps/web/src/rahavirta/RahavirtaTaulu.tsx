@@ -6,6 +6,7 @@ import { SuoritusDialog } from '@/laskutus/SuoritusDialog';
 import { laskuTila } from '@/laskutus/laskuTila';
 import { LISTALTA } from '@/tositteet/listanJarjestys';
 import { AlkuperaLippu, LiiteMerkki } from '@/tositteet/merkit';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import {
   type RahavirtaRivi,
   TositeTila,
@@ -101,7 +102,7 @@ export function RahavirtaTaulu({
   const onkoLasku = ONKO_LASKU[laji];
 
   // "Tänään" luetaan renderöintihetkellä (UI-tilaväritys, ei rahaa).
-  const tanaan = new Date().toISOString().slice(0, 10);
+  const tanaan = paikallinenTanaan();
 
   const kartta = useMemo(() => (init ? lataaKartta(init.tilit) : []), [init]);
   const oletusRahatili = init ? tiliAsetuksesta(init.asetukset, 'LaskuMaksutili') : undefined;

@@ -2,6 +2,7 @@ import { useTallennaSuoritus } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
 import { EuroInput } from '@/editori/EuroInput';
 import { TiliValitsin } from '@/editori/TiliValitsin';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import type { Tili } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import { useState } from 'react';
@@ -39,7 +40,7 @@ export function SuoritusDialog({
   onPeruuta: () => void;
 }) {
   const { tallenna, virheviesti, tallentaa } = useTallennaSuoritus();
-  const [pvm, setPvm] = useState(() => new Date().toISOString().slice(0, 10));
+  const [pvm, setPvm] = useState(() => paikallinenTanaan());
   const [summa, setSumma] = useState<Cents>(lasku.avoin);
   const [rahatili, setRahatili] = useState<number | undefined>(oletusRahatili);
   const [otsikko, setOtsikko] = useState(

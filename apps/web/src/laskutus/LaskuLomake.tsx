@@ -35,6 +35,7 @@ import {
   riviHinnaton,
   riviTositeRiviksi,
 } from './rakennaLaskuSyote.js';
+import { uusiRyhmaTunniste } from './ryhmaTunniste.js';
 
 /** Muutosseurannan vertailuprojektio: laskulomake + ryhmälaskun vastaanottajat. */
 function lomakeVertailuun(x: { tila: LaskuTila; vastaanottajat: number[] }) {
@@ -194,7 +195,7 @@ export function LaskuLomake({
     const luodut = await tallennaRyhma({
       ...pohja,
       kumppanit: vastaanottajat,
-      ryhma: crypto.randomUUID(),
+      ryhma: uusiRyhmaTunniste(),
     });
     if (!luodut) return;
     asetaPohja({ tila, vastaanottajat });

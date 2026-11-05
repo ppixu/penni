@@ -130,7 +130,10 @@ function Lomake({
     setLomakevirhe(null);
     const viiteTeksti = viite.replace(/\s/g, '');
     const kasin = muokkaus || itse;
-    if (kasin) {
+    // Muokkauksessa muuttumatonta viitettä ei tarkisteta: tuotu (Kitsas) viite voi olla Pennin
+    // muodon ulkopuolella, ja sen otsikkoa ja tiliä on voitava muokata (moottori tekee samoin).
+    const ennallaan = muokkaus && viiteTeksti === vakioviite.viite;
+    if (kasin && !ennallaan) {
       const virhe = viiteVirhe(viiteTeksti);
       if (virhe) {
         setLomakevirhe(virhe);

@@ -218,6 +218,36 @@ describe('VakioviiteDialog, muokkaus', () => {
     expect((await client.haeVakioviitteet()).map((v) => v.viite)).toEqual(['1012', '2008']);
   });
 
+  it('tuotu muodoton viite: muokkaus ilman viitteen vaihtoa ei tarkista muotoa', async () => {
+    const tuotu = { viite: '00123', tili: 3000, otsikko: 'Tuotu' };
+    const { tulos, onValmis } = renderoi({ vakioviite: tuotu });
+    const { user, client } = await tulos;
+    const tallenna = vi.spyOn(client, 'tallennaVakioviite').mockResolvedValue(tuotu);
+    const otsikko = await screen.findByLabelText('Otsikko');
+    await user.clear(otsikko);
+    await user.type(otsikko, 'Tuotu, muokattu');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    await waitFor(() => expect(onValmis).toHaveBeenCalled());
+    expect(tallenna.mock.calls[0]?.[0]).toMatchObject({
+      viite: '00123',
+      vanhaViite: '00123',
+      otsikko: 'Tuotu, muokattu',
+    });
+  });
+
+  it('tuotu muodoton viite: vaihdettu viite tarkistetaan', async () => {
+    const tuotu = { viite: '00123', tili: 3000, otsikko: 'Tuotu' };
+    const { tulos } = renderoi({ vakioviite: tuotu });
+    const { user, client } = await tulos;
+    const tallenna = vi.spyOn(client, 'tallennaVakioviite');
+    const viite = await screen.findByLabelText('Viite');
+    await user.clear(viite);
+    await user.type(viite, '00124');
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByText(/4-7 numeroa/)).toBeInTheDocument();
+    expect(tallenna).not.toHaveBeenCalled();
+  });
+
   it('muokkaus ei kosketa NumeroiVakioviiteItse-asetukseen', async () => {
     const { tulos } = await muokkaus({ NumeroiVakioviiteItse: 'true' });
     const { client } = await tulos;

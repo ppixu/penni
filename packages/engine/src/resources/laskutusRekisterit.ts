@@ -64,7 +64,10 @@ export async function tallennaVakioviite(
   if (annettu === undefined) {
     viite = seuraavaViite(olemassa);
   } else {
-    if (!KASIN_VIITE.test(annettu) || !tarkistaViite(annettu))
+    // Muoto ja tarkiste tarkistetaan vain, kun viite muuttuu: tuotu (Kitsas) vakioviite voi olla
+    // Pennin muodon ulkopuolella, ja sen otsikkoa ja tiliä on voitava muokata.
+    const ennallaan = annettu === vanhaViite && olemassa.some((v) => v.viite === annettu);
+    if (!ennallaan && (!KASIN_VIITE.test(annettu) || !tarkistaViite(annettu)))
       throw new ResourceError('EIVIITE', 'Vakioviite on virheellinen');
     if (annettu !== vanhaViite && olemassa.some((v) => v.viite === annettu))
       throw new ResourceError('VIITEKAYTOSSA', 'Vakioviite on jo käytössä');

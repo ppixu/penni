@@ -1,6 +1,7 @@
 import { useInit, useTallennaTuote } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
 import { alvValintaNimi, muotoileAlvProsentti } from '@/editori/AlvValitsin';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import {
   type InitBundle,
   type Tuote,
@@ -158,7 +159,7 @@ function Lomake({
   const muokkaus = tuote !== undefined;
   const { tallenna, virheviesti, tallentaa } = useTallennaTuote();
 
-  const tanaan = new Date().toISOString().slice(0, 10);
+  const tanaan = paikallinenTanaan();
   const alvVelvollinen = asetusPaalla(init.asetukset.AlvVelvollinen);
   const alvit = useMemo(
     () =>

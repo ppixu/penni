@@ -117,6 +117,30 @@ describe('vakioviitteet', () => {
     ).rejects.toMatchObject({ code: 'VIITEKAYTOSSA' });
   });
 
+  it('tuotu muodoton viite: otsikkoa ja tiliä voi muokata, kun viite ei muutu', async () => {
+    const s = tuore();
+    // Kitsaksesta tuotu vakioviite voi olla Pennin muodon ulkopuolella (alkunolla, väärä tarkiste).
+    for (const viite of ['00123', '1000']) {
+      await s.saveVakioviite({ viite, tili: 3000, otsikko: 'Tuotu' });
+      const p = await tallennaVakioviite(s, {
+        viite,
+        vanhaViite: viite,
+        tili: 3001,
+        otsikko: 'Muokattu',
+      });
+      expect(p).toMatchObject({ viite, tili: 3001, otsikko: 'Muokattu' });
+    }
+    expect(await haeVakioviitteet(s)).toHaveLength(2);
+    // Viitettä vaihdettaessa uusi viite tarkistetaan kuten ennen.
+    await expect(
+      tallennaVakioviite(s, { viite: '00124', vanhaViite: '00123', tili: 3000, otsikko: 'X' }),
+    ).rejects.toMatchObject({ code: 'EIVIITE' });
+    // Olematon "vanha viite" ei ohita tarkistusta.
+    await expect(
+      tallennaVakioviite(s, { viite: '0042', vanhaViite: '0042', tili: 3000, otsikko: 'X' }),
+    ).rejects.toMatchObject({ code: 'EIVIITE' });
+  });
+
   it('poistaa viitteen', async () => {
     const s = tuore();
     const a = await tallennaVakioviite(s, { tili: 3000, otsikko: 'A' });
