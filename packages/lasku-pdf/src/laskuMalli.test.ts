@@ -6,6 +6,7 @@ import {
   type StoredTosite,
   type TositeRivi,
   TositeTyyppi,
+  type TositeVienti,
   generoiLaskunViennit,
   laskuSummat,
 } from '@penni/engine';
@@ -289,6 +290,74 @@ describe('laskuMalli', () => {
     expect(m.tiedostonimi).toBe('Kuitti-1.pdf');
   });
 
+  describe('tuotu lasku: rivit vain, jos ne vastaavat kirjattua summaa', () => {
+    // RIVIT: brutto 249,50 €.
+    const saatava = (debet: number, kredit = 0, era = 1): TositeVienti => ({
+      tili: 1701,
+      debet: debet as Cents,
+      kredit: kredit as Cents,
+      pvm: '2026-06-01',
+      alvKoodi: 0,
+      alvProsentti: 0,
+      era,
+      tyyppi: 202,
+    });
+    const ESTE = 'Laskun rivit eivät vastaa kirjattua summaa — alkuperäinen lasku on liitteenä';
+
+    it('täsmäävät rivit: rivit, summat ja maksuosa kuten ennen', () => {
+      const m = malli({ viennit: [saatava(24950)] });
+      expect(m.rivit).toHaveLength(3);
+      expect(m.maksu?.summa).toBe(muotoileEuro(24950 as Cents));
+      expect(m.pdfEste).toBeNull();
+      expect(m.rivitonSyy).toBeUndefined();
+    });
+
+    it('eri summa: ei rivejä, ei maksuosaa, PDF estetty syyn kera', () => {
+      const m = malli({ viennit: [saatava(30000)] });
+      expect(m.rivit).toEqual([]);
+      expect(m.maksu).toBeNull();
+      expect(m.pdfEste).toBe(ESTE);
+      expect(m.rivitonSyy).toBe('Laskun rivit eivät vastaa kirjattua summaa');
+    });
+
+    it('luonnos (myös tuotu, Kitsaksen vienneillä) näyttää aina rivit: kirjaus generoi viennit', () => {
+      const m = malli({ tila: 50, viennit: [saatava(30000)] });
+      expect(m.rivit).toHaveLength(3);
+      expect(m.rivitonSyy).toBeUndefined();
+    });
+
+    it('vastavienti ilman erää (käteiskuitti) vertautuu samoin', () => {
+      const { era: _e, ...ilmanEraa } = saatava(1000);
+      const m = malli({ maksutapa: Maksutapa.KATEINEN, viennit: [ilmanEraa] });
+      expect(m.rivit).toEqual([]);
+      expect(m.pdfEste).toBe(ESTE);
+    });
+
+    it('tuotu osittainen hyvityslasku ei tulosta koko alkuperäistä negatiivisena', () => {
+      const alkuperainen = lasku({ id: 1, viennit: [saatava(24950)] });
+      const hyvitys = (kredit: number) =>
+        laskuMalli({
+          tosite: lasku({
+            id: 2,
+            tyyppi: TositeTyyppi.HYVITYSLASKU,
+            numero: '6',
+            alkuperainenTosite: 1,
+            rivit: undefined,
+            viennit: [saatava(0, kredit)],
+          }),
+          kumppanit: KUMPPANIT,
+          asetukset: ASETUKSET,
+          alkuperainen,
+        });
+      const osittainen = hyvitys(10000);
+      expect(osittainen.rivit).toEqual([]);
+      expect(osittainen.pdfEste).toBe(ESTE);
+      const taysi = hyvitys(24950);
+      expect(taysi.rivit).toHaveLength(3);
+      expect(taysi.pdfEste).toBeNull();
+    });
+  });
+
   describe('pdfEste', () => {
     const { LaskuIban: _pois, ...ilmanIbania } = ASETUKSET;
 
@@ -550,6 +619,26 @@ describe('laskuMalli', () => {
         ['Laskun avoin saldo', eur(100000)],
         ['Huomautuskulut', eur(500)],
       ]);
+    });
+
+    it('aiempi tuotu lasku, jonka rivit eivät vastaa kirjattua summaa, näkyy ilman rivejä', () => {
+      const eriSumma = {
+        ...alkuperainen,
+        viennit: [
+          {
+            tili: 1701,
+            debet: 123456 as Cents,
+            kredit: 0 as Cents,
+            pvm: '2026-04-01',
+            alvKoodi: 0,
+            alvProsentti: 0,
+            era: 1,
+            tyyppi: 202,
+          },
+        ],
+      };
+      const m = muistutus({}, ASETUKSET, [eriSumma]);
+      expect(m.aiemmat?.[0]?.rivit).toEqual([]);
     });
 
     it('aiemmat puuttuu muilta lajeilta ja kun niitä ei anneta', () => {

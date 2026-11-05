@@ -1,7 +1,7 @@
 import { renderRoute } from '@/test/renderRoute';
 import type { KpClient } from '@penni/asiakas';
 import { ResourceError } from '@penni/engine';
-import { Euro } from '@penni/euro';
+import { type Cents, Euro } from '@penni/euro';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -359,6 +359,56 @@ describe('Laskudokumentti — ei rivejä', () => {
     });
     const doc = await screen.findByLabelText('laskudokumentti');
     odotaPaneeli(doc, 2);
+  });
+
+  /** Tuotu kirjattu lasku riveineen; saatavan debet `debet` senttiä (rivien brutto 125,50 €). */
+  const tuotuRivillinen = (debet: number) => async (c: KpClient) => {
+    await c.luoTosite({
+      pvm: '2026-06-01',
+      erapvm: '2026-06-15',
+      tyyppi: 210,
+      sarja: '',
+      tila: 100,
+      numero: '1',
+      viite: '1000193',
+      rivit: [{ myyntiKpl: 1, aNetto: 100, alvKoodi: 11, alvProsentti: 25.5, selite: 'Työ' }],
+      viennit: [
+        {
+          tili: 1701,
+          debet: debet as Cents,
+          kredit: 0 as Cents,
+          pvm: '2026-06-01',
+          alvKoodi: 0,
+          alvProsentti: 0,
+          tyyppi: 202,
+        },
+        {
+          tili: 3000,
+          debet: 0 as Cents,
+          kredit: debet as Cents,
+          pvm: '2026-06-01',
+          alvKoodi: 0,
+          alvProsentti: 0,
+          tyyppi: 201,
+        },
+      ],
+    });
+  };
+
+  it('tuotu lasku, jonka rivit eivät vastaa kirjattua summaa, näyttää paneelin syyn kera', async () => {
+    await renderRoute('/myyntilaskut/1', { seed: SEED, arrange: tuotuRivillinen(20000) });
+    const doc = await screen.findByLabelText('laskudokumentti');
+    expect(within(doc).getByText(/Laskun rivit eivät vastaa kirjattua summaa/)).toBeInTheDocument();
+    expect(within(doc).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(doc).queryByText('Saaja')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Lataa PDF/ })).toBeDisabled();
+  });
+
+  it('tuotu lasku, jonka rivit vastaavat kirjattua summaa, näyttää rivit', async () => {
+    await renderRoute('/myyntilaskut/1', { seed: SEED, arrange: tuotuRivillinen(12550) });
+    const doc = await screen.findByLabelText('laskudokumentti');
+    expect(within(doc).getByRole('table')).toBeInTheDocument();
+    expect(within(doc).queryByText(/eivät vastaa/)).not.toBeInTheDocument();
   });
 
   it('tavallinen lasku ei näytä paneelia', async () => {

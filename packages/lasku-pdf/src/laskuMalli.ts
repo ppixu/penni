@@ -7,9 +7,12 @@ import {
   type StoredTosite,
   type TositeRivi,
   TositeTyyppi,
+  VientiTyyppi,
   asetusPaalla,
   bruttoYhteensa,
+  eranVienti,
   laskuSummat,
+  onKirjanpidossa,
 } from '@penni/engine';
 import { type Cents, muotoileEuro, muotoilePvm, roundHalfAway } from '@penni/euro';
 import { bic, muotoileIban, muotoileViite, sepaQr, virtuaaliviivakoodi } from '@penni/validator';
@@ -64,6 +67,9 @@ export interface LaskuMalli {
   alatunniste: string[][];
   /** Syy, miksi PDF-nappi on pois käytöstä; muuten null. */
   pdfEste: string | null;
+  /** Rivit jätettiin pois, vaikka laskulla on niitä (tuodun laskun rivit eivät vastaa kirjattua
+   *  summaa); näkymä kertoo tämän syyn "ei rivejä" -tekstin sijaan. Muuten puuttuu. */
+  rivitonSyy?: string;
   tiedostonimi: string;
 }
 
@@ -177,6 +183,30 @@ function malliRivi(r: TositeRivi): MalliRivi {
   };
 }
 
+/**
+ * Kirjattu laskusumma etumerkillisenä (debet − kredit): erävienti, muuten vastavienti (202).
+ * Luonnoksella (myös tuodulla, jonka Kitsaksen viennit kirjaus generoi uudelleen riveistä) tai
+ * vientittömällä tositteella undefined.
+ */
+function kirjattuSumma(t: StoredTosite): number | undefined {
+  if (!onKirjanpidossa(t.tila)) return undefined;
+  const v =
+    eranVienti(t.viennit) ??
+    t.viennit.find((x) => x.tyyppi === VientiTyyppi.MYYNTI + VientiTyyppi.VASTAKIRJAUS);
+  return v === undefined ? undefined : v.debet - v.kredit;
+}
+
+/**
+ * Rivit kelpaavat dokumentiksi, kun niiden brutto on sama kuin kirjattu summa tai kirjausta ei
+ * ole (luonnos). Tuodun Kitsas-laskun rivit ovat vain tiedoksi: Pennin rivilaskenta ei välttämättä
+ * toista Kitsaksen summaa, eikä osittaisen hyvityksen summa ole koko alkuperäinen. Silloin
+ * dokumenttia ja maksuosaa ei rakenneta riveistä, jotta ne eivät ristiriitaisi kirjanpidon kanssa.
+ */
+function rivitVastaavatKirjausta(t: StoredTosite, rivit: readonly TositeRivi[]): boolean {
+  const kirjattu = kirjattuSumma(t);
+  return kirjattu === undefined || laskuSummat(rivit).brutto === kirjattu;
+}
+
 /** Yksi aiemman asiakirjan osio: otsikko + sen oma rivistö. */
 function aiempiOsio(t: StoredTosite): { otsikko: string; rivit: MalliRivi[] } {
   const muistutus = t.tyyppi === TositeTyyppi.MAKSUMUISTUTUS;
@@ -186,8 +216,13 @@ function aiempiOsio(t: StoredTosite): { otsikko: string; rivit: MalliRivi[] } {
     muotoilePvm(t.laskupvm ?? t.pvm),
     ...(t.erapvm ? [muotoilePvm(t.erapvm)] : []),
   ].join(' \u00b7 ');
+  const omat = t.rivit ?? [];
   const rivit =
-    muistutus && t.muistutus ? muistutusRivit(t.muistutus) : (t.rivit ?? []).map(malliRivi);
+    muistutus && t.muistutus
+      ? muistutusRivit(t.muistutus)
+      : rivitVastaavatKirjausta(t, omat)
+        ? omat.map(malliRivi)
+        : [];
   return { otsikko, rivit };
 }
 
@@ -217,12 +252,16 @@ export function laskuMalli(p: {
 
   // Hyvityslaskun rivit ovat alkuperäisen rivit määrä käännettynä → summat tulostuvat negatiivisina.
   // Maksumuistutuksella ei ole tallennettuja rivejä: rivit johdetaan `muistutus`-objektista.
-  const rivit: TositeRivi[] =
+  const kaikkiRivit: TositeRivi[] =
     laji === 'hyvityslasku'
       ? (alkuperainen?.rivit ?? []).map((r) => ({ ...r, myyntiKpl: -r.myyntiKpl }))
       : laji === 'maksumuistutus'
         ? []
         : (tosite.rivit ?? []);
+  // Tuodun laskun (tai osittaisen hyvityksen) rivit, jotka eivät vastaa kirjattua summaa, jätetään
+  // pois: dokumentti käsitellään kuten rivitön, eli alkuperäinen lasku on liitteenä.
+  const eriSumma = kaikkiRivit.length > 0 && !rivitVastaavatKirjausta(tosite, kaikkiRivit);
+  const rivit: TositeRivi[] = eriSumma ? [] : kaikkiRivit;
   const summat = laskuSummat(rivit);
   const maksettava: Cents = muistutus !== undefined ? muistutusSumma(muistutus) : summat.brutto;
 
@@ -343,7 +382,9 @@ export function laskuMalli(p: {
     .filter((sarake) => sarake.length > 0);
 
   let pdfEste: string | null = null;
-  if (laji !== 'maksumuistutus' && rivit.length === 0)
+  if (eriSumma)
+    pdfEste = 'Laskun rivit eivät vastaa kirjattua summaa — alkuperäinen lasku on liitteenä';
+  else if (laji !== 'maksumuistutus' && rivit.length === 0)
     pdfEste = 'Laskulla ei ole rivejä — alkuperäinen lasku on liitteenä';
   else if (numero === null)
     pdfEste =
@@ -381,6 +422,7 @@ export function laskuMalli(p: {
       : {}),
     alatunniste,
     pdfEste,
+    ...(eriSumma ? { rivitonSyy: 'Laskun rivit eivät vastaa kirjattua summaa' } : {}),
     tiedostonimi: numero !== null ? `${otsikko}-${numero}.pdf` : `${otsikko}.pdf`,
   };
 }

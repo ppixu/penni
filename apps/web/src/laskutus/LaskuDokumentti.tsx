@@ -35,7 +35,8 @@ function SepaQrKuva({ data }: { data: string }) {
  */
 export function LaskuDokumentti({ malli, tositeId }: { malli: LaskuMalli; tositeId: number }) {
   const { maksu } = malli;
-  // Rivitön malli (Kitsas-tuotu lasku/hyvityslasku tai puuttuva alkuperäinen) ei kerro laskun
+  // Rivitön malli (Kitsas-tuotu lasku/hyvityslasku, jonka rivejä ei ole tai ne eivät vastaa
+  // kirjattua summaa, tai puuttuva alkuperäinen) ei kerro laskun
   // sisältöä: tyhjä taulukko ja 0,00 € ristiriitaisivat kirjanpidon kanssa → rivit, summat ja
   // maksuosa korvataan viittauksella tositteeseen, jolla alkuperäinen lasku ja viennit ovat.
   const eiRivejä = malli.rivit.length === 0;
@@ -85,7 +86,8 @@ export function LaskuDokumentti({ malli, tositeId }: { malli: LaskuMalli; tosite
 
       {eiRivejä ? (
         <p className="my-6 border-y border-[var(--border)] py-4 text-[var(--text-muted)]">
-          Laskulla ei ole rivejä — alkuperäinen lasku ja viennit ovat tositteella.{' '}
+          {malli.rivitonSyy ?? 'Laskulla ei ole rivejä'} — alkuperäinen lasku ja viennit ovat
+          tositteella.{' '}
           <Link
             to="/tositteet/$id"
             params={{ id: String(tositeId) }}
