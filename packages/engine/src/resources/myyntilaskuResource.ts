@@ -54,12 +54,46 @@ export function validoiJakso(jakso: Tosite['jakso']): void {
     throw new ResourceError('EIJAKSO', 'Laskutusjakson loppu on ennen alkua');
 }
 
-/** Parse a positive account number from a settings key; undefined if missing/blank/invalid. */
-export function tiliAsetuksesta(asetukset: Asetukset, avain: string): number | undefined {
-  const arvo = asetukset[avain];
-  if (arvo === undefined || arvo === '') return undefined;
+/**
+ * Asetusavaimen vaihtoehtoiset kirjoitusasut. Tilikarttapohja ja Kitsas-tuonti tallentavat
+ * avaimet muodossa `LaskuSaatavatili`; moottorin vanha asu `LaskuSaatavaTili` jää varalle.
+ * Ensimmäinen lueteltu asu voittaa.
+ */
+const AVAINALIAKSET: Readonly<Record<string, readonly string[]>> = {
+  LaskuSaatavaTili: ['LaskuSaatavatili', 'LaskuSaatavaTili'],
+  AlvVelkaTili: ['AlvVelkatili', 'AlvVelkaTili'],
+  OstoVelkaTili: ['Ostovelkatili', 'OstoVelkaTili'],
+  LaskuMaksutili: ['LaskuMaksutili'],
+};
+
+function tiliArvosta(arvo: unknown): number | undefined {
+  if (arvo === undefined || arvo === null || arvo === '') return undefined;
   const n = Number(arvo);
   return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/** Ensimmäinen kelvollinen tilinumero Kitsaksen `LaskuTilit`-arvosta ("1910" tai "1910 1920,1930"). */
+function ensimmainenLaskuTili(arvo: unknown): number | undefined {
+  if (typeof arvo !== 'string' && typeof arvo !== 'number') return undefined;
+  for (const osa of String(arvo).split(/[\s,;]+/)) {
+    const n = tiliArvosta(osa);
+    if (n !== undefined) return n;
+  }
+  return undefined;
+}
+
+/**
+ * Parse a positive account number from a settings key; undefined if missing/blank/invalid.
+ * Tuntee tilikarttapohjan/Kitsaksen kirjoitusasut (`LaskuSaatavatili`, `AlvVelkatili`,
+ * `Ostovelkatili`) sekä vanhat asut; `LaskuMaksutili` putoaa `LaskuTilit`-listan ensimmäiseen tiliin.
+ */
+export function tiliAsetuksesta(asetukset: Asetukset, avain: string): number | undefined {
+  for (const a of AVAINALIAKSET[avain] ?? [avain]) {
+    const n = tiliArvosta(asetukset[a]);
+    if (n !== undefined) return n;
+  }
+  if (avain === 'LaskuMaksutili') return ensimmainenLaskuTili(asetukset.LaskuTilit);
+  return undefined;
 }
 
 /**

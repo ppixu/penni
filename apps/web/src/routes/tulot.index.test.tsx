@@ -276,6 +276,31 @@ describe('Tulot', () => {
     expect(screen.queryByLabelText('laskudokumentti')).not.toBeInTheDocument();
   });
 
+  it('Kirjaa maksu esitäyttää rahatilin tilikarttapohjan asetuksilla (LaskuTilit)', async () => {
+    const { Nimi, AlvVelvollinen, OletusMyyntitili } = SEED_MAKSU.asetukset;
+    const { user } = await renderRoute('/tulot', {
+      seed: {
+        ...SEED_MAKSU,
+        asetukset: {
+          Nimi,
+          AlvVelvollinen,
+          OletusMyyntitili,
+          LaskuSaatavatili: '1701',
+          AlvVelkatili: '2939',
+          LaskuTilit: '1900 1910',
+        },
+      },
+      arrange: siemennaMaksu,
+    });
+    const sivu = await screen.findByLabelText('tositteselaus');
+    const rivi = (await within(sivu).findAllByText('25,10 €'))[0]?.closest('tr');
+    await user.click(within(rivi as HTMLElement).getByRole('button', { name: 'Kirjaa maksu' }));
+    const dialogi = await screen.findByRole('dialog', { name: 'Kirjaa maksu' });
+    expect(within(dialogi).getByRole('combobox', { name: 'Rahatili' })).toHaveValue(
+      '1900 Pankkitili',
+    );
+  });
+
   it('kirjaa täyden maksun ja Avoin päivittyy nollaan', async () => {
     const { user, client } = await renderRoute('/tulot', {
       seed: SEED_MAKSU,
