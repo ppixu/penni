@@ -71,6 +71,7 @@ export interface WireMuistutus {
   korkoloppuu: string;
   aiempiSaldo: string;
   aiemmat: number[];
+  korkoKaytossa?: boolean;
   [key: string]: unknown;
 }
 
@@ -83,6 +84,7 @@ function encodeMuistutus(m: Muistutus): WireMuistutus {
     korkoloppuu: m.korkoloppuu,
     aiempiSaldo: centsToWire(m.aiempiSaldo),
     aiemmat: m.aiemmat,
+    ...(m.korkoKaytossa !== undefined ? { korkoKaytossa: m.korkoKaytossa } : {}),
   };
 }
 
@@ -98,6 +100,7 @@ function decodeMuistutus(w: unknown): Muistutus | undefined {
     korkoloppuu: r.korkoloppuu,
     aiempiSaldo: wireToCents(r.aiempiSaldo as string | number | null | undefined),
     aiemmat: Array.isArray(r.aiemmat) ? r.aiemmat.map(Number) : [],
+    ...(typeof r.korkoKaytossa === 'boolean' ? { korkoKaytossa: r.korkoKaytossa } : {}),
   };
 }
 

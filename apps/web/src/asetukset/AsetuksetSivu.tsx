@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button';
 import { DEMO } from '@/demo/tila';
 import { VieKirjanpito } from '@/vienti/VieKirjanpito';
 import type { AsetuksetPatch } from '@penni/asiakas';
-import { type Asetukset, type Tilikausi, asetusPaalla } from '@penni/engine';
+import {
+  type Asetukset,
+  PERUSKORKO_RAJAT,
+  type Tilikausi,
+  asetusPaalla,
+  jasennaAsetusluku,
+} from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
 import { tarkistaIban } from '@penni/validator';
 import { Link } from '@tanstack/react-router';
@@ -115,12 +121,14 @@ function OrganisaatioLomake({ asetukset }: { asetukset: Asetukset }) {
     setTallennettu(false);
     setIbanVirhe(null);
     setPeruskorkoVirhe(null);
-    // Peruskorko: pilkku → piste, vähintään 0; tyhjä on sallittu.
-    const peruskorkoSiisti = peruskorko.trim().replace(',', '.');
-    if (peruskorkoSiisti !== '' && !(Number(peruskorkoSiisti) >= 0)) {
+    // Peruskorko: vain tavallinen desimaaliluku 0–100 (pilkku tai piste; ei eksponenttia, heksaa
+    // eikä Infinityä), tallennetaan pisteellä; tyhjä on sallittu. Sama jäsennin kuin moottorissa.
+    const peruskorkoTeksti = peruskorko.trim();
+    if (peruskorkoTeksti !== '' && jasennaAsetusluku(peruskorkoTeksti, PERUSKORKO_RAJAT) === null) {
       setPeruskorkoVirhe('Tarkista peruskorko');
       return;
     }
+    const peruskorkoSiisti = peruskorkoTeksti.replace(/,/g, '.');
     // IBAN normalisoidaan (välit pois, isot kirjaimet) ja validoidaan; tyhjä on sallittu.
     const ibanSiisti = iban.replace(/\s/g, '').toUpperCase();
     if (ibanSiisti !== '' && !tarkistaIban(ibanSiisti)) {

@@ -17,7 +17,7 @@ export interface MuistutusLaskentaSyote {
   korko: boolean;
   /** Dialogissa annettu korkoprosentti; voittaa muut. */
   viivkorko?: number;
-  /** `Number(asetukset.LaskuPeruskorko ?? '0')`. */
+  /** `luePeruskorko(asetukset)` (kelvoton tai puuttuva → 0). */
   peruskorko: number;
   /** Kumppanilla on alv-tunnus. */
   yritysasiakas: boolean;

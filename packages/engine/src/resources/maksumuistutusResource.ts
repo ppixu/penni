@@ -1,5 +1,6 @@
 import type { Cents } from '@penni/euro';
 import { ViiteTyyppi, viiteEralle } from '@penni/validator';
+import { lueMaksuaika, luePeruskorko } from '../laskutus/laskuasetukset.js';
 import { type MuistutusLaskentaSyote, laskeMaksumuistutus } from '../laskutus/maksumuistutus.js';
 import { lisaaPaivia, oikaiseErapaiva } from '../laskutus/paivat.js';
 import { kasvataLaskunumeroa, lueSeuraavaLaskunumero } from '../laskutus/seuraavaLaskunumero.js';
@@ -124,9 +125,10 @@ function tarkistaErapaiva(erapvm: IsoDate | undefined, pvm: IsoDate): void {
     throw new ResourceError('EIERAPVM', `Eräpäivä ${erapvm} on ennen muistutuksen päivää ${pvm}`);
 }
 
-/** Oletuseräpäivä: `pvm` + `LaskuMaksuaika` päivää (oletus 14), oikaistuna pankkipäivään. */
+/** Oletuseräpäivä: `pvm` + `LaskuMaksuaika` päivää (kelvoton tai puuttuva → 14), oikaistuna
+ *  pankkipäivään. */
 function oletusErapaiva(asetukset: Asetukset, pvm: IsoDate): IsoDate {
-  return oikaiseErapaiva(lisaaPaivia(pvm, Number(asetukset.LaskuMaksuaika ?? '14')));
+  return oikaiseErapaiva(lisaaPaivia(pvm, lueMaksuaika(asetukset)));
 }
 
 /** Laskee muistutuksen ketjun tiedoista; `aiemmat` = laskun id + aiemmat muistutukset, vanhin ensin. */
@@ -172,7 +174,7 @@ export async function luoMaksumuistutukset(
   tarkistaEiMaksuperusteinen(asetukset, syote.pvm);
 
   const erapvm = syote.erapvm ?? oletusErapaiva(asetukset, syote.pvm);
-  const peruskorko = Number(asetukset.LaskuPeruskorko ?? '0');
+  const peruskorko = luePeruskorko(asetukset);
   const kumppanit = await storage.getKumppanit();
 
   const luonnokset = [];
@@ -199,7 +201,8 @@ export async function luoMaksumuistutukset(
       erapvm,
       otsikko: `Maksumuistutus laskusta ${lasku.numero ?? lasku.id}`,
       alkuperainenTosite: lasku.id,
-      muistutus,
+      // Valinta talteen: luonnoksella nollaan pyöristynyt korko lasketaan kirjattaessa uudelleen.
+      muistutus: { ...muistutus, korkoKaytossa: syote.korko },
       viennit: [],
       ...(lasku.kumppani !== undefined ? { kumppani: lasku.kumppani } : {}),
     });
@@ -227,7 +230,8 @@ function suomeksi(pvm: IsoDate): string {
 /**
  * Kirjaa maksumuistutusluonnoksen (spec §4.4; maksumuistutusmuodostaja.cpp:79-165). Muistutus
  * lasketaan uudelleen ketjusta luonnoksen (tai muutosten) päivän erän saldolla: maksu ja
- * korkoprosentti luonnokselta, korko mukana vain jos luonnoksella on korkoa. Saa numeron
+ * korkoprosentti luonnokselta, korko mukana jos se valittiin (`muistutus.korkoKaytossa`; vanhalla
+ * luonnoksella ilman valintaa: jos luonnoksella on korkoa). Saa numeron
  * `LaskuSeuraavaId`:stä ja viitteen kuten lasku. Viennit (kaikki alv-koodilla 0): debet
  * alkuperäisen erävientin tilille `maksu + korko` samalle erälle (202), kredit
  * `LaskuMaksumuistutustili` (201, "Huomautuskulut") ja `LaskuViivastyskorkotili` (201,
@@ -263,14 +267,18 @@ export async function kirjaaMaksumuistutus(
   const tiedot = await muistutettavanTiedot(storage, alkuperainenId, pvm);
   tarkistaMuistutettavuus(tiedot, pvm, alkuperainenId);
 
-  const muistutus = laskeKetjulle(tiedot, pvm, {
+  // Korkovalinta luonnokselta; vanhalta luonnokselta (ei valintaa) se päätellään korosta (ruling 6).
+  const korkoKaytossa = luonnos.muistutus.korkoKaytossa;
+  const laskettu = laskeKetjulle(tiedot, pvm, {
     maksu: muutokset.muistutus?.maksu ?? luonnos.muistutus.maksu,
-    korko: luonnos.muistutus.korko > 0,
+    korko: korkoKaytossa ?? luonnos.muistutus.korko > 0,
     viivkorko: muutokset.muistutus?.viivkorko ?? luonnos.muistutus.viivkorko,
     // Korkoprosentti annetaan aina, joten oletuskorkoa (peruskorko + 7/8) ei käytetä.
     peruskorko: 0,
     yritysasiakas: false,
   });
+  const muistutus: Muistutus =
+    korkoKaytossa !== undefined ? { ...laskettu, korkoKaytossa } : laskettu;
 
   const maksutili = tiliAsetuksesta(asetukset, 'LaskuMaksumuistutustili');
   const korkotili = tiliAsetuksesta(asetukset, 'LaskuViivastyskorkotili');

@@ -412,6 +412,24 @@ describe('Asetukset-näkymä — peruskorko', () => {
     expect((await client.haeInit()).asetukset.LaskuPeruskorko).toBeUndefined();
   });
 
+  it('hyväksyy vain tavallisen desimaaliluvun välillä 0–100', async () => {
+    const { user, client } = await renderRoute('/asetukset', { seed: SEED });
+    const sivu = await screen.findByLabelText('asetukset');
+    const kentta = within(sivu).getByLabelText('Peruskorko');
+    for (const roska of ['Infinity', '1e3', '0x10', '100,5', '2,5,1', 'abc']) {
+      await user.clear(kentta);
+      await user.type(kentta, roska);
+      await user.click(within(sivu).getByRole('button', { name: 'Tallenna' }));
+      expect(await screen.findByText('Tarkista peruskorko')).toBeInTheDocument();
+      expect((await client.haeInit()).asetukset.LaskuPeruskorko).toBeUndefined();
+    }
+    await user.clear(kentta);
+    await user.type(kentta, '100');
+    await user.click(within(sivu).getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByText('Tallennettu')).toBeInTheDocument();
+    expect((await client.haeInit()).asetukset.LaskuPeruskorko).toBe('100');
+  });
+
   it('tyhjennetty peruskorko poistaa avaimen null-patchilla', async () => {
     const { user, client } = await renderRoute('/asetukset', {
       seed: { ...SEED, asetukset: { ...SEED.asetukset, LaskuPeruskorko: '2.5' } },

@@ -309,6 +309,19 @@ describe('laskutuksen lisäkentät', () => {
     expect([m?.maksu, m?.korko, m?.aiempiSaldo]).toEqual([500, 945, 100000]);
   });
 
+  it('muistutuksen korkovalinta pyörii ympäri; puuttuva valinta ei tule langalle', () => {
+    const muistutus = laskutus.muistutus as NonNullable<typeof laskutus.muistutus>;
+    for (const korkoKaytossa of [true, false]) {
+      const t = { ...laskutus, muistutus: { ...muistutus, korkoKaytossa } };
+      const w = encodeTosite(t);
+      expect((w.muistutus as Record<string, unknown>).korkoKaytossa).toBe(korkoKaytossa);
+      expect(decodeTosite(w).muistutus?.korkoKaytossa).toBe(korkoKaytossa);
+    }
+    const w = encodeTosite(laskutus);
+    expect('korkoKaytossa' in (w.muistutus as Record<string, unknown>)).toBe(false);
+    expect(decodeTosite(w).muistutus).not.toHaveProperty('korkoKaytossa');
+  });
+
   it('puuttuvat lisäkentät eivät tule langalle', () => {
     const w = encodeTosite(voucher);
     for (const k of ['jakso', 'muistutus', 'viivkorko', 'toisto', 'toistoPvm', 'ryhma'])

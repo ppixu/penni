@@ -1,4 +1,5 @@
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import { type RahavirtaRivi, ResourceError, lisaaPaivia, oikaiseErapaiva } from '@penni/engine';
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -22,7 +23,7 @@ const rivi = (tosite: number, kumppani?: number): RahavirtaRivi =>
     ...(kumppani !== undefined ? { kumppani } : {}),
   }) as RahavirtaRivi;
 
-const tanaan = () => new Date().toISOString().slice(0, 10);
+const tanaan = () => paikallinenTanaan();
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -113,6 +114,65 @@ describe('MuistutusDialog', () => {
     await waitFor(() => expect(luo).toHaveBeenCalledTimes(1));
     expect(luo.mock.calls[0]?.[0]).toMatchObject({ korko: false });
     expect(luo.mock.calls[0]?.[0]).not.toHaveProperty('viivkorko');
+  });
+
+  it('"tänään" on paikallinen päivä, ei UTC-päivä (00:30 uudenvuodenpäivänä)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2027, 0, 1, 0, 30));
+    try {
+      const { user, client } = await renderWithProviders(
+        <MuistutusDialog laskut={[rivi(1)]} onPeruuta={() => {}} onValmis={() => {}} />,
+      );
+      const luo = vi.spyOn(client, 'luoMaksumuistutukset').mockResolvedValue([]);
+      await user.click(screen.getByRole('button', { name: 'Luo muistutukset' }));
+      await waitFor(() => expect(luo).toHaveBeenCalledTimes(1));
+      expect(luo.mock.calls[0]?.[0]).toMatchObject({ pvm: '2027-01-01' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('negatiivinen muistutusmaksu hylätään eikä sitä käännetä positiiviseksi', async () => {
+    const { user, client } = await renderWithProviders(
+      <MuistutusDialog laskut={[rivi(1)]} onPeruuta={() => {}} onValmis={() => {}} />,
+    );
+    const luo = vi.spyOn(client, 'luoMaksumuistutukset').mockResolvedValue([]);
+    const maksu = screen.getByLabelText('Muistutusmaksun summa');
+    await user.clear(maksu);
+    await user.type(maksu, '-5,00');
+    await user.click(screen.getByRole('button', { name: 'Luo muistutukset' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tarkista muistutusmaksun summa');
+    expect(luo).not.toHaveBeenCalled();
+  });
+
+  it('tyhjennetty eräpäivä näyttää selkeän viestin eikä lähetä', async () => {
+    const { user, client } = await renderWithProviders(
+      <MuistutusDialog laskut={[rivi(1)]} onPeruuta={() => {}} onValmis={() => {}} />,
+    );
+    const luo = vi.spyOn(client, 'luoMaksumuistutukset').mockResolvedValue([]);
+    await user.clear(screen.getByLabelText('Eräpäivä'));
+    await user.click(screen.getByRole('button', { name: 'Luo muistutukset' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Valitse muistutuksen eräpäivä');
+    expect(luo).not.toHaveBeenCalled();
+  });
+
+  it('kelvottomat asetukset: oletuskorko 0 + 7 ja maksuaika 14 pv', async () => {
+    await renderWithProviders(
+      <MuistutusDialog laskut={[rivi(1)]} onPeruuta={() => {}} onValmis={() => {}} />,
+      {
+        seed: async (c) => {
+          await c.paivitaAsetukset({ LaskuPeruskorko: 'Infinity', LaskuMaksuaika: '1e9' });
+        },
+      },
+    );
+    // Asetukset ladattu (nappi aktivoituu vasta init-datalla), sitten oletukset.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Luo muistutukset' })).toBeEnabled(),
+    );
+    expect(screen.getByLabelText('Korkoprosentti')).toHaveAttribute('placeholder', '7,00');
+    expect(screen.getByLabelText('Eräpäivä')).toHaveValue(
+      oikaiseErapaiva(lisaaPaivia(tanaan(), 14)),
+    );
   });
 
   it('virheellinen korkoprosentti estää lähetyksen', async () => {

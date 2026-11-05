@@ -61,6 +61,9 @@ export interface Muistutus {
   korkoloppuu: IsoDate;
   aiempiSaldo: Cents; // aiemman laskun/laskujen avoin saldo muistutushetkellä
   aiemmat: number[]; // muistutettujen aiempien tositteiden id:t
+  // Käyttäjä valitsi viivästyskoron (dialogin ruutu). Puuttuu vanhoilta luonnoksilta ja tuoduilta
+  // muistutuksilta: silloin valinta päätellään kirjattaessa ehdosta korko > 0.
+  korkoKaytossa?: boolean;
 }
 
 /**

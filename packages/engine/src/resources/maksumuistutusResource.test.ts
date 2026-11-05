@@ -5,6 +5,7 @@ import { createMemoryStorage } from '../../../storage-memory/src/memory.js';
 import { AlvKoodi } from '../alv/koodit.js';
 import { oikaiseErapaiva } from '../laskutus/paivat.js';
 import { Maksutapa, TositeTila, TositeTyyppi, VientiTyyppi } from '../vouchers/enums.js';
+import type { Muistutus } from '../vouchers/types.js';
 import { tallennaHyvityslasku } from './hyvityslaskuResource.js';
 import { kirjaaLaskuluonnos } from './laskuluonnosResource.js';
 import {
@@ -14,7 +15,7 @@ import {
   onMuistutettava,
 } from './maksumuistutusResource.js';
 import { muistutusKulut, tallennaMyyntilasku, tallennaSuoritus } from './myyntilaskuResource.js';
-import type { Storage } from './storage.js';
+import type { Storage, StoredTosite } from './storage.js';
 
 const c = (n: number) => Euro.fromCents(n);
 
@@ -401,6 +402,25 @@ describe('luoMaksumuistutukset', () => {
     expect(ma?.muistutus?.viivkorko).toBe(10.5);
     expect(mb?.muistutus?.viivkorko).toBe(9.5);
   });
+
+  it('roska-asetukset (peruskorko, maksuaika) eivät kaada eivätkä vääristä: oletukset 0 ja 14', async () => {
+    for (const [peruskorko, maksuaika] of [
+      ['Infinity', 'NaN'],
+      ['1e3', '1e9'],
+      ['abc', ''],
+    ] as const) {
+      const s = seed();
+      await s.patchAsetukset({ LaskuPeruskorko: peruskorko, LaskuMaksuaika: maksuaika });
+      const l = await lasku(s);
+      const [m] = await luoMaksumuistutukset(
+        s,
+        { tositteet: [l.id], pvm: '2026-05-30', korko: true },
+        env,
+      );
+      expect(m?.muistutus?.viivkorko).toBe(7);
+      expect(m?.erapvm).toBe(oikaiseErapaiva('2026-06-13'));
+    }
+  });
 });
 
 describe('luoMaksumuistutukset: syötteen arvot', () => {
@@ -599,6 +619,71 @@ describe('kirjaaMaksumuistutus', () => {
     await expect(kirjaaLaskuluonnos(s, m.id, env)).rejects.toMatchObject({
       code: 'EIMUISTUTETTAVA',
     });
+  });
+});
+
+describe('korkovalinta tallentuu muistutukselle (ruling 6)', () => {
+  /** 10,00 € lasku: yhden päivän korko pyöristyy nollaan, kahden kuukauden ei. */
+  const pieniLasku = (s: Storage) =>
+    tallennaMyyntilasku(
+      s,
+      {
+        pvm: '2026-04-01',
+        erapvm: '2026-04-30',
+        rivit: [{ ...tonni, aNetto: 10 }],
+      },
+      env,
+    );
+
+  it('luonnos tallentaa valinnan: korko päällä → true, pois → false', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    expect((await muistutusluonnos(s, l.id)).muistutus?.korkoKaytossa).toBe(true);
+    const s2 = seed();
+    const l2 = await lasku(s2);
+    expect((await muistutusluonnos(s2, l2.id, { korko: false })).muistutus?.korkoKaytossa).toBe(
+      false,
+    );
+  });
+
+  it('valittu korko, joka luonnoksella pyöristyi nollaan, lasketaan kirjattaessa myöhemmältä päivältä', async () => {
+    const s = seed();
+    const l = await pieniLasku(s);
+    const [m] = await luoMaksumuistutukset(
+      s,
+      { tositteet: [l.id], pvm: '2026-05-01', korko: true, viivkorko: 7 },
+      env,
+    );
+    expect(m?.muistutus).toMatchObject({ korko: 0, korkoKaytossa: true });
+    const kirjattu = await kirjaaMaksumuistutus(s, m as StoredTosite, env, {
+      pvm: '2026-06-30',
+    });
+    expect(kirjattu.muistutus?.korko).toBeGreaterThan(0);
+    expect(kirjattu.muistutus?.korkoKaytossa).toBe(true);
+  });
+
+  it('valitsematon korko pysyy pois myöhemmälläkin päivällä', async () => {
+    const s = seed();
+    const l = await lasku(s);
+    const m = await muistutusluonnos(s, l.id, { korko: false });
+    const kirjattu = await kirjaaMaksumuistutus(s, m, env, { pvm: '2026-06-30' });
+    expect(kirjattu.muistutus).toMatchObject({ korko: 0, korkoKaytossa: false });
+  });
+
+  it('vanha luonnos ilman valintaa: korko päätellään kuten ennen (korko > 0)', async () => {
+    const s = seed();
+    const l = await pieniLasku(s);
+    const [m] = await luoMaksumuistutukset(
+      s,
+      { tositteet: [l.id], pvm: '2026-05-01', korko: true, viivkorko: 7 },
+      env,
+    );
+    const { korkoKaytossa: _pois, ...vanha } = (m as StoredTosite).muistutus as Muistutus;
+    const vanhaLuonnos = await s.saveTosite({ ...(m as StoredTosite), muistutus: vanha }, env);
+    const kirjattu = await kirjaaMaksumuistutus(s, vanhaLuonnos, env, { pvm: '2026-06-30' });
+    expect(kirjattu.muistutus?.korko).toBe(0);
+    // Ilman lähdettä valinta jää kirjatultakin pois (päätelty arvo ei ole käyttäjän valinta).
+    expect(kirjattu.muistutus?.korkoKaytossa).toBeUndefined();
   });
 });
 

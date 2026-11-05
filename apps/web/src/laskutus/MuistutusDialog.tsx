@@ -1,11 +1,14 @@
 import { useInit, useKumppanit, useLuoMaksumuistutukset } from '@/app/kysely';
 import { Button } from '@/components/ui/button';
+import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import {
   type IsoDate,
   OLETUS_MUISTUTUSMAKSU,
   type RahavirtaRivi,
   type StoredTosite,
   lisaaPaivia,
+  lueMaksuaika,
+  luePeruskorko,
   oikaiseErapaiva,
 } from '@penni/engine';
 import { type Cents, Euro, muotoileEuro } from '@penni/euro';
@@ -28,12 +31,11 @@ function lueKorko(teksti: string): number | undefined | null {
 
 /**
  * Oletuskorko ensimmäiselle valitulle laskulle (spec §4.3): peruskorko + 7 kuluttajalle,
- * + 8 yritykselle (kumppanilla alv-tunnus), suomalaisella desimaalipilkulla.
+ * + 8 yritykselle (kumppanilla alv-tunnus), suomalaisella desimaalipilkulla. Peruskorko luetaan
+ * samalla vartioidulla jäsentimellä kuin moottorissa (kelvoton → 0).
  */
-function oletuskorkoTeksti(peruskorko: string | undefined, yritysasiakas: boolean): string {
-  const perus = Number((peruskorko ?? '0').replace(',', '.'));
-  const korko = (Number.isFinite(perus) ? perus : 0) + (yritysasiakas ? 8 : 7);
-  return korko.toFixed(2).replace('.', ',');
+function oletuskorkoTeksti(peruskorko: number, yritysasiakas: boolean): string {
+  return (peruskorko + (yritysasiakas ? 8 : 7)).toFixed(2).replace('.', ',');
 }
 
 /**
@@ -54,9 +56,9 @@ export function MuistutusDialog({
   const { data: kumppanit } = useKumppanit();
   const { luo, virheviesti, luomassa } = useLuoMaksumuistutukset();
 
-  // "Tänään" luetaan avattaessa (UI-oletus, ei rahaa).
-  const [pvm] = useState<IsoDate>(() => new Date().toISOString().slice(0, 10));
-  const maksuaika = Number(init?.asetukset.LaskuMaksuaika || '14');
+  // "Tänään" luetaan avattaessa paikallisena kalenteripäivänä (UTC-päivä olisi klo 0–3 eilinen).
+  const [pvm] = useState<IsoDate>(() => paikallinenTanaan());
+  const maksuaika = lueMaksuaika(init?.asetukset ?? {});
   const [erapvm, setErapvm] = useState<IsoDate | null>(null);
   const oletusErapvm = oikaiseErapaiva(lisaaPaivia(pvm, maksuaika));
   const [maksuPaalla, setMaksuPaalla] = useState(true);
@@ -71,18 +73,26 @@ export function MuistutusDialog({
   const yritysasiakas =
     ensimmainen?.kumppani !== undefined &&
     !!kumppanit?.find((k) => k.id === ensimmainen.kumppani)?.alvtunnus;
-  const korkoOletus = oletuskorkoTeksti(init?.asetukset.LaskuPeruskorko, yritysasiakas);
+  const korkoOletus = oletuskorkoTeksti(luePeruskorko(init?.asetukset ?? {}), yritysasiakas);
 
   async function laheta() {
     setLomakevirhe(null);
     let maksu: Cents = 0 as Cents;
     if (maksuPaalla) {
       try {
-        maksu = Euro.abs(Euro.fromString(maksuTeksti));
+        maksu = Euro.fromString(maksuTeksti);
       } catch {
+        maksu = -1 as Cents;
+      }
+      // Negatiivista maksua ei käännetä hiljaa positiiviseksi: se on kirjoitusvirhe.
+      if (maksu < 0) {
         setLomakevirhe('Tarkista muistutusmaksun summa');
         return;
       }
+    }
+    if (erapvm === '') {
+      setLomakevirhe('Valitse muistutuksen eräpäivä');
+      return;
     }
     const viivkorko = korkoPaalla ? lueKorko(korkoTeksti) : undefined;
     if (viivkorko === null) {
