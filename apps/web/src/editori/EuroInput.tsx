@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { type Cents, Euro, EuroParseError } from '@penni/euro';
-import { type Ref, useEffect, useState } from 'react';
+import { type Ref, useEffect, useRef, useState } from 'react';
 
 /** Committed Cents -> the editable string ('' for 0, else bare comma figure, no €). */
 function naytaArvo(c: Cents): string {
@@ -20,20 +20,33 @@ export function EuroInput({
   onCommit,
   inputRef,
   etumerkillinen = false,
+  onVirheMuuttui,
   ...rest
 }: {
   arvo: Cents;
   onCommit: (snt: Cents) => void;
+  /** Ilmoittaa, kun kentän teksti muuttuu virheelliseksi tai kelvolliseksi (lomake voi estää tallennuksen). */
+  onVirheMuuttui?: (virhe: boolean) => void;
   inputRef?: Ref<HTMLInputElement>;
   etumerkillinen?: boolean;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
   const [teksti, setTeksti] = useState(() => naytaArvo(arvo));
-  const [virhe, setVirhe] = useState(false);
+  const [virhe, setVirheTila] = useState(false);
+  function setVirhe(v: boolean) {
+    setVirheTila(v);
+    onVirheMuuttui?.(v);
+  }
+
+  // Kentän poistuessa näkyvistä virhetila poistuu lomakkeelta (viimeisin callback refistä).
+  const virheRef = useRef(onVirheMuuttui);
+  virheRef.current = onVirheMuuttui;
+  useEffect(() => () => virheRef.current?.(false), []);
 
   // Reflect external value changes (e.g. addBalancingRow pre-fill) while not editing.
   useEffect(() => {
     setTeksti(naytaArvo(arvo));
-    setVirhe(false);
+    setVirheTila(false);
+    virheRef.current?.(false);
   }, [arvo]);
 
   function commit() {

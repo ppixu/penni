@@ -1,4 +1,5 @@
 import type { Cents } from '@penni/euro';
+import type { PalkkaAjo } from './palkka.js';
 
 /** ISO calendar date 'YYYY-MM-DD'. Lexicographic order == chronological order. */
 export type IsoDate = string;
@@ -93,6 +94,7 @@ export interface Tosite {
   alkuperainenTosite?: number; // hyvityslasku: the credited original voucher's id
   marginaalialijaama?: Record<string, number>; // MARGINAALILASKELMA: rate-key -> carried deficit cents
   tiliote?: TilioteTiedot; // TILIOTE: kausi, pankkitili ja pankin saldot
+  palkka?: PalkkaAjo; // PALKKA: palkka-ajon tilannekuva (rivit, prosentit, tulokset, ilmoitus)
   info?: string; // vapaamuotoiset lisätiedot (Kitsaksen tositteen json `info`, model/tosite.cpp:668)
   jakso?: { alkaa: IsoDate; loppuu: IsoDate }; // laskutettava ajanjakso
   muistutus?: Muistutus; // maksumuistutuksen tiedot

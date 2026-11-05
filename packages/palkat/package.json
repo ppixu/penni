@@ -1,0 +1,22 @@
+{
+  "name": "@penni/palkat",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": { "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } },
+  "files": ["dist", "taulukot"],
+  "scripts": { "build": "tsc -p tsconfig.json", "test": "vitest run", "test:watch": "vitest" },
+  "dependencies": {
+    "@penni/engine": "workspace:*",
+    "@penni/euro": "workspace:*",
+    "@penni/validator": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "xmllint-wasm": "^5.3.0"
+  }
+}

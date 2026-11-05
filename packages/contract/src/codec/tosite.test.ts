@@ -1,4 +1,4 @@
-import type { StoredTosite, Tosite } from '@penni/engine';
+import { type PalkkaAjo, type StoredTosite, type Tosite, TositeTyyppi } from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import { Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
@@ -143,6 +143,82 @@ describe('round-trip', () => {
       tiliote: { tili: '1910', alkupvm: '2026-09-01', loppupvm: '2026-09-30' },
     });
     expect(t.tiliote).toEqual({ tili: 1910, alkupvm: '2026-09-01', loppupvm: '2026-09-30' });
+  });
+
+  it('palkka-snapshot säilyy koodekin läpi', () => {
+    const palkka: PalkkaAjo = {
+      versio: 1,
+      kausiAlkaa: '2026-10-01',
+      kausiLoppuu: '2026-10-31',
+      laskettu: '2026-10-31T12:00:00.000Z',
+      henkilot: [
+        {
+          tyontekijaId: 'tyontekija-1',
+          nimi: 'Testi Työntekijä',
+          vakuutusperuste: 'tyontekija',
+          verokortti: {
+            alkaa: '2026-01-01',
+            paattyy: '2026-12-31',
+            perusBp: 1500,
+            lisaBp: 3500,
+            tuloraja: 1_500_000 as Cents,
+            tammikuuSaanto: false,
+          },
+          prosentit: {
+            tyelTyontekijaBp: 715,
+            tyelKokonaisBp: 2490,
+            tvrTyontekijaBp: 31,
+            tvrTyonantajaBp: 52,
+            savaBp: 0,
+          },
+          rivit: [
+            { laji: 'kuukausipalkka', selite: 'Lokakuun palkka', summa: 300_000 as Cents },
+            {
+              laji: 'km',
+              selite: 'Helsinki–Tampere asiakaskäynti',
+              maara: 17_000,
+              ahinta: 57 as Cents,
+              summa: 9_690 as Cents,
+              pvm: '2026-10-12',
+            },
+            { laji: 'kulukorvaus', selite: 'Parkkimaksu', summa: 800 as Cents, tili: 7690 },
+          ],
+          tulos: {
+            rahapalkka: 300_000 as Cents,
+            luontoisedut: 0 as Cents,
+            verovapaat: 10_490 as Cents,
+            pidatysperuste: 300_000 as Cents,
+            pidatysOsat: [{ bp: 1500, peruste: 300_000 as Cents }],
+            ennakonpidatys: 45_000 as Cents,
+            tyelTyontekija: 21_450 as Cents,
+            tyelTyonantaja: 53_250 as Cents,
+            tvrTyontekija: 930 as Cents,
+            tvrTyonantaja: 1_560 as Cents,
+            sava: 0 as Cents,
+            nettopalkka: 243_110 as Cents,
+            kertymaJalkeen: 3_000_000 as Cents,
+            varoitukset: ['Tuloraja lähestyy'],
+          },
+        },
+      ],
+      ilmoitus: { lahetetty: '2026-11-03', deliveryId: 'abc-123', sha256: 'f'.repeat(64) },
+    };
+    const t: Tosite = {
+      pvm: '2026-10-31',
+      tyyppi: TositeTyyppi.PALKKA,
+      tila: 100,
+      tunniste: 0,
+      sarja: '',
+      viennit: [],
+      palkka,
+    };
+    const w = encodeTosite(t);
+    // Senttimäärät pysyvät kokonaislukusentteinä langalla (Penni-laajennus).
+    expect(w.palkka?.henkilot[0]?.tulos.nettopalkka).toBe(243_110);
+    expect(decodeTosite(w)).toEqual(t);
+    // Tuntematon versio pudotetaan.
+    expect(decodeTosite({ ...w, palkka: { versio: 2 } }).palkka).toBeUndefined();
+    expect('palkka' in decodeTosite({ ...w, palkka: { versio: 2 } })).toBe(false);
   });
 
   it('round-trips marginaalialijaama', () => {

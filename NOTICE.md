@@ -59,5 +59,11 @@ with these terms:
 
 - **Inter** typeface, copyright (c) The Inter Project Authors, licensed under the SIL Open Font
   License 1.1. Licence text: [`packages/lasku-pdf/fonts/OFL.txt`](packages/lasku-pdf/fonts/OFL.txt).
+- **Tulorekisteri XML schemas** in [`packages/palkat/xsd/`](packages/palkat/xsd/README.md) are published by
+  the Finnish Tax Administration (Verohallinto, Tulorekisteriyksikkö) and are included unmodified, for
+  tests only; see that README for their source and checksums. They are not part of a published package.
+- **XML Signature schema** (`packages/palkat/xsd/*/xmldsig-core-schema.xsd`), copyright 2001 The
+  Internet Society and W3C, governed by the W3C Software License. Included unmodified with the
+  Tulorekisteri schemas, for tests only.
 - **npm dependencies** are installed from the npm registry and remain under their own licences.
   See each package's `package.json` and the `node_modules` tree after `pnpm install`.

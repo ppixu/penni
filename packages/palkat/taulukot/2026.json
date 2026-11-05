@@ -1,0 +1,73 @@
+{
+  "vuosi": 2026,
+  "kentat": {
+    "tyelTyontekijaBp": {
+      "arvo": 730,
+      "lahde": "https://www.etk.fi/wp-content/uploads/2026/01/lakisaateiset-sosiaalivakuutusmaksut-suomessa-2026-suomi-1.pdf"
+    },
+    "tyelOletusKokonaisBp": {
+      "arvo": 2485,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelTilapainenKokonaisBp": {
+      "arvo": 2585,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tyelAlarajaKk": {
+      "arvo": 7172,
+      "lahde": "https://www.elo.fi/-/media/files/vakuuttaminen-esitteet/sosiaalivakuutusmaksut_2026.pdf"
+    },
+    "tvrTyontekijaBp": {
+      "arvo": 89,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrTyonantajaBp": {
+      "arvo": 31,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrOsaomistajaTyontekijaBp": {
+      "arvo": 39,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "tvrOsaomistajaTyonantajaBp": {
+      "arvo": 31,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "savaBp": {
+      "arvo": 191,
+      "lahde": "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/being-an-employer/social-insurance-contributions/"
+    },
+    "kmKorvaus": {
+      "arvo": 55,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47405/tax-exempt-allowances-in-2026-for-business-travel/"
+    },
+    "kokopaivaraha": {
+      "arvo": 5400,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47405/tax-exempt-allowances-in-2026-for-business-travel/"
+    },
+    "osapaivaraha": {
+      "arvo": 2500,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47405/tax-exempt-allowances-in-2026-for-business-travel/"
+    },
+    "ateriakorvaus": {
+      "arvo": 1350,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47405/tax-exempt-allowances-in-2026-for-business-travel/"
+    },
+    "puhelinetuKk": {
+      "arvo": 2000,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2026/"
+    },
+    "ravintoetu": {
+      "arvo": 880,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2026/"
+    },
+    "ravintoetuYlaraja": {
+      "arvo": 1400,
+      "lahde": "https://www.vero.fi/en/detailed-guidance/decisions/47380/in-kind-benefits-fringe-benefits-2026/"
+    },
+    "eiVerokorttiaBp": {
+      "arvo": 6000,
+      "lahde": "https://www.vero.fi/syventavat-vero-ohjeet/ohje-hakusivu/48735/ennakonpidatyksen-toimittaminen11/"
+    }
+  }
+}
