@@ -28,8 +28,8 @@ function luotujenTeksti(maara: number): string | null {
  * Kirjan avauksen toistoajo (spec §5.3, Trigger): kun kirja on avattu, luodaan erääntyneet
  * toistuvat laskut luonnoksiksi kerran, ja jos luonnoksia syntyi, ilmoitetaan siitä. Ajo on
  * kertaluonteinen kirjaa kohden, ei sivunavigointia kohden. Virhe (esim. laskutilit puuttuvat) ja
- * yksittäisten toistojen epäonnistumiset (`epaonnistuneet`) näytetään ei-estävänä ilmoituksena; se ei koskaan estä sovelluksen käyttöä. "Tänään" on
- * paikallinen kalenteripäivä.
+ * yksittäisten toistojen epäonnistumiset (`epaonnistuneet`) näytetään ei-estävänä ilmoituksena;
+ * se ei koskaan estä sovelluksen käyttöä. "Tänään" on paikallinen kalenteripäivä.
  */
 export function ToistoAjo() {
   const client = useKpClient();
