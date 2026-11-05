@@ -2,7 +2,7 @@ import { lisaaPaivia, oikaiseErapaiva, siirraKuukausia } from '../laskutus/paiva
 import { type Toisto, paivitaRivienAlv, pohjaLaskusta, siirraJaksoa } from '../laskutus/toisto.js';
 import type { Tuote } from '../laskutus/tuote.js';
 import { TositeTila, TositeTyyppi, onKirjanpidossa } from '../vouchers/enums.js';
-import type { IsoDate, TositeRivi } from '../vouchers/types.js';
+import { type IsoDate, type TositeRivi, onkoPvmValidi } from '../vouchers/types.js';
 import { tallennaMyyntilasku } from './myyntilaskuResource.js';
 import { tilikausiPaivalle } from './numbering.js';
 import { type ResourceEnv, ResourceError, type Storage, type StoredTosite } from './storage.js';
@@ -17,11 +17,20 @@ export interface ToistoLaskustaSyote {
   nimi?: string;
 }
 
+/** Toisto, jonka luonnoksen luonti epäonnistui; `virhe` on ResourceErrorin koodi. */
+export interface EpaonnistunutToisto {
+  toisto: number;
+  nimi?: string;
+  virhe: string;
+}
+
 export interface ErantyneetToistot {
   /** Luotujen luonnosten tosite-id:t luontijärjestyksessä. */
   luodut: number[];
   /** Ajo ohitettiin: tälle päivälle ei ole tilikautta tai päivä on lukitussa kaudessa. */
   ohitettu?: 'EITILIKAUTTA' | 'LUKITTU';
+  /** Toistot, joiden luonti epäonnistui (vain jos niitä on). Muut toistot luotiin silti. */
+  epaonnistuneet?: EpaonnistunutToisto[];
 }
 
 function kelpaaValiksi(kuukausia: number): boolean {
@@ -31,7 +40,10 @@ function kelpaaValiksi(kuukausia: number): boolean {
 /**
  * Luo toiston KIRJATUSTA myyntilaskusta (spec §5.2). Puuttuva tai poistettu tosite → EITOSITETTA;
  * muu kuin kirjattu myyntilasku (esim. luonnos) → EIKELPAA; `kuukausia` ei kokonaisluku ≥ 1 →
- * EIKUUKAUSIA. Asiakas tulee laskulta, pohja `pohjaLaskusta`:lla.
+ * EIKUUKAUSIA; laskulta ei siirry pohjaan yhtään riviä (esim. tuotu Kitsas-lasku ilman rivejä) →
+ * EIRIVEJA, koska sellaisen toiston jokainen luonnos kaatuisi; `seuraava` tai `loppuu` ei ole
+ * kelvollinen ISO-päivä tai `loppuu` on ennen ensimmäistä luontipäivää → EITOISTOPVM.
+ * Asiakas tulee laskulta, pohja `pohjaLaskusta`:lla.
  */
 export async function luoToistoLaskusta(
   storage: Storage,
@@ -45,14 +57,22 @@ export async function luoToistoLaskusta(
     throw new ResourceError('EIKELPAA', 'Toiston voi luoda vain kirjatusta myyntilaskusta');
   if (!kelpaaValiksi(syote.kuukausia))
     throw new ResourceError('EIKUUKAUSIA', 'Toistovälin on oltava vähintään yksi kuukausi');
+  const pohja = pohjaLaskusta(t, syote.kuukausia);
+  if (pohja.rivit.length === 0)
+    throw new ResourceError('EIRIVEJA', 'Toiston voi luoda vain laskusta, jolla on rivejä');
+  if (syote.seuraava !== undefined && !onkoPvmValidi(syote.seuraava))
+    throw new ResourceError('EITOISTOPVM', 'Toiston ensimmäinen päivä on virheellinen');
+  const seuraava = syote.seuraava ?? siirraKuukausia(t.laskupvm ?? t.pvm, syote.kuukausia);
+  if (syote.loppuu !== undefined && (!onkoPvmValidi(syote.loppuu) || syote.loppuu < seuraava))
+    throw new ResourceError('EITOISTOPVM', 'Toiston päättymispäivä on virheellinen');
 
   return storage.saveToisto({
     ...(syote.nimi !== undefined ? { nimi: syote.nimi } : {}),
     ...(t.kumppani !== undefined ? { kumppani: t.kumppani } : {}),
     kuukausia: syote.kuukausia,
-    seuraava: syote.seuraava ?? siirraKuukausia(t.laskupvm ?? t.pvm, syote.kuukausia),
+    seuraava,
     ...(syote.loppuu !== undefined ? { loppuu: syote.loppuu } : {}),
-    pohja: pohjaLaskusta(t, syote.kuukausia),
+    pohja,
     lahdeTosite: t.id,
     aktiivinen: true,
   });
@@ -151,6 +171,10 @@ const onErantynyt = (t: Toisto, tanaan: IsoDate) =>
  * välissä korjautuu seuraavassa ajossa. Poistettua luonnosta ei luoda uudelleen, koska `seuraava`
  * on jo siirtynyt sen ohi.
  *
+ * Virheet eristetään toistoittain: jos yhden toiston luonnos kaatuu (esim. EIRIVEJA tai puuttuva
+ * laskutustili), sen aikataulu jää paikalleen (yritetään uudelleen seuraavassa ajossa), virhe
+ * kirjataan `epaonnistuneet`-listaan ja muut toistot luodaan normaalisti.
+ *
  * Koko ajo ohitetaan, jos erääntyneitä on mutta tälle päivälle ei ole tilikautta (EITILIKAUTTA) tai
  * päivä on lukitussa kaudessa (LUKITTU) (laskunuusinta.cpp:57-64); ilman erääntyneitä ei ilmoiteta.
  */
@@ -174,18 +198,27 @@ export async function luoErantyneetToistot(
   const tuotteet = new Map(tuoteLista.map((t) => [t.id, t]));
 
   const luodut: number[] = [];
+  const epaonnistuneet: EpaonnistunutToisto[] = [];
   for (let toisto of erantyneet) {
-    while (onErantynyt(toisto, tanaan)) {
-      const k = avain(toisto.id, toisto.seuraava);
-      if (!olemassa.has(k)) {
-        const luonnos = await luoLuonnos(storage, toisto, tanaan, lukitusraja, tuotteet, env);
-        olemassa.add(k);
-        luodut.push(luonnos.id);
+    try {
+      while (onErantynyt(toisto, tanaan)) {
+        const k = avain(toisto.id, toisto.seuraava);
+        if (!olemassa.has(k)) {
+          const luonnos = await luoLuonnos(storage, toisto, tanaan, lukitusraja, tuotteet, env);
+          olemassa.add(k);
+          luodut.push(luonnos.id);
+        }
+        toisto = await storage.saveToisto(siirraAikataulua(toisto));
       }
-      toisto = await storage.saveToisto(siirraAikataulua(toisto));
+    } catch (e) {
+      epaonnistuneet.push({
+        toisto: toisto.id,
+        ...(toisto.nimi !== undefined ? { nimi: toisto.nimi } : {}),
+        virhe: e instanceof ResourceError ? e.code : 'TUNTEMATON',
+      });
     }
   }
-  return { luodut };
+  return epaonnistuneet.length > 0 ? { luodut, epaonnistuneet } : { luodut };
 }
 
 /**

@@ -342,6 +342,33 @@ describe('luoErantyneetToistot', () => {
     expect(await s.listTositteet({ bucket: 'luonnos' })).toEqual([]);
   });
 
+  it('epäonnistuva toisto ei estä muita: virhe palautetaan, aikataulu ei siirry', async () => {
+    const s = seed();
+    const rikki = await toisto(s, { pohja: pohja({ rivit: [] }) });
+    const ehja = await toisto(s, { seuraava: '2026-03-01' });
+    const tulos = await luoErantyneetToistot(s, '2026-03-05', env);
+    expect(tulos.epaonnistuneet).toEqual([{ toisto: rikki.id, virhe: 'EIRIVEJA' }]);
+    expect(tulos.luodut).toHaveLength(1);
+    expect((await toistonLuonnokset(s, ehja.id)).map((l) => l.pvm)).toEqual(['2026-03-01']);
+    expect((await haeToisto(s, rikki.id)).seuraava).toBe('2026-01-31');
+    expect((await haeToisto(s, ehja.id)).seuraava).toBe('2026-04-01');
+  });
+
+  it('epäonnistuneen toiston nimi kulkee virheen mukana', async () => {
+    const s = seed();
+    const rikki = await s.saveToisto({
+      nimi: 'Vuokra',
+      kuukausia: 1,
+      seuraava: '2026-01-31',
+      aktiivinen: true,
+      pohja: pohja({ rivit: [] }),
+    });
+    expect(await luoErantyneetToistot(s, '2026-01-31', env)).toEqual({
+      luodut: [],
+      epaonnistuneet: [{ toisto: rikki.id, nimi: 'Vuokra', virhe: 'EIRIVEJA' }],
+    });
+  });
+
   it('lukittuun kauteen osuva ajastettu päivä saa luonnoksen tälle päivälle', async () => {
     const s = seed({ TilitPaatetty: '2026-01-31' });
     const t = await toisto(s);
@@ -420,6 +447,70 @@ describe('luoToistoLaskusta', () => {
   });
 });
 
+describe('luoToistoLaskusta: rivitön lähde ja päivät', () => {
+  it('rivitön kirjattu lasku (esim. tuotu Kitsas-lasku) hylätään EIRIVEJA', async () => {
+    const s = seed();
+    const ilmanRiveja = await s.saveTosite(
+      {
+        pvm: '2026-01-31',
+        tyyppi: TositeTyyppi.MYYNTILASKU,
+        tila: TositeTila.KIRJANPIDOSSA,
+        tunniste: 1,
+        sarja: '',
+        maksutapa: Maksutapa.LASKU,
+        viennit: [],
+      },
+      env,
+    );
+    await expect(
+      luoToistoLaskusta(s, { tosite: ilmanRiveja.id, kuukausia: 1 }, env),
+    ).rejects.toMatchObject({ code: 'EIRIVEJA' });
+    // Pelkät ennakon vähennysrivit eivät siirry pohjaan, joten lähde on yhtä lailla rivitön.
+    const vainVahennys = await s.saveTosite(
+      {
+        pvm: '2026-01-31',
+        tyyppi: TositeTyyppi.MYYNTILASKU,
+        tila: TositeTila.KIRJANPIDOSSA,
+        tunniste: 2,
+        sarja: '',
+        maksutapa: Maksutapa.LASKU,
+        rivit: [{ ...rivi, aNetto: -50, tili: 2861, ennakkoTosite: 7 }],
+        viennit: [],
+      },
+      env,
+    );
+    await expect(
+      luoToistoLaskusta(s, { tosite: vainVahennys.id, kuukausia: 1 }, env),
+    ).rejects.toMatchObject({ code: 'EIRIVEJA' });
+    expect(await s.getToistot()).toEqual([]);
+  });
+
+  it('seuraava ja loppuu: oltava kelvollisia päiviä ja loppuu ≥ seuraava', async () => {
+    const s = seed();
+    const lasku = await tallennaMyyntilasku(s, { pvm: '2026-01-31', rivit: [rivi] }, env);
+    const virheelliset: { seuraava?: IsoDate; loppuu?: IsoDate }[] = [
+      { seuraava: '2026-02-30' },
+      { seuraava: 'huomenna' },
+      { loppuu: '31.12.2026' },
+      { seuraava: '2026-05-01', loppuu: '2026-04-30' },
+      // Oletusseuraava on 28.2.; sitä aiempi loppu hylätään.
+      { loppuu: '2026-02-27' },
+    ];
+    for (const paivat of virheelliset) {
+      await expect(
+        luoToistoLaskusta(s, { tosite: lasku.id, kuukausia: 1, ...paivat }, env),
+      ).rejects.toMatchObject({ code: 'EITOISTOPVM' });
+    }
+    expect(await s.getToistot()).toEqual([]);
+    const sama = await luoToistoLaskusta(
+      s,
+      { tosite: lasku.id, kuukausia: 1, seuraava: '2026-05-01', loppuu: '2026-05-01' },
+      env,
+    );
+    expect(sama).toMatchObject({ seuraava: '2026-05-01', loppuu: '2026-05-01' });
+  });
+});
+
 describe('toiston luonnoksen kirjaus päivittää pohjan', () => {
   it('muuttamaton, viikonlopulta siirretty eräpäivä ei kasvata maksuaikaa', async () => {
     const s = seed();
@@ -452,6 +543,19 @@ describe('toiston luonnoksen kirjaus päivittää pohjan', () => {
         jakso: { alkaa: '2026-03-01', loppuu: '2026-03-31' },
       },
     });
+  });
+
+  it('pohjan päivityksen virhe kirjauksen jälkeen ei näy kirjauksen virheenä', async () => {
+    const s = seed();
+    await toisto(s);
+    const { luodut } = await luoErantyneetToistot(s, '2026-02-05', env);
+    const rikki: Storage = {
+      ...s,
+      saveToisto: () => Promise.reject(new Error('levy täynnä')),
+    };
+    const kirjattu = await kirjaaLaskuluonnos(rikki, luodut[0] as number, env);
+    expect(kirjattu.tila).toBe(TositeTila.KIRJANPIDOSSA);
+    expect((await s.getTosite(kirjattu.id))?.tila).toBe(TositeTila.KIRJANPIDOSSA);
   });
 
   it('poistetun toiston luonnos kirjautuu normaalisti', async () => {

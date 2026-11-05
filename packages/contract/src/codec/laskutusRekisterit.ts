@@ -104,6 +104,15 @@ export function decodeErantyneetToistot(w: Record<string, unknown>): ErantyneetT
   return {
     luodut: ((w.luodut ?? []) as unknown[]).map(Number),
     ...(ohitettu === 'EITILIKAUTTA' || ohitettu === 'LUKITTU' ? { ohitettu } : {}),
+    ...(Array.isArray(w.epaonnistuneet) && w.epaonnistuneet.length > 0
+      ? {
+          epaonnistuneet: (w.epaonnistuneet as Record<string, unknown>[]).map((e) => ({
+            toisto: Number(e.toisto),
+            ...(typeof e.nimi === 'string' ? { nimi: e.nimi } : {}),
+            virhe: String(e.virhe),
+          })),
+        }
+      : {}),
   };
 }
 

@@ -50,6 +50,27 @@ describe('Toista-toiminto laskunäkymässä', () => {
     expect(await screen.findByText('Asiakas Oy')).toBeInTheDocument();
   });
 
+  it('rivittömällä (tuodulla) laskulla Toista on estetty syyn kera', async () => {
+    await renderRoute('/myyntilaskut/1', {
+      seed: SEED,
+      arrange: async (c) => {
+        await c.luoTosite({
+          pvm: '2026-06-01',
+          erapvm: '2026-06-15',
+          tyyppi: 210,
+          sarja: '',
+          tila: 100,
+          numero: '1',
+          rivit: [],
+          viennit: [],
+        });
+      },
+    });
+    const nappi = await screen.findByRole('button', { name: 'Toista' });
+    expect(nappi).toBeDisabled();
+    expect(nappi).toHaveAttribute('title', expect.stringContaining('ei ole rivejä'));
+  });
+
   it('Peruuta sulkee dialogin luomatta toistoa', async () => {
     const { user, client } = await renderRoute('/myyntilaskut/1', {
       seed: SEED,

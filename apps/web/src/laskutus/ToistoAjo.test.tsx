@@ -3,7 +3,7 @@ import { avaimet } from '@/app/kysely';
 import { renderReitittimessa } from '@/test/renderReitittimessa';
 import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import { InProcessClient, type KpClient } from '@penni/asiakas';
-import { ResourceError } from '@penni/engine';
+import { type ErantyneetToistot, ResourceError } from '@penni/engine';
 import { createMemoryStorage } from '@penni/storage-memory';
 import { QueryClient } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react';
@@ -42,7 +42,7 @@ function uusiKirja() {
  * Kirja, jonka toistoajon tulos vapautetaan käsin renderöinnin jälkeen `act`-kääreessä: ilmoituksen
  * tilapäivitys ei saa osua renderöinnin odotuksen aikaan (muuten React varoittaa act-puutteesta).
  */
-function viivastettuKirja(tulos: { luodut: number[] } | Error) {
+function viivastettuKirja(tulos: ErantyneetToistot | Error) {
   const kasi: { vapauta: () => void } = { vapauta: () => {} };
   return {
     kasi,
@@ -135,6 +135,44 @@ describe('ToistoAjo (kirjan avauksen toistoajo)', () => {
     );
     // Sovellus on käytössä ilmoituksen kanssa.
     expect(screen.getByRole('button', { name: 'Vaihda kirja' })).toBeEnabled();
+  });
+
+  it('epäonnistuneet toistot luetellaan ilmoituksessa luotujen rinnalla', async () => {
+    const toinen = uusiKirja();
+    const { kasi, seed } = viivastettuKirja({
+      luodut: [4],
+      epaonnistuneet: [
+        { toisto: 2, nimi: 'Vuokra', virhe: 'EIRIVEJA' },
+        { toisto: 3, virhe: 'EILASKUTILIA' },
+      ],
+    });
+    await renderReitittimessa(<Kehys toinenKirja={toinen.client} />, { seed });
+    await act(async () => kasi.vapauta());
+    const ilmoitus = await screen.findByRole('status');
+    expect(ilmoitus).toHaveTextContent('1 toistuva lasku odottaa Lähtevissä');
+    expect(ilmoitus).toHaveTextContent(
+      'Toistojen luonti epäonnistui: Vuokra (Laskulla ei ole rivejä), toisto 3 (Laskutuksen tili puuttuu asetuksista)',
+    );
+    expect(screen.getByRole('link', { name: 'Avaa toistuvat laskut' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/toistot'),
+    );
+  });
+
+  it('pelkkä epäonnistuminen ilman luotuja näytetään myös', async () => {
+    const toinen = uusiKirja();
+    const { kasi, seed } = viivastettuKirja({
+      luodut: [],
+      epaonnistuneet: [{ toisto: 2, nimi: 'Vuokra', virhe: 'EIRIVEJA' }],
+    });
+    await renderReitittimessa(<Kehys toinenKirja={toinen.client} />, { seed });
+    await act(async () => kasi.vapauta());
+    const ilmoitus = await screen.findByRole('status');
+    expect(ilmoitus).toHaveTextContent(
+      'Toiston luonti epäonnistui: Vuokra (Laskulla ei ole rivejä)',
+    );
+    expect(ilmoitus).not.toHaveTextContent('odottaa Lähtevissä');
+    expect(screen.queryByRole('link', { name: 'Avaa Lähtevät' })).not.toBeInTheDocument();
   });
 
   it('ilmoituksen voi sulkea', async () => {

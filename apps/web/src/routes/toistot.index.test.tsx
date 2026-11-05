@@ -165,6 +165,24 @@ describe('Toistuvat laskut -lista', () => {
     await user.click(screen.getByRole('button', { name: 'Luo erääntyneet nyt' }));
     expect(await screen.findByText(/ei ole tilikautta/)).toBeInTheDocument();
   });
+
+  it('epäonnistuneet toistot luetellaan luotujen rinnalla', async () => {
+    const { user, client } = await renderRoute('/toistot', {
+      seed: SEED,
+      arrange: toistoJaVakioituAjo,
+    });
+    const luo = vi.mocked(client.luoErantyneetToistot);
+    await waitFor(() => expect(luo).toHaveBeenCalledTimes(1));
+    luo.mockResolvedValueOnce({
+      luodut: [10],
+      epaonnistuneet: [{ toisto: 1, virhe: 'EIRIVEJA' }],
+    });
+    await user.click(await screen.findByRole('button', { name: 'Luo erääntyneet nyt' }));
+    expect(await screen.findByText('1 toistuva lasku odottaa Lähtevissä')).toBeInTheDocument();
+    expect(
+      screen.getByText('Toiston luonti epäonnistui: toisto 1 (Laskulla ei ole rivejä)'),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('Toiston muokkaus', () => {

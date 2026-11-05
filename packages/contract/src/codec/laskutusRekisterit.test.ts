@@ -1,10 +1,13 @@
-import type { Toisto, Tuote, Vakioviite } from '@penni/engine';
+import type { ErantyneetToistot, Toisto, Tuote, Vakioviite } from '@penni/engine';
 import { describe, expect, it } from 'vitest';
+import { WireErantyneetToistotSchema } from '../schema/wire.js';
 import {
+  decodeErantyneetToistot,
   decodeToisto,
   decodeTuote,
   decodeVakioviite,
   decodeVakioviiteSyote,
+  encodeErantyneetToistot,
   encodeToisto,
   encodeTuote,
   encodeVakioviite,
@@ -31,6 +34,21 @@ describe('laskutuksen rekisterien koodekit', () => {
     expect(decodeTuote({ id: '7', nimike: 'A', aNetto: 1, alvKoodi: 0, alvProsentti: 0 }).id).toBe(
       7,
     );
+  });
+
+  it('erääntyneiden toistojen tulos: epäonnistuneet pyörivät ympäri, tyhjä lista jää pois', () => {
+    const t: ErantyneetToistot = {
+      luodut: [4],
+      epaonnistuneet: [
+        { toisto: 2, nimi: 'Vuokra', virhe: 'EIRIVEJA' },
+        { toisto: 3, virhe: 'X' },
+      ],
+    };
+    const w = encodeErantyneetToistot(t);
+    expect(WireErantyneetToistotSchema.parse(w)).toEqual(w);
+    expect(decodeErantyneetToistot(w)).toEqual(t);
+    expect(decodeErantyneetToistot({ luodut: [], epaonnistuneet: [] })).toEqual({ luodut: [] });
+    expect(decodeErantyneetToistot({ luodut: [] })).toEqual({ luodut: [] });
   });
 
   it('vakioviite pyörii ympäri', () => {

@@ -404,6 +404,40 @@ export function runLaskutusClientConformance(name: string, makeClient: MakeClien
       });
     });
 
+    describe('toistuvat laskut: virheet', () => {
+      it('epäonnistuva toisto palautetaan, muut luodaan; virheelliset päivät hylätään', async () => {
+        const c = await fresh();
+        const lasku = await c.tallennaMyyntilasku({ pvm: '2026-05-31', rivit });
+        await expect(
+          c.luoToistoLaskusta({ tosite: lasku.id, kuukausia: 1, seuraava: '2026-02-30' }),
+        ).rejects.toMatchObject({ code: 'EITOISTOPVM' });
+        await expect(
+          c.luoToistoLaskusta({
+            tosite: lasku.id,
+            kuukausia: 1,
+            seuraava: '2026-06-30',
+            loppuu: '2026-06-29',
+          }),
+        ).rejects.toMatchObject({ code: 'EITOISTOPVM' });
+        const ehja = await c.luoToistoLaskusta({ tosite: lasku.id, kuukausia: 1 });
+        const rikki = await c.tallennaToisto({
+          nimi: 'Rivitön',
+          kuukausia: 1,
+          seuraava: '2026-06-30',
+          aktiivinen: true,
+          pohja: { maksutapa: 0, rivit: [], maksuaikaPaivia: 14 },
+        });
+        const tulos = await c.luoErantyneetToistot('2026-07-05');
+        expect(tulos.luodut).toHaveLength(1);
+        expect(tulos.epaonnistuneet).toEqual([
+          { toisto: rikki.id, nimi: 'Rivitön', virhe: 'EIRIVEJA' },
+        ]);
+        const toistot = await c.haeToistot();
+        expect(toistot.find((t) => t.id === ehja.id)?.seuraava).toBe('2026-07-31');
+        expect(toistot.find((t) => t.id === rikki.id)?.seuraava).toBe('2026-06-30');
+      });
+    });
+
     describe('ennakkolaskut', () => {
       it('avoin ennakko listautuu ja poistuu loppulaskun vähennyksellä', async () => {
         const c = await fresh();

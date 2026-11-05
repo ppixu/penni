@@ -56,7 +56,8 @@ function luonnosSyotteeksi(t: StoredTosite): MyyntilaskuSyote {
  * → EILUONNOS. Maksumuistutus kirjataan `kirjaaMaksumuistutus`:lla, joka käyttää muutoksista
  * vain pvm:n, eräpäivän, otsikon ja `muistutus`-kentän (maksu, korkoprosentti); muistutus ilman
  * muistutustietoja (tuotu Kitsas-luonnos) → EIMUISTUTUSTIETOJA. Toistosta luodun laskun kirjaus
- * päivittää toiston pohjan (`paivitaToistoKirjatusta`).
+ * päivittää toiston pohjan (`paivitaToistoKirjatusta`); pohjan päivityksen virhe ei kumoa eikä
+ * raportoi jo onnistunutta kirjausta.
  */
 export async function kirjaaLaskuluonnos(
   storage: Storage,
@@ -85,7 +86,13 @@ export async function kirjaaLaskuluonnos(
     env,
     id,
   );
-  await paivitaToistoKirjatusta(storage, kirjattu);
+  // Kirjaus on jo tallessa: pohjan päivitys on jälkitoimi, jonka virhe ei saa näkyä kirjauksen
+  // epäonnistumisena (käyttäjä yrittäisi kirjata uudelleen). Pohja jää silloin ennalleen.
+  try {
+    await paivitaToistoKirjatusta(storage, kirjattu);
+  } catch {
+    // ohitetaan tarkoituksella
+  }
   return kirjattu;
 }
 

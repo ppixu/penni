@@ -543,6 +543,9 @@ export const WireLuoToistotSchema = z.object({ tanaan: z.string() });
 export const WireErantyneetToistotSchema = z.object({
   luodut: z.array(z.number()),
   ohitettu: z.enum(['EITILIKAUTTA', 'LUKITTU']).optional(),
+  epaonnistuneet: z
+    .array(z.object({ toisto: z.number(), nimi: z.string().optional(), virhe: z.string() }))
+    .optional(),
 });
 
 export const WireLiiteMetaSchema = z

@@ -118,6 +118,9 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
   // Moottori tukee vain täyshyvitystä, joten vain koskematon lasku on hyvitettävissä —
   // tämä disabloi Hyvitän myös käteis-/korttikuiteilla, joilla avoin=0 ≠ summa.
   const myyntirivi = myyntirivit?.find((r) => r.tosite === tosite.id);
+  // Toiston pohjaan siirtyvät rivit (ennakon vähennysrivit jäävät pois): ilman niitä moottori
+  // hylkää toiston (EIRIVEJA), esim. tuodulla Kitsas-laskulla, jonka rivejä ei tuotu.
+  const toistettavat = (tosite.rivit ?? []).some((r) => r.ennakkoTosite == null);
   return (
     <>
       <TopBar
@@ -134,7 +137,13 @@ function LaskuNaytto({ alkuHuomio }: { alkuHuomio: string | null }) {
             {/* Toisto vaatii kirjatun myyntilaskun (spec §5.2); tämä näkymä näyttää vain kirjattuja,
                 luonnos avautuu lomakkeena ilman tätä nappia. Hyvityslaskua ei toisteta. */}
             {tosite.tyyppi === TositeTyyppi.MYYNTILASKU && (
-              <Button variant="sec" type="button" onClick={() => setToistoAuki(true)}>
+              <Button
+                variant="sec"
+                type="button"
+                disabled={!toistettavat}
+                title={toistettavat ? undefined : 'Laskulla ei ole rivejä, joita toistaa'}
+                onClick={() => setToistoAuki(true)}
+              >
                 Toista
               </Button>
             )}

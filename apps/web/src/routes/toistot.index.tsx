@@ -8,6 +8,7 @@ import {
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { ToistoMuokkausDialog } from '@/laskutus/ToistoMuokkausDialog';
+import { epaonnistuneetTeksti } from '@/laskutus/toistoVirheet';
 import { paikallinenTanaan } from '@/tositteet/pikavalinnat';
 import type { ErantyneetToistot, Toisto } from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
@@ -30,7 +31,8 @@ function tilaTeksti(t: Toisto): string {
 function tulosTeksti(t: ErantyneetToistot): string {
   if (t.ohitettu === 'EITILIKAUTTA') return 'Tälle päivälle ei ole tilikautta, luontia ei tehty';
   if (t.ohitettu === 'LUKITTU') return 'Päivä on lukitussa tilikaudessa, luontia ei tehty';
-  if (t.luodut.length === 0) return 'Ei erääntyneitä toistoja';
+  if (t.luodut.length === 0)
+    return t.epaonnistuneet?.length ? 'Uusia luonnoksia ei syntynyt' : 'Ei erääntyneitä toistoja';
   return t.luodut.length === 1
     ? '1 toistuva lasku odottaa Lähtevissä'
     : `${t.luodut.length} toistuvaa laskua odottaa Lähtevissä`;
@@ -93,6 +95,11 @@ function ToistuvatLaskut() {
               </Link>
             )}
           </output>
+        )}
+        {tulos?.epaonnistuneet && (
+          <p className="mb-3 text-[12.5px] text-[var(--danger)]">
+            {epaonnistuneetTeksti(tulos.epaonnistuneet)}
+          </p>
         )}
         {virhe && (
           <p role="alert" className="mb-3 text-[12.5px] text-[var(--danger)]">

@@ -556,6 +556,10 @@ export function laskuVirheViesti(e: unknown): string {
         return 'Toiston voi luoda vain kirjatusta myyntilaskusta';
       case 'EIKUUKAUSIA':
         return 'Toistovälin on oltava vähintään yksi kuukausi';
+      case 'EITOISTOPVM':
+        return 'Toiston päivät ovat virheelliset (päättymispäivä ei voi olla ennen ensimmäistä laskua)';
+      case 'TUNTEMATON':
+        return 'Odottamaton virhe';
       case 'EITILIA':
         return 'Tili puuttuu';
       case 'EIOTSIKKOA':
