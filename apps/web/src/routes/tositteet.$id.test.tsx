@@ -1504,3 +1504,21 @@ describe('Laskun viennit', () => {
     expect(await client.haeTosite(1)).toEqual(ennen);
   });
 });
+
+describe('Palkka-ajon tosite', () => {
+  it('näyttää linkin palkanmaksuun, ei avaudu ruudukkoon eikä poistu täältä', async () => {
+    const { tallennaPalkkaAjo } = await import('@/palkat/tallennaPalkkaAjo');
+    const { luonnosA, palkkaSiemen } = await import('@/test/palkkaFikstuuri');
+    await renderRoute('/tositteet/1', {
+      seed: palkkaSiemen(),
+      arrange: async (c) => {
+        await tallennaPalkkaAjo(c, luonnosA(), undefined, () => '2026-11-01T08:00:00.000Z');
+      },
+    });
+    const linkki = await screen.findByRole('link', { name: 'Avaa palkanmaksu' });
+    expect(linkki).toHaveAttribute('href', '/palkat/1');
+    expect(screen.getByRole('button', { name: 'Poista' })).toBeDisabled();
+    expect(screen.getByLabelText('tosite')).toHaveTextContent('palkka-ajo');
+    expect(screen.queryByRole('radiogroup', { name: 'Tyyppi' })).not.toBeInTheDocument();
+  });
+});

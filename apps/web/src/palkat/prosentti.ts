@@ -24,3 +24,33 @@ export function muotoileBp(bp: number): string {
     ? String(kokonaiset)
     : `${kokonaiset},${desimaalit}`;
 }
+
+/**
+ * Tunnit, km, päivät ja ateriat sadasosina (`PalkkaRivi.maara`): "37,5" -> 3750. Enintään kaksi
+ * desimaalia; `kokonaisluku` (päivärahat, ateriat) hylkää desimaalit. Tyhjä on 0. Välilyönnit
+ * (tuhaterottimet) ohitetaan. Jäsennys numeroittain, ei parseFloatia.
+ */
+export function parsiSadasosat(
+  teksti: string,
+  kokonaisluku = false,
+): { arvo: number } | { virhe: string } {
+  const t = teksti.replace(/[\s ]/g, '');
+  if (t === '') return { arvo: 0 };
+  const m = /^(\d{1,9})(?:[.,](\d+))?$/.exec(t);
+  if (!m) return { virhe: 'Määrä ei ole kelvollinen luku.' };
+  const desimaalit = m[2] ?? '';
+  if (kokonaisluku && /[1-9]/.test(desimaalit)) return { virhe: 'Määrän on oltava kokonaisluku.' };
+  if (desimaalit.length > 2) return { virhe: 'Määrä: enintään kaksi desimaalia.' };
+  const kokonaiset = Number.parseInt(m[1] as string, 10);
+  return { arvo: kokonaiset * 100 + Number.parseInt(desimaalit.padEnd(2, '0'), 10) };
+}
+
+/** 3750 -> "37,5"; 10000 -> "100"; 0 -> "" (tyhjä kenttä). */
+export function muotoileSadasosat(sadasosat: number): string {
+  if (sadasosat === 0) return '';
+  const kokonaiset = Math.trunc(sadasosat / 100);
+  const desimaalit = String(sadasosat % 100)
+    .padStart(2, '0')
+    .replace(/0+$/, '');
+  return desimaalit === '' ? String(kokonaiset) : `${kokonaiset},${desimaalit}`;
+}

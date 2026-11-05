@@ -9,7 +9,7 @@ import {
   useTallennaLiite,
 } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { KirjausYhteenveto } from '@/editori/KirjausYhteenveto';
 import { SegmentedControl } from '@/editori/SegmentedControl';
 import { TYYPPIVAIHTOEHDOT, TositeEditori } from '@/editori/TositeEditori';
@@ -53,7 +53,7 @@ import {
 } from '@penni/engine';
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
 import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useLocation, useNavigate } from '@tanstack/react-router';
+import { Link, createFileRoute, useLocation, useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/tositteet/$id')({ component: TositeReitti });
@@ -86,6 +86,7 @@ function onLukittu(tosite: StoredTosite, raja: IsoDate | undefined): boolean {
  */
 function vainLukuSyy(tosite: StoredTosite): string {
   const alku = 'Tätä tositetta ei voi muokata ruudukossa';
+  if (tosite.palkka) return `${alku} (palkka-ajo). Muokkaa ja poista se palkanmaksun sivulla.`;
   if (onLasku(tosite)) return `${alku} (lasku).`;
   if (tosite.tyyppi >= TositeTyyppi.JARJESTELMATOSITE)
     return `${alku} (järjestelmän muodostama tosite).`;
@@ -333,8 +334,10 @@ function TositeNaytto() {
   const poistettu = tosite.tila === TositeTila.POISTETTU;
   // Viennitön lasku (esim. eräpäivällinen laskun runko) jää vain luku -näkymään: editorin
   // tyyppivalinta irrottaisi sen laskusta.
+  // Palkka-ajon tositetta muokataan vain palkanmaksun sivulla (tilannekuva ja viennit yhdessä).
   const alkutila =
     init &&
+    !tosite.palkka &&
     RUUDUKKOTYYPIT.has(tosite.tyyppi) &&
     !(tosite.rivit && tosite.rivit.length > 0) &&
     (tosite.viennit.length > 0 || !onLasku(tosite))
@@ -353,10 +356,19 @@ function TositeNaytto() {
           })
         }
       />
+      {tosite.palkka ? (
+        <Link
+          to="/palkat/$id"
+          params={{ id: String(tosite.id) }}
+          className={buttonVariants({ variant: 'sec' })}
+        >
+          Avaa palkanmaksu
+        </Link>
+      ) : null}
       <Button
         variant="sec"
         type="button"
-        disabled={lukittu || poistettu || poistetaan}
+        disabled={lukittu || poistettu || poistetaan || tosite.palkka !== undefined}
         onClick={() =>
           void poistaTosite(`${tositeTyyppiLabel(tosite.tyyppi)} ${nro}`.trim(), tallennus)
         }
@@ -427,7 +439,7 @@ function TositeNaytto() {
           ) : (
             <p className="mb-3 text-[12.5px] text-[var(--text-muted)]">{vainLukuSyy(tosite)}</p>
           )}
-          {!lukittu && tyypinVoiVaihtaa(tosite) ? (
+          {!lukittu && !tosite.palkka && tyypinVoiVaihtaa(tosite) ? (
             <div className="mb-3">
               <SegmentedControl
                 nimi="Tyyppi"
