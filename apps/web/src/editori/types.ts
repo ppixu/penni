@@ -62,6 +62,9 @@ export type EditoriAction =
       /** Tilin alv-oletus (tilinAlvOletus); sovelletaan vain riville, jonka alv-koodia
        *  käyttäjä ei ole itse valinnut. Puuttuu = rivin alv ennallaan. */
       alv?: { alvKoodi: number; alvProsentti: number };
+      /** Tilin oletuskohdennus (tilinOletusKohdennus); korvaa rivin kohdennuksen, merkkaukset
+       *  säilyvät. Puuttuu = rivin kohdennus ennallaan. */
+      kohdennus?: number;
     }
   | { type: 'setDebet'; avain: string; snt: Cents } // setting debet zeroes kredit
   | { type: 'setKredit'; avain: string; snt: Cents } // and vice-versa

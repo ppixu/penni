@@ -319,17 +319,73 @@ describe('tositeEditorille — kohdennus ja merkkaukset', () => {
     expect(uudet).toEqual(viennit);
   });
 
-  it('kohdennus vain perusviennillä (Kitsas-tapa, alv-vienti ilman) ei avaudu: tallennus muuttaisi alv-vientiä', () => {
-    const viennit = johdaViennit(
-      [kohdennettu(rivi(4000, 12550, 0, [21, 25.5])), rivi(1900, 0, 12550)],
-      CHART,
-      PVM,
-    ).map((v) => {
-      if (v.alvKoodi < 100) return v;
-      const { kohdennus: _k, merkkaukset: _m, ...ilman } = v;
-      return ilman;
+  describe('kohdennus vain perusviennillä (Kitsas-tapa)', () => {
+    const kitsasOsto = (alvMuutos: Partial<TositeVienti> = {}) =>
+      johdaViennit(
+        [
+          { ...rivi(4000, 12550, 0, [21, 25.5]), kohdennus: 2, merkkaukset: [7] },
+          rivi(1900, 0, 12550),
+        ],
+        CHART,
+        PVM,
+      ).map((v) => {
+        if (v.alvKoodi < 100) return v;
+        const { kohdennus: _k, merkkaukset: _m, ...ilman } = v;
+        return { ...ilman, ...alvMuutos };
+      });
+
+    it('alv-vienti ilman kohdennusta tasetilillä: avautuu, ja uudelleenjohdettu alv-vienti saa kohdennuksen', () => {
+      const tila = tositeEditorille(tallennettu(kitsasOsto()), CHART);
+      expect(tila?.rows).toHaveLength(2);
+      expect(tila?.rows?.[0]).toMatchObject({ tili: 4000, kohdennus: 2, merkkaukset: [7] });
+      const uudet = johdaViennit(tila?.rows ?? [], CHART, PVM);
+      const alv = uudet.find((v) => v.alvKoodi >= 100);
+      expect(alv).toMatchObject({ tili: 1763, kohdennus: 2, merkkaukset: [7] });
     });
-    expect(tositeEditorille(tallennettu(viennit), CHART)).toBeNull();
+
+    it('alv-vientiin merkitty oma kohdennus (3) estää', () => {
+      expect(tositeEditorille(tallennettu(kitsasOsto({ kohdennus: 3 })), CHART)).toBeNull();
+    });
+
+    it('alv-vientiin merkityt merkkaukset estävät, vaikka kohdennus puuttuu', () => {
+      expect(tositeEditorille(tallennettu(kitsasOsto({ merkkaukset: [7] })), CHART)).toBeNull();
+    });
+
+    it('alv-vienti, jolla on jo sama kohdennus ja merkkaukset (Penni-muoto), avautuu edelleen', () => {
+      const penni = kitsasOsto({ kohdennus: 2, merkkaukset: [7] });
+      expect(tositeEditorille(tallennettu(penni), CHART)?.rows).toHaveLength(2);
+    });
+
+    it('alv-vienti tulostilillä ilman kohdennusta estää (tallennus muuttaisi kohdennuksen tulosta)', () => {
+      // Ruudukon alv-koodit tuottavat alv-vientejä vain tasetileille, joten tulostilille osuva
+      // alv-vienti rakennetaan tilikartalla, jonka alv-saatavatili on 4500: johdettu vienti
+      // täsmää tallennettuun tilin osalta, ja vain kohdennuksettomuuden vartija hylkää sen.
+      const kartta = lataaKartta([
+        { numero: 4500, tyyppi: 'AL', nimi: { fi: 'Alv-saatava tulostilillä' } },
+        { numero: 1900, tyyppi: 'ARP', nimi: { fi: 'Pankkitili' } },
+        { numero: 4000, tyyppi: 'D', nimi: { fi: 'Ostot' } },
+      ]);
+      const viennit = johdaViennit(
+        [{ ...rivi(4000, 12550, 0, [21, 25.5]), kohdennus: 2 }, rivi(1900, 0, 12550)],
+        kartta,
+        PVM,
+      ).map((v) => {
+        if (v.alvKoodi < 100) return v;
+        const { kohdennus: _k, merkkaukset: _m, ...ilman } = v;
+        return ilman;
+      });
+      expect(viennit.find((v) => v.alvKoodi >= 100)?.tili).toBe(4500);
+      expect(tositeEditorille(tallennettu(viennit), kartta)).toBeNull();
+    });
+
+    it('tosite ilman kohdennuksia avautuu kuten ennenkin', () => {
+      const viennit = johdaViennit(
+        [rivi(4000, 12550, 0, [21, 25.5]), rivi(1900, 0, 12550)],
+        CHART,
+        PVM,
+      );
+      expect(tositeEditorille(tallennettu(viennit), CHART)?.rows).toHaveLength(2);
+    });
   });
 
   it('eri merkkaukset samalla tilillä ja summalla erottuvat vertailussa', () => {

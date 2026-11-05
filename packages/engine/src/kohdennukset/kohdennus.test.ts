@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { lataaTili } from '../accounts/tili.js';
 import { ResourceError } from '../resources/storage.js';
 import {
   type Kohdennus,
@@ -12,7 +13,9 @@ import {
   normalisoiMerkkaukset,
   onVoimassa,
   onVoimassaValilla,
+  tilinOletusKohdennus,
   validoiKohdennus,
+  vientiSuodattimessa,
 } from './kohdennus.js';
 
 const { KUSTANNUSPAIKKA, PROJEKTI, MERKKAUS } = KohdennusTyyppi;
@@ -286,5 +289,68 @@ describe('kohdennusSuodatin', () => {
   });
   it('tuntematon id => vain se', () => {
     expect(kohdennusSuodatin(KAIKKI, 42)).toEqual({ kohdennukset: [42] });
+  });
+});
+
+describe('vientiSuodattimessa', () => {
+  it('kohdennusjoukko: puuttuva kohdennus on 0', () => {
+    const suodatin = { kohdennukset: [0, 4] };
+    expect(vientiSuodattimessa(suodatin, {})).toBe(true);
+    expect(vientiSuodattimessa(suodatin, { kohdennus: 4 })).toBe(true);
+    expect(vientiSuodattimessa(suodatin, { kohdennus: 5 })).toBe(false);
+  });
+  it('kohdennusjoukko ilman nollaa ei päästä läpi kohdentamatonta', () => {
+    expect(vientiSuodattimessa({ kohdennukset: [4] }, {})).toBe(false);
+  });
+  it('merkkaus: vienti, jolla merkkaus on; merkkaukseton ei', () => {
+    expect(vientiSuodattimessa({ merkkaus: 7 }, { merkkaukset: [3, 7] })).toBe(true);
+    expect(vientiSuodattimessa({ merkkaus: 7 }, { merkkaukset: [3] })).toBe(false);
+    expect(vientiSuodattimessa({ merkkaus: 7 }, {})).toBe(false);
+  });
+  it('tyhjä suodatin päästää kaiken läpi', () => {
+    expect(vientiSuodattimessa({}, {})).toBe(true);
+    expect(vientiSuodattimessa({}, { kohdennus: 9, merkkaukset: [1] })).toBe(true);
+  });
+});
+
+describe('tilinOletusKohdennus', () => {
+  const tulotili = (kohdennus?: unknown) =>
+    lataaTili({
+      numero: 3000,
+      tyyppi: 'CL',
+      nimi: { fi: 'Myynti' },
+      ...(kohdennus !== undefined ? { kohdennus } : {}),
+    });
+  const PVM = '2026-06-01';
+
+  it('palauttaa tulostilin oletuksen, kun kustannuspaikka on voimassa', () => {
+    expect(tilinOletusKohdennus(tulotili(1), KAIKKI, PVM)).toBe(1);
+  });
+  it('projekti kelpaa oletukseksi', () => {
+    expect(tilinOletusKohdennus(tulotili(4), KAIKKI, PVM)).toBe(4);
+  });
+  it('ei oletusta: puuttuva avain, 0, merkkijono, ei-kokonaisluku, ei tiliä', () => {
+    expect(tilinOletusKohdennus(tulotili(), KAIKKI, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili(0), KAIKKI, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili('1'), KAIKKI, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili(1.5), KAIKKI, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(undefined, KAIKKI, PVM)).toBeUndefined();
+  });
+  it('merkkaus tai tuntematon id ei kelpaa oletukseksi', () => {
+    expect(tilinOletusKohdennus(tulotili(7), KAIKKI, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili(99), KAIKKI, PVM)).toBeUndefined();
+  });
+  it('päättynyt tai ei vielä alkanut kohdennus ohitetaan', () => {
+    const lista: Kohdennus[] = [
+      { id: 1, tyyppi: KUSTANNUSPAIKKA, nimi: { fi: 'Vanha' }, paattyy: '2026-05-31' },
+      { id: 2, tyyppi: KUSTANNUSPAIKKA, nimi: { fi: 'Tuleva' }, alkaa: '2026-06-02' },
+    ];
+    expect(tilinOletusKohdennus(tulotili(1), lista, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili(2), lista, PVM)).toBeUndefined();
+    expect(tilinOletusKohdennus(tulotili(1), lista, '2026-05-31')).toBe(1);
+  });
+  it('tasetili ei saa oletusta, vaikka avain olisi tallennettu', () => {
+    const pankki = lataaTili({ numero: 1900, tyyppi: 'ARP', nimi: { fi: 'Pankki' }, kohdennus: 1 });
+    expect(tilinOletusKohdennus(pankki, KAIKKI, PVM)).toBeUndefined();
   });
 });

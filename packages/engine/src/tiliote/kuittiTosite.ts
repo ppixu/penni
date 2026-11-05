@@ -4,10 +4,11 @@ import { type Tili, tiliTyypilla } from '../accounts/tili.js';
 import { type VerollinenRivi, generoiVeroviennit } from '../alv/generoiVeroviennit.js';
 import { yleinenAlv } from '../alv/kannat.js';
 import { AlvKoodi, veroTyyppi } from '../alv/koodit.js';
+import { type Kohdennus, tilinOletusKohdennus } from '../kohdennukset/kohdennus.js';
 import type { Kuitti, KuittiAlvEra } from '../kuitti/kuitti.js';
 import { ResourceError } from '../resources/storage.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
-import type { Tosite, TositeVienti } from '../vouchers/types.js';
+import type { IsoDate, Tosite, TositeVienti } from '../vouchers/types.js';
 import { normalisoiNimi } from './nimi.js';
 import type { Tilitapahtuma } from './poimiTiliote.js';
 
@@ -27,6 +28,28 @@ export interface TositeAsetukset {
   pankkitili?: number;
   /** Myyjäkohtaiset menotilisäännöt; ensimmäinen täsmäävä voittaa. */
   menotiliSaannot?: readonly MenotiliSaanto[];
+  /**
+   * Kirjan kohdennukset: meno- tai tulorivi saa tilinsä oletuskohdennuksen (tilinOletusKohdennus),
+   * kuten Kitsas tiliotteen ja tulo/meno-apurin riveille (apuri/tiliote/tiliotekirjausrivi.cpp:376-379).
+   * Puuttuu = ei oletuksia.
+   */
+  kohdennukset?: readonly Kohdennus[];
+}
+
+/** Tilin oletuskohdennus rivin päivälle VerollinenRivin kenttänä (tyhjä, jos oletusta ei ole). */
+function oletusKohdennus(
+  tili: number,
+  chart: readonly Tili[],
+  asetukset: TositeAsetukset,
+  pvm: IsoDate,
+): { kohdennus?: number } {
+  if (!asetukset.kohdennukset?.length) return {};
+  const kohdennus = tilinOletusKohdennus(
+    chart.find((t) => t.numero === tili && t.otsikkotaso === 0),
+    asetukset.kohdennukset,
+    pvm,
+  );
+  return kohdennus !== undefined ? { kohdennus } : {};
 }
 
 /**
@@ -118,6 +141,7 @@ export function luoTositeValinnasta(
     bruttoSyotto: !kaanteinen,
     puoli: tapahtuma.maara < 0 ? 'debet' : 'kredit',
     pvm: tapahtuma.pvm,
+    ...oletusKohdennus(valinta.tili, chart, asetukset, tapahtuma.pvm),
   };
   const tosite = pankillaTasapainotettu(tapahtuma, generoiVeroviennit([rivi], chart), pankki);
   if (tapahtuma.viite) tosite.viite = tapahtuma.viite;
@@ -158,6 +182,7 @@ export function luoTositeMatchista(
   // verovelvollisuus (ostossa) → EU-palveluosto (25) tai EU:n ulkopuolinen palveluosto (29)
   // yleisellä kannalla; muuten veroton (EIALV).
   const rev = meno && (kuitti.kaanteinenAlv ?? false);
+  const kohdennus = oletusKohdennus(baseTili, chart, asetukset, tapahtuma.pvm);
   const verollinenRivi = (maara: Cents, kanta: number): VerollinenRivi => {
     if (kanta > 0)
       return {
@@ -168,6 +193,7 @@ export function luoTositeMatchista(
         bruttoSyotto: true,
         puoli,
         pvm: tapahtuma.pvm,
+        ...kohdennus,
       };
     if (rev)
       return {
@@ -181,6 +207,7 @@ export function luoTositeMatchista(
         bruttoSyotto: false,
         puoli,
         pvm: tapahtuma.pvm,
+        ...kohdennus,
       };
     return {
       tili: baseTili,
@@ -190,6 +217,7 @@ export function luoTositeMatchista(
       bruttoSyotto: true,
       puoli,
       pvm: tapahtuma.pvm,
+      ...kohdennus,
     };
   };
 

@@ -9,7 +9,7 @@ export interface RaporttiProps {
   muoto?: string;
   /** "Näytä tilit": kaavaraporttien tilikohtaiset erittelyrivit. */
   naytaTilit: boolean;
-  /** Tuloslaskelman kohdennussuodatin (kohdennuksen id, 0 = Yleinen); puuttuu = kaikki. */
+  /** Kohdennussuodatin: tuloslaskelma, päiväkirja ja pääkirja (kohdennuksen id, 0 = Yleinen); puuttuu = kaikki. */
   kohdennus?: number;
   /** Pääkirjan rajaus yhteen tiliin tai tiliryhmään (tilikartan riviltä). */
   tilirajaus?: Tilirajaus;

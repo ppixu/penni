@@ -93,6 +93,9 @@ export interface SaldotKysely {
   tuloslaskelma?: string;
   tili?: string;
   kohdennus?: string;
+  /** Pilkuilla eroteltu kohdennusjoukko; tyhjä merkkijono = tyhjä joukko (ei rivejä). */
+  kohdennukset?: string;
+  merkkaus?: string;
   alkusaldot?: string;
 }
 
@@ -106,6 +109,15 @@ export function saldotParametrit(q: SaldotKysely): SaldotParams {
   if (t !== undefined) p.tili = t;
   const k = numero(q.kohdennus);
   if (k !== undefined) p.kohdennus = k;
+  if (q.kohdennukset !== undefined) {
+    // Kelvottomat alkiot pudotetaan (ks. numero); pelkkä tyhjä merkkijono on tyhjä joukko.
+    p.kohdennukset = q.kohdennukset
+      .split(',')
+      .map((osa) => numero(osa.trim()))
+      .filter((n): n is number => n !== undefined);
+  }
+  const m = numero(q.merkkaus);
+  if (m !== undefined) p.merkkaus = m;
   return p;
 }
 

@@ -28,6 +28,9 @@ const RAPORTTI = {
   liitteet: 1,
   ohitetut: { Kohdennus: 3 },
   loki: 0,
+  kohdennukset: 0,
+  merkkaukset: 0,
+  budjettirivit: 0,
   varoitukset: ['Taulua Kohdennus (3 riviä) ei tuotu — Penni ei mallinna sitä.'],
 };
 
@@ -109,6 +112,43 @@ describe('TuontiNakyma', () => {
     expect(
       await screen.findByText(/Laskutuksesta tuotiin 3 tuotetta ja 2 vakioviitettä/),
     ).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ kohdennukset: 6, budjettirivit: 12 }, 'Lisäksi tuotiin 6 kohdennusta ja 12 budjettiriviä.'],
+    [{ kohdennukset: 1, budjettirivit: 1 }, 'Lisäksi tuotiin 1 kohdennus ja 1 budjettirivi.'],
+    [{ kohdennukset: 0, budjettirivit: 3 }, 'Lisäksi tuotiin 0 kohdennusta ja 3 budjettiriviä.'],
+  ])('kertoo kohdennusten ja budjettirivien määrät (%j)', async (maarat, lause) => {
+    window.penni = luoSilta({
+      tuo: vi.fn(async () => ({
+        kohde: '/tmp/testi.penni',
+        raportti: { ...RAPORTTI, ...maarat },
+        taysmaytys: {
+          tasmaa: true,
+          erot: [],
+          maarat: {},
+          ulkopuoliset: 0,
+          alvErot: [],
+          alvIlmoituksia: 0,
+          kattamattomat: {},
+        },
+      })),
+    });
+    const user = userEvent.setup();
+    render(<TuontiNakyma />);
+    await user.click(screen.getByRole('button', { name: 'Valitse Kitsas-tiedosto' }));
+    await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
+    expect(await screen.findByText(lause, { exact: false })).toBeInTheDocument();
+  });
+
+  it('ei mainitse kohdennuksia kun niitä ja budjettirivejä ei tuotu', async () => {
+    window.penni = luoSilta();
+    const user = userEvent.setup();
+    render(<TuontiNakyma />);
+    await user.click(screen.getByRole('button', { name: 'Valitse Kitsas-tiedosto' }));
+    await user.click(await screen.findByRole('button', { name: 'Tuo kirjanpito' }));
+    expect(await screen.findByText(/Täsmäytys onnistui/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Lisäksi tuotiin/)).not.toBeInTheDocument();
   });
 
   it('näyttää täsmäytyksen erot tileittäin sentteinä, ei liukulukuina', async () => {

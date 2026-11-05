@@ -1,6 +1,8 @@
 import { type Cents, Euro } from '@penni/euro';
 import { describe, expect, it } from 'vitest';
 import { type Tili, lataaKartta } from '../accounts/tili.js';
+import { AlvKoodi } from '../alv/koodit.js';
+import { type Kohdennus, KohdennusTyyppi } from '../kohdennukset/kohdennus.js';
 import type { Kuitti } from '../kuitti/kuitti.js';
 import { TositeTila, TositeTyyppi } from '../vouchers/enums.js';
 import type { TositeVienti } from '../vouchers/types.js';
@@ -240,5 +242,68 @@ describe('arkistotunnus pankkiviennille', () => {
     const { arkistotunnus: _pois, ...ilmanTunnusta } = tapahtuma;
     const ilman = luoTositeMatchista(ilmanTunnusta, kuitti({ bruttoSumma: e('10.00') }), CHART);
     expect('arkistotunnus' in (pankkiVienti(ilman) ?? {})).toBe(false);
+  });
+});
+
+describe('tilin oletuskohdennus', () => {
+  const KARTTA: Tili[] = lataaKartta([
+    { numero: 1910, tyyppi: 'ARP', nimi: { fi: 'Pankkitili' } },
+    { numero: 1763, tyyppi: 'AL', nimi: { fi: 'ALV-saatava' } },
+    { numero: 4000, tyyppi: 'D', nimi: { fi: 'Ostot' }, kohdennus: 2 },
+    { numero: 7570, tyyppi: 'D', nimi: { fi: 'Atk-kulut' } },
+  ]);
+  const KOHDENNUKSET: Kohdennus[] = [
+    { id: 2, tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA, nimi: { fi: 'Nuorisotoiminta' } },
+    {
+      id: 3,
+      tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA,
+      nimi: { fi: 'Päättynyt' },
+      paattyy: '2026-01-31',
+    },
+  ];
+  const tapahtuma: Tilitapahtuma = { pvm: '2026-05-04', nimi: 'KAUPPA', maara: e('-124.00') };
+  const k = kuitti({
+    bruttoSumma: e('124.00'),
+    alv: [{ kanta: 24, netto: e('100.00'), vero: e('24.00'), brutto: e('124.00') }],
+  });
+
+  it('meno- ja alv-vienti saavat menotilin oletuskohdennuksen, pankkivienti ei', () => {
+    const t = luoTositeMatchista(tapahtuma, k, KARTTA, {
+      menotili: 4000,
+      kohdennukset: KOHDENNUKSET,
+    });
+    expect(t.viennit.find((v) => v.tili === 4000)?.kohdennus).toBe(2);
+    expect(t.viennit.find((v) => v.tili === 1763)?.kohdennus).toBe(2);
+    expect(t.viennit.find((v) => v.tili === 1910)).not.toHaveProperty('kohdennus');
+  });
+
+  it('ilman kohdennuslistaa, oletuksetonta tiliä tai voimassa olevaa oletusta ei kohdennusta', () => {
+    const ilmanListaa = luoTositeMatchista(tapahtuma, k, KARTTA, { menotili: 4000 });
+    const oletukseton = luoTositeMatchista(tapahtuma, k, KARTTA, {
+      menotili: 7570,
+      kohdennukset: KOHDENNUKSET,
+    });
+    const paattynyt = luoTositeMatchista(
+      tapahtuma,
+      k,
+      lataaKartta([
+        { numero: 1910, tyyppi: 'ARP', nimi: { fi: 'Pankkitili' } },
+        { numero: 1763, tyyppi: 'AL', nimi: { fi: 'ALV-saatava' } },
+        { numero: 4000, tyyppi: 'D', nimi: { fi: 'Ostot' }, kohdennus: 3 },
+      ]),
+      { menotili: 4000, kohdennukset: KOHDENNUKSET },
+    );
+    for (const t of [ilmanListaa, oletukseton, paattynyt])
+      expect(t.viennit.some((v) => v.kohdennus !== undefined)).toBe(false);
+  });
+
+  it('kirjaushistorian valinta saa tilin oletuskohdennuksen', () => {
+    const t = luoTositeValinnasta(
+      tapahtuma,
+      { tili: 4000, alvKoodi: AlvKoodi.OSTOT_NETTO, alvProsentti: 24 },
+      KARTTA,
+      { kohdennukset: KOHDENNUKSET },
+    );
+    expect(t.viennit.find((v) => v.tili === 4000)?.kohdennus).toBe(2);
   });
 });

@@ -141,3 +141,53 @@ describe('Uusi ostolasku — tallentamattomat muutokset', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
 });
+
+describe('Uusi ostolasku — kohdennukset', () => {
+  it('ei näytä kohdennussaraketta, kun kirjanpidossa ei ole kohdennuksia', async () => {
+    await renderRoute('/ostolaskut/uusi', { seed: SEED });
+    await screen.findByLabelText('ostolaskulomake');
+    expect(screen.queryByRole('columnheader', { name: 'Kohdennus' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Kohdennus, rivi 1')).not.toBeInTheDocument();
+  });
+
+  it('rivin projekti ja merkkaus päätyvät tallennettuun kuluvientiin; muutos likaa lomakkeen', async () => {
+    const { user, client, router } = await renderRoute('/ostolaskut/uusi', {
+      seed: SEED,
+      arrange: async (c) => {
+        await c.tallennaKohdennus({ tyyppi: 2, nimi: { fi: 'Kesäleiri' } });
+        await c.tallennaKohdennus({ tyyppi: 3, nimi: { fi: 'Avustus' } });
+      },
+    });
+    await screen.findByLabelText('ostolaskulomake');
+    expect(await screen.findByRole('columnheader', { name: 'Kohdennus' })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Selite, rivi 1'), 'Leirin ruoka');
+    await user.type(screen.getByLabelText('À-hinta, rivi 1'), '100');
+    await user.tab();
+    await user.click(screen.getByRole('combobox', { name: 'Kohdennus, rivi 1' }));
+    await user.click(screen.getByRole('option', { name: 'Avustus' }));
+    await user.click(screen.getByRole('option', { name: 'Kesäleiri' }));
+
+    // Poistuminen kysyy vahvistuksen: valinta on muutos.
+    await user.click(screen.getByRole('link', { name: 'Kojelauta' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Tallentamattomia muutoksia' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Jää sivulle' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(router.state.location.pathname).toBe('/ostolaskut/uusi');
+
+    await user.click(screen.getByRole('button', { name: 'Tallenna' }));
+    expect(await screen.findByLabelText('ostolaskunäkymä')).toBeInTheDocument();
+
+    const tosite = await client.haeTosite(1);
+    const kulu = tosite?.viennit.find((v) => v.tili === 4000);
+    expect(kulu).toMatchObject({ kohdennus: 1, merkkaukset: [2] });
+    // Vähennettävä alv seuraa perusvientiä; ostovelkavienti jää ilman kohdennusta.
+    expect(tosite?.viennit.find((v) => v.tili === 1763)).toMatchObject({
+      kohdennus: 1,
+      merkkaukset: [2],
+    });
+    expect(tosite?.viennit.find((v) => v.tili === 2871)?.kohdennus).toBeUndefined();
+  });
+});

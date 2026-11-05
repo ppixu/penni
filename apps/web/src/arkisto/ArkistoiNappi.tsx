@@ -5,29 +5,8 @@ import { lataaSelaimeen } from '@/laskutus/lataaLaskuPdf';
 import type { IsoDate } from '@penni/engine';
 import { muotoilePvm } from '@penni/euro';
 import { useState } from 'react';
+import { arkistoKirjauksenAvain, lueKirjaus, paikallinenPaiva } from './arkistoKirjaus';
 import { rakennaArkisto } from './rakennaArkisto';
-
-/** Aikaleiman päivä paikallisessa ajassa ISO-muodossa (UTC-päivä voi olla eri vuorokausi). */
-function paikallinenPaiva(aika: string): string {
-  const d = new Date(aika);
-  if (Number.isNaN(d.getTime())) return aika.slice(0, 10);
-  const kaksi = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${kaksi(d.getMonth() + 1)}-${kaksi(d.getDate())}`;
-}
-
-/** Asetuksiin kirjattu arkistointi (`Arkistoitu/<loppuu>` = JSON `{aika, tiiviste}`), jos luettavissa. */
-function lueKirjaus(arvo: string | undefined): { aika: string; tiiviste: string } | null {
-  if (!arvo) return null;
-  try {
-    const k = JSON.parse(arvo) as { aika?: unknown; tiiviste?: unknown };
-    if (typeof k.aika === 'string' && typeof k.tiiviste === 'string') {
-      return { aika: k.aika, tiiviste: k.tiiviste };
-    }
-  } catch {
-    // Vioittunut kirjaus ohitetaan: näytetään vain nappi.
-  }
-  return null;
-}
 
 /** Tilinpäätössivun "Arkistoi": rakentaa lukitun kauden sähköisen arkiston, lataa sen zip-
  *  pakettina ja kirjaa arkistointipäivän ja juuritiivisteen asetuksiin (Kitsas tarjoaa tätä
@@ -49,7 +28,7 @@ export function ArkistoiNappi({
   const [virhe, setVirhe] = useState<string | null>(null);
   const kesken = edistys !== null;
 
-  const avain = `Arkistoitu/${loppuu}`;
+  const avain = arkistoKirjauksenAvain(loppuu);
   const kirjaus = lueKirjaus(init?.asetukset[avain]);
 
   async function arkistoi() {

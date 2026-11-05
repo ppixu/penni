@@ -356,8 +356,23 @@ describe('Raportit: kohdennukset', () => {
     await waitFor(async () => expect(await liikevaihto()).toHaveTextContent('40,00 €'));
 
     // Muut raportit eivät ole kohdennettavissa: suodatin ei näy.
-    await user.selectOptions(screen.getByLabelText('Raportti'), 'Pääkirja');
+    await user.selectOptions(screen.getByLabelText('Raportti'), 'Tositeluettelo');
     expect(screen.queryByLabelText('Kohdennus')).not.toBeInTheDocument();
+  });
+
+  it('Kohdennus-suodatin näkyy myös päiväkirjalla ja pääkirjalla, ei ilman kohdennuksia', async () => {
+    const { user } = await renderRoute('/raportit?raportti=paivakirja', {
+      seed: SEED,
+      arrange: kirjaa,
+    });
+    const suodatin = await screen.findByLabelText('Kohdennus');
+    await within(suodatin).findByRole('option', { name: 'Nuorisotoiminta' });
+    await user.selectOptions(screen.getByLabelText('Raportti'), 'Pääkirja');
+    expect(await screen.findByLabelText('Kohdennus')).toBeInTheDocument();
+    await user.selectOptions(suodatin, 'Nuorisotoiminta');
+    expect(screen.getByRole('heading', { level: 1, hidden: true })).toHaveTextContent(
+      /^Demo Oy – Pääkirja 1\.1\.2026 – 31\.12\.2026 – Nuorisotoiminta$/,
+    );
   });
 
   it('Tuloslaskelma kuukausittain rajautuu samalla suodattimella', async () => {

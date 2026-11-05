@@ -8,6 +8,7 @@ import {
   useVahvistaTilinpaatos,
 } from '@/app/kysely';
 import { ArkistoiNappi } from '@/arkisto/ArkistoiNappi';
+import { TarkistaArkisto } from '@/arkisto/TarkistaArkisto';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { useValittuTilikausi } from '@/tilikausi/valittuTilikausi';
@@ -173,6 +174,8 @@ function TilinpaatosSisalto({
           />
         )}
         {virhe && <span className="text-[12.5px] text-[var(--danger)]">{virhe}</span>}
+        {/* Tarkistus toimii minkä tahansa kauden (tai koko kirjanpidon viennin) zipille. */}
+        <TarkistaArkisto />
       </div>
 
       <TilinpaatosDokumentti

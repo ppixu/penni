@@ -1,6 +1,12 @@
 import { alustaTila, uusiRivi } from '@/editori/reducer';
 import { CHART } from '@/editori/testHelpers';
-import { AlvKoodi, type Kuitti, TositeTyyppi, poimiKuittiTekstista } from '@penni/engine';
+import {
+  AlvKoodi,
+  KohdennusTyyppi,
+  type Kuitti,
+  TositeTyyppi,
+  poimiKuittiTekstista,
+} from '@penni/engine';
 import { Euro } from '@penni/euro';
 import { describe, expect, it, vi } from 'vitest';
 import { type TayttoOptiot, kuittiTaytto } from './kuittiTaytto.js';
@@ -51,6 +57,28 @@ describe('kuittiTaytto', () => {
       expect.objectContaining({ tili: 4000, debetSnt: 2000 }),
       expect.objectContaining({ tili: 1900, kreditSnt: 2000 }),
     ]);
+  });
+
+  it('menorivi saa menotilin oletuskohdennuksen', () => {
+    const chart = CHART.map((t) =>
+      t.numero === 4000 && t.otsikkotaso === 0 ? { ...t, data: { ...t.data, kohdennus: 5 } } : t,
+    );
+    const t = kuittiTaytto(
+      kuitti(),
+      tyhja(),
+      optiot({
+        chart,
+        asetukset: {
+          pankkitili: 1900,
+          menotili: 4000,
+          kohdennukset: [
+            { id: 5, tyyppi: KohdennusTyyppi.KUSTANNUSPAIKKA, nimi: { fi: 'Nuorisotoiminta' } },
+          ],
+        },
+      }),
+    );
+    expect(t?.tila.rows.find((r) => r.tili === 4000)?.kohdennus).toBe(5);
+    expect(t?.tila.rows.find((r) => r.tili === 1900)?.kohdennus).toBeUndefined();
   });
 
   it('täyttää tyhjän lomakkeen: päivä, otsikko ja meno-, alv- ja pankkirivit', () => {

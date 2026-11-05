@@ -149,6 +149,40 @@ export function runKohdennusClientConformance(name: string, makeClient: MakeClie
       expect(lista.find((x) => x.id === a.id)?.lkm).toBe(1);
     });
 
+    it('haeSaldot suodattaa tulostilit kohdennusjoukolla ja merkkauksella', async () => {
+      const k = await fresh();
+      const kp = await k.tallennaKohdennus({ tyyppi: 1, nimi: { fi: 'Nuorisotoiminta' } });
+      const projekti = await k.tallennaKohdennus({
+        tyyppi: 2,
+        kuuluu: kp.id,
+        nimi: { fi: 'Kesäleiri' },
+      });
+      const merkkaus = await k.tallennaKohdennus({ tyyppi: 3, nimi: { fi: 'Lahjoitus' } });
+      await k.luoTosite(kohdistettu(3000, 10_000, '2026-03-01')); // kohdentamaton
+      await k.luoTosite(kohdistettu(3000, 40_000, '2026-03-02', kp.id));
+      await k.luoTosite(kohdistettu(4000, 7_000, '2026-03-03', projekti.id, [merkkaus.id]));
+
+      const p = { pvm: '2026-12-31', alkupvm: '2026-01-01', tuloslaskelma: true };
+      const saldo = async (extra: object) => {
+        const m = await k.haeSaldot({ ...p, ...extra });
+        return [...m.entries()].sort(([a], [b]) => a - b);
+      };
+
+      expect(await saldo({})).toEqual([
+        [3000, 50_000],
+        [4000, -7_000],
+      ]);
+      expect(await saldo({ kohdennukset: [kp.id] })).toEqual([[3000, 40_000]]);
+      expect(await saldo({ kohdennukset: [0] })).toEqual([[3000, 10_000]]);
+      expect(await saldo({ kohdennukset: [0, projekti.id] })).toEqual([
+        [3000, 10_000],
+        [4000, -7_000],
+      ]);
+      expect(await saldo({ kohdennukset: [] })).toEqual([]);
+      expect(await saldo({ merkkaus: merkkaus.id })).toEqual([[4000, -7_000]]);
+      expect(await saldo({ kohdennukset: [kp.id], merkkaus: merkkaus.id })).toEqual([]);
+    });
+
     it('budjetti kiertää sentteinä ja korvautuu kokonaan; virheet kulkevat koodilla', async () => {
       const k = await fresh();
       const kp = await k.tallennaKohdennus({ tyyppi: 1, nimi: { fi: 'Nuorisotoiminta' } });

@@ -117,17 +117,22 @@ export async function kirjoitaKirja(
   ilmoita('tositteet', 0, kirja.tositteet.length);
   n = 0;
   let viennit = 0;
+  let merkattuja = 0;
   for (const tosite of kirja.tositteet) {
     await storage.saveTosite(tosite, audit);
     viennit += tosite.viennit.length;
+    merkattuja += tosite.viennit.filter((v) => (v.merkkaukset?.length ?? 0) > 0).length;
     ilmoita('tositteet', ++n, kirja.tositteet.length);
   }
 
   // 6b. budjetit (tilikaudet ja kohdennukset ovat jo tallessa)
   const kaudet = new Set(kirja.tilikaudet.map((k) => k.alkaa));
+  let budjettirivit = 0;
   for (const { tilikausi, rivit } of kirja.budjetit) {
-    if (kaudet.has(tilikausi)) await storage.putBudjetti(tilikausi, rivit);
-    else
+    if (kaudet.has(tilikausi)) {
+      await storage.putBudjetti(tilikausi, rivit);
+      budjettirivit += rivit.length;
+    } else
       varoitukset.push(
         `Budjettia tilikaudelle ${tilikausi} (${rivit.length} riviä) ei tuotu — tilikautta ei ole.`,
       );
@@ -174,6 +179,9 @@ export async function kirjoitaKirja(
     liitteet: kirja.liitteet.length,
     ohitetut: kirja.ohitetut,
     loki: lokia,
+    kohdennukset: kirja.kohdennukset.length,
+    merkkaukset: merkattuja,
+    budjettirivit,
     varoitukset,
   };
 }

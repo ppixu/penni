@@ -22,6 +22,10 @@ export interface KirjaRivi {
   kumppani: number | undefined;
   debet: Cents;
   kredit: Cents;
+  /** Viennin kohdennus (kustannuspaikka/projekti); 0 = kohdentamaton (Yleinen). */
+  kohdennus: number;
+  /** Viennin merkkaukset (tagit); puuttuu, kun merkkauksia ei ole. */
+  merkkaukset: number[] | undefined;
 }
 
 /** Tositteen tunniste näytettävässä muodossa, sama kuin tositelistassa (tositteet.index.tsx). */
@@ -58,6 +62,8 @@ export function kirjaRivit(
           kumppani: t.kumppani,
           debet: v.debet,
           kredit: v.kredit,
+          kohdennus: v.kohdennus ?? 0,
+          merkkaukset: v.merkkaukset,
         },
       });
     });

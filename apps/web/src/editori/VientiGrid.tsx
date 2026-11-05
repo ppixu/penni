@@ -1,6 +1,12 @@
 import { KohdennusValitsin, kohdennusSoluKaytossa } from '@/kohdennukset/KohdennusValitsin';
 import { kohdennusSolunTeksti } from '@/kohdennukset/kohdennusTeksti';
-import { type IsoDate, type Kohdennus, type Tili, TositeTyyppi } from '@penni/engine';
+import {
+  type IsoDate,
+  type Kohdennus,
+  type Tili,
+  TositeTyyppi,
+  tilinOletusKohdennus,
+} from '@penni/engine';
 import type { Cents } from '@penni/euro';
 import type { Dispatch } from 'react';
 import { AlvValitsin } from './AlvValitsin.js';
@@ -117,11 +123,17 @@ export function VientiGrid({
                       uusi && (onkoAlvVelvollinen?.(pvm) ?? true)
                         ? tilinAlvOletus(uusi, pvm)
                         : undefined;
+                    // Tulostilin oletuskohdennus samalle päivälle kuin KohdennusValitsimen voimassaolo.
+                    // Vain tilin vaihtuessa: saman tilin uudelleenvalinta (Enter tili-solussa)
+                    // ei saa korvata käsin valittua kohdennusta oletuksella.
+                    const kohdennus =
+                      numero !== r.tili ? tilinOletusKohdennus(uusi, kohdennukset, pvm) : undefined;
                     dispatch({
                       type: 'setTili',
                       avain: r.avain,
                       tili: numero,
                       ...(alv !== undefined ? { alv } : {}),
+                      ...(kohdennus !== undefined ? { kohdennus } : {}),
                     });
                   }}
                   // Kohdennus ohitetaan tässä: kirjaus etenee tilistä suoraan summaan.

@@ -177,6 +177,12 @@ export function TuontiNakyma(): React.ReactElement {
               <p className="mt-2 text-[12.5px] text-[var(--text-muted)]">
                 Tuotiin {tulos.raportti.tositteet} tositetta, {tulos.raportti.viennit} vientiä ja{' '}
                 {tulos.raportti.liitteet} liitettä tiedostoon {tulos.kohde}.
+                {(tulos.raportti.kohdennukset > 0 || tulos.raportti.budjettirivit > 0) &&
+                  ` Lisäksi tuotiin ${tulos.raportti.kohdennukset} ${
+                    tulos.raportti.kohdennukset === 1 ? 'kohdennus' : 'kohdennusta'
+                  } ja ${tulos.raportti.budjettirivit} ${
+                    tulos.raportti.budjettirivit === 1 ? 'budjettirivi' : 'budjettiriviä'
+                  }.`}
               </p>
               {(tulos.raportti.tuotteet > 0 || tulos.raportti.vakioviitteet > 0) && (
                 <p className="mt-1 text-[12.5px] text-[var(--text-muted)]">

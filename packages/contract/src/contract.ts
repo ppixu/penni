@@ -115,6 +115,10 @@ const SaldotQuery = z.object({
   tuloslaskelma: z.string().optional(),
   tili: z.string().optional(),
   kohdennus: z.string().optional(),
+  /** Tulosblokin kohdennusjoukko pilkuilla eroteltuna (id:t, 0 = Yleinen); tyhjä merkkijono = tyhjä joukko. */
+  kohdennukset: z.string().optional(),
+  /** Tulosblokin merkkaussuodatin (merkkauksen id). */
+  merkkaus: z.string().optional(),
   alkusaldot: z.string().optional(),
 });
 

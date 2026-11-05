@@ -570,6 +570,8 @@ export class HttpClient implements KpClient {
     if (params.tuloslaskelma) query.tuloslaskelma = 'true';
     if (params.tili !== undefined) query.tili = String(params.tili);
     if (params.kohdennus !== undefined) query.kohdennus = String(params.kohdennus);
+    if (params.kohdennukset !== undefined) query.kohdennukset = params.kohdennukset.join(',');
+    if (params.merkkaus !== undefined) query.merkkaus = String(params.merkkaus);
     // The contract's zod query type requires `pvm`; our string-bag carries it. Cast bridges the
     // wire-string impedance (same pattern as the decode casts).
     const r = await this.tsr.haeSaldot({

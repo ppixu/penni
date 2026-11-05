@@ -1,7 +1,14 @@
-import { useInit, useKumppanit, useSaldot, useTositteet } from '@/app/kysely';
+import { useInit, useKohdennukset, useKumppanit, useSaldot, useTositteet } from '@/app/kysely';
 import { Linkki } from '@/components/Linkki';
+import { kohdennusSolunTeksti } from '@/kohdennukset/kohdennusTeksti';
 import { tiliRajauksessa } from '@/tilikartta/tilinakyma';
-import { type Tili, lataaKartta, nimi } from '@penni/engine';
+import {
+  type Tili,
+  kohdennusSuodatin,
+  lataaKartta,
+  nimi,
+  vientiSuodattimessa,
+} from '@penni/engine';
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
 import { useMemo } from 'react';
 import { Lataustila } from './Lataustila';
@@ -17,15 +24,27 @@ const OTSIKKO = 'px-[10px] pb-[7px] text-[9px] font-semibold uppercase tracking-
  * tase-tileillä saldo ennen jaksoa, tulostileillä tilikauden alusta jakson alkuun. Saldon
  * etumerkki: vastaavaa-tilit debet − kredit, kaikki muut kredit − debet (kredit-tilit positiivisia).
  * Tilikartasta tultaessa näytetään vain rajauksen tili tai tiliryhmä (`tilirajaus`).
- * Kohdennus-, kumppani- ja ALV-sarakkeet puuttuvat.
+ * Kohdennus-sarake näkyy, kun kirjassa on kohdennuksia (laatijanpaakirja.cpp:219). Kohdennus-
+ * suodattimella (`kohdennus`) rivit rajataan kaikilta tileiltä ja alkusaldot haetaan vain
+ * tulostileille (`tuloslaskelma`, :20-48): kohdennuksella ei ole tasetta, joten tase-tilit
+ * alkavat nollasta. Kumppani- ja ALV-sarakkeet puuttuvat.
  */
-export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
+export function Paakirja({ alkupvm, loppupvm, tilirajaus, kohdennus }: RaporttiProps) {
   const { data: init, isError: initVirhe } = useInit();
   const { data: tositteet, isError: tositteetVirhe } = useTositteet({ alkupvm, loppupvm });
-  const { data: alkusaldot, isError: saldotVirhe } = useSaldot({
-    pvm: alkupvm,
-    alkusaldot: true,
-  });
+  const { data: kohdennukset, isError: kohdennuksetVirhe } = useKohdennukset();
+  const suodatin = useMemo(
+    () => (kohdennus === undefined ? undefined : kohdennusSuodatin(kohdennukset ?? [], kohdennus)),
+    [kohdennus, kohdennukset],
+  );
+  const { data: alkusaldot, isError: saldotVirhe } = useSaldot(
+    {
+      pvm: alkupvm,
+      alkusaldot: true,
+      ...(suodatin ? { tuloslaskelma: true, ...suodatin } : {}),
+    },
+    kohdennukset !== undefined,
+  );
   const { data: kumppanit } = useKumppanit();
 
   const tilit = useMemo(() => {
@@ -37,16 +56,17 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
     const nimet = new Map((kumppanit ?? []).map((k) => [k.id, k.nimi]));
     return (id: number) => nimet.get(id);
   }, [kumppanit]);
-  const ryhmat = useMemo(
-    () =>
-      paakirjaTilit(kirjaRivit(tositteet ?? [], alkupvm, loppupvm), alkusaldot).filter(
-        (r) => !tilirajaus || tiliRajauksessa(r.tili, tilirajaus),
-      ),
-    [tositteet, alkusaldot, alkupvm, loppupvm, tilirajaus],
-  );
+  const ryhmat = useMemo(() => {
+    const kaikki = kirjaRivit(tositteet ?? [], alkupvm, loppupvm);
+    const rivit = suodatin ? kaikki.filter((r) => vientiSuodattimessa(suodatin, r)) : kaikki;
+    return paakirjaTilit(rivit, alkusaldot).filter(
+      (r) => !tilirajaus || tiliRajauksessa(r.tili, tilirajaus),
+    );
+  }, [tositteet, alkusaldot, alkupvm, loppupvm, tilirajaus, suodatin]);
 
-  if (!tositteet || !alkusaldot || !init)
-    return <Lataustila virhe={initVirhe || tositteetVirhe || saldotVirhe} />;
+  if (!tositteet || !alkusaldot || !init || !kohdennukset)
+    return <Lataustila virhe={initVirhe || tositteetVirhe || saldotVirhe || kohdennuksetVirhe} />;
+  const kohdennusSarake = kohdennukset.length > 0;
   if (ryhmat.length === 0)
     return (
       <p className="text-[13px] text-[var(--text-muted)]">
@@ -63,6 +83,7 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
           <th className={`${OTSIKKO} w-[90px]`}>Pvm</th>
           <th className={`${OTSIKKO} w-[80px]`}>Tosite</th>
           <th className={OTSIKKO}>Selite</th>
+          {kohdennusSarake && <th className={OTSIKKO}>Kohdennus</th>}
           <th className={`${OTSIKKO} text-right`}>Debet €</th>
           <th className={`${OTSIKKO} text-right`}>Kredit €</th>
           <th className={`${OTSIKKO} text-right`}>Saldo €</th>
@@ -73,7 +94,7 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
         return (
           <tbody key={ryhma.tili} className="break-inside-avoid">
             <tr id={`tili-${ryhma.tili}`} className="font-semibold">
-              <td className="px-[10px] pb-[3px] pt-[14px]" colSpan={5}>
+              <td className="px-[10px] pb-[3px] pt-[14px]" colSpan={kohdennusSarake ? 6 : 5}>
                 <Linkki
                   to="/tilikartta"
                   search={{ nakyma: 'kaikki', tili: ryhma.tili }}
@@ -106,6 +127,11 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
                 <td className="px-[10px] py-[4px] text-[var(--text-muted)]">
                   {riviSelite(r, kumppaninNimi)}
                 </td>
+                {kohdennusSarake && (
+                  <td className="px-[10px] py-[4px] text-[var(--text-muted)]">
+                    {kohdennusSolunTeksti(r.kohdennus, r.merkkaukset, kohdennukset)}
+                  </td>
+                )}
                 <td className="px-[10px] py-[4px] text-right tabular-nums">
                   {r.debet === 0 ? '' : muotoileEuro(r.debet)}
                 </td>
@@ -125,6 +151,7 @@ export function Paakirja({ alkupvm, loppupvm, tilirajaus }: RaporttiProps) {
                 <td className="px-[10px] py-[5px] text-right tabular-nums text-[var(--text-muted)]">
                   {`Muutos ${muotoileEuro(ryhma.muutos)}`}
                 </td>
+                {kohdennusSarake && <td />}
                 <td className="px-[10px] py-[5px] text-right tabular-nums">
                   {muotoileEuro(ryhma.debet)}
                 </td>

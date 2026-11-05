@@ -30,6 +30,10 @@ describe('@penni/tuonti tyypit', () => {
       viennit: 0,
       liitteet: 0,
       ohitetut: {},
+      loki: 0,
+      kohdennukset: 0,
+      merkkaukset: 0,
+      budjettirivit: 0,
       varoitukset: [],
     };
     const taysmaytys: TaysmaytysRaportti = { tasmaa: true, erot: [], maarat: {}, ulkopuoliset: 0 };

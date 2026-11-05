@@ -1,4 +1,4 @@
-import { useKumppanit, useTallennaOstolasku } from '@/app/kysely';
+import { useKohdennukset, useKumppanit, useTallennaOstolasku } from '@/app/kysely';
 import { TopBar } from '@/components/shell/TopBar';
 import { Button } from '@/components/ui/button';
 import { KumppaniDialog } from '@/laskutus/KumppaniDialog';
@@ -41,6 +41,7 @@ export function OstolaskuLomake({
     alustaOstolaskuTila,
   );
   const { data: kumppanit } = useKumppanit();
+  const { data: kohdennukset } = useKohdennukset();
   const { tallenna, virheviesti, tallentaa } = useTallennaOstolasku();
   const [dialogiAuki, setDialogiAuki] = useState(false);
   const { onkoLikainen, asetaPohja } = useMuutosseuranta(tila, ostolaskuVertailuun);
@@ -116,6 +117,7 @@ export function OstolaskuLomake({
           pvm={tila.laskupvm}
           dispatch={dispatch}
           koodit={OSTOKOODIT}
+          kohdennukset={kohdennukset}
         />
 
         {virheviesti ? (
