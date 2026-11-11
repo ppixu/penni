@@ -487,7 +487,7 @@ function KysyOsio({ asetukset }: { asetukset: Asetukset }) {
           aria-label="Paikallinen malli"
           value={malli}
           onChange={(e) => setMalli(e.target.value)}
-          placeholder="qwen3.5:2b"
+          placeholder="qwen3.5:2b-mtp-q8_0"
           className={LK_LUOKKA}
         />
       </label>

@@ -3,9 +3,10 @@ import { KysyVirhe } from '@penni/kysy';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { KirjaIstunto } from './kirjaIstunto.js';
 
-const { kysyMock, varmistaKysyOllamaMock } = vi.hoisted(() => ({
+const { kysyMock, varmistaKysyOllamaMock, tukeeAjatteluaMock } = vi.hoisted(() => ({
   kysyMock: vi.fn(),
   varmistaKysyOllamaMock: vi.fn(),
+  tukeeAjatteluaMock: vi.fn(async () => true),
 }));
 
 vi.mock('@penni/kysy', async () => {
@@ -14,6 +15,7 @@ vi.mock('@penni/kysy', async () => {
     ...oikea,
     kysy: kysyMock,
     varmistaKysyOllama: varmistaKysyOllamaMock,
+    tukeeAjattelua: tukeeAjatteluaMock,
     luoOllamaKutsu: vi.fn(() => vi.fn()),
   };
 });
@@ -60,7 +62,7 @@ describe('kysyTila', () => {
   it('käyttää oletusmallia kun KysyMalli puuttuu tai on tyhjä', async () => {
     varmistaKysyOllamaMock.mockResolvedValue(undefined);
     const k = kysyKasittelijat(() => fakeIstunto({ KysyMalli: '  ' }));
-    expect(await k.kysyTila()).toEqual({ ok: true, malli: 'qwen3.5:2b' });
+    expect(await k.kysyTila()).toEqual({ ok: true, malli: 'qwen3.5:2b-mtp-q8_0' });
   });
 
   it('välittää KysyVirheen viestin ja korjauksen', async () => {
@@ -77,6 +79,24 @@ describe('kysyTila', () => {
 });
 
 describe('kysyKysy', () => {
+  it('kytkee ajattelun päälle vain, kun malli tukee sitä', async () => {
+    kysyMock.mockImplementation(async function* (): AsyncGenerator<KysyTapahtuma> {
+      yield { tyyppi: 'vastaus', teksti: 'Vastaus.' };
+    });
+    const k = kysyKasittelijat(() => fakeIstunto({ KysyMalli: 'oma:malli' }));
+
+    tukeeAjatteluaMock.mockResolvedValueOnce(true);
+    await k.kysyKysy(1, 'Kysymys', vi.fn());
+    expect(tukeeAjatteluaMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ malli: 'oma:malli' }),
+    );
+    expect(kysyMock.mock.lastCall?.[1].asetukset).toEqual({ malli: 'oma:malli', ajattelu: true });
+
+    tukeeAjatteluaMock.mockResolvedValueOnce(false);
+    await k.kysyKysy(2, 'Kysymys', vi.fn());
+    expect(kysyMock.mock.lastCall?.[1].asetukset).toEqual({ malli: 'oma:malli', ajattelu: false });
+  });
+
   it('ajaa silmukan ja välittää molemmat tapahtumat kysymysId:llä', async () => {
     kysyMock.mockImplementation(async function* (): AsyncGenerator<KysyTapahtuma> {
       yield { tyyppi: 'tyokalu_alkoi', kutsuId: 1, nimi: 'perustiedot', syote: {} };

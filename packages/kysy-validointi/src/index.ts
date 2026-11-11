@@ -57,7 +57,7 @@ async function main(): Promise<void> {
 
   if (!values.db) {
     console.error(
-      'Käyttö: pnpm validoi --db <polku.kitsas|.penni> [--malli qwen3.5:2b] [--limit N] ' +
+      'Käyttö: pnpm validoi --db <polku.kitsas|.penni> [--malli qwen3.5:2b-mtp-q8_0] [--limit N] ' +
         '[--out <hakemisto>] [--url <ollama-url>] [--ajattelu] [--aikakatkaisu <sekunnit>] ' +
         '[--konteksti <tokenit>] [--cache <hakemisto>]',
     );

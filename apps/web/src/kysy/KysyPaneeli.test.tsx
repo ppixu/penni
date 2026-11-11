@@ -6,7 +6,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from '../components/shell/AppShell.js';
@@ -195,5 +195,76 @@ describe('KysyPaneeli', () => {
     expect(await screen.findByText('Penni')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Kysy' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Kysy kirjanpitäjältä')).not.toBeInTheDocument();
+  });
+});
+
+describe('KysyPaneeli: mallin ajattelu', () => {
+  it('kokoaa saman ajatusId:n palat yhdeksi ajatukseksi ja näyttää sen auki kesken kysymyksen', async () => {
+    let lopeta: (() => void) | undefined;
+    const kysy: KysySilta['kysy'] = (kysymysId, _k, kasittelija) => {
+      kasittelija({ tyyppi: 'ajatus', ajatusId: 1, osa: 'Haen pankkitilin ', kysymysId });
+      kasittelija({ tyyppi: 'ajatus', ajatusId: 1, osa: 'saldon.', kysymysId });
+      return new Promise<void>((r) => {
+        lopeta = r;
+      });
+    };
+    asetaSilta(luoSilta({ kysy: vi.fn(kysy) }));
+    const user = userEvent.setup();
+    render(<KysyPaneeli auki sulje={vi.fn()} />);
+    await screen.findByText('qwen3.5:2b');
+
+    await user.type(screen.getByLabelText('Kysymys'), 'Paljonko pankissa on?{Enter}');
+
+    expect(await screen.findByLabelText('mallin ajatus')).toHaveTextContent(
+      'Haen pankkitilin saldon.',
+    );
+    expect(screen.getByRole('button', { name: /Mietin…/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await act(async () => lopeta?.());
+  });
+
+  it('sulkee ajatuksen kun seuraava askel alkaa, ja sen voi avata uudelleen', async () => {
+    asetaSilta(
+      luoSilta({
+        kysy: skriptoituKysy([
+          { tyyppi: 'ajatus', ajatusId: 1, osa: 'Katson saldot.' },
+          { tyyppi: 'vastaus', teksti: 'Pankissa on 100,00 €' },
+        ]),
+      }),
+    );
+    const user = userEvent.setup();
+    render(<KysyPaneeli auki sulje={vi.fn()} />);
+    await screen.findByText('qwen3.5:2b');
+
+    await user.type(screen.getByLabelText('Kysymys'), 'Kysymys{Enter}');
+    await screen.findByText('Pankissa on 100,00 €');
+
+    const nappi = screen.getByRole('button', { name: /^Mietin ▸/ });
+    expect(screen.queryByLabelText('mallin ajatus')).not.toBeInTheDocument();
+    await user.click(nappi);
+    expect(screen.getByLabelText('mallin ajatus')).toHaveTextContent('Katson saldot.');
+  });
+
+  it('näyttää varatien huomion ja pitää eri kutsujen ajatukset erillään', async () => {
+    asetaSilta(
+      luoSilta({
+        kysy: skriptoituKysy([
+          { tyyppi: 'ajatus', ajatusId: 1, osa: 'kehä kehä' },
+          { tyyppi: 'varatie' },
+          { tyyppi: 'vastaus', teksti: 'Vastaus ilman ajattelua' },
+        ]),
+      }),
+    );
+    const user = userEvent.setup();
+    render(<KysyPaneeli auki sulje={vi.fn()} />);
+    await screen.findByText('qwen3.5:2b');
+
+    await user.type(screen.getByLabelText('Kysymys'), 'Kysymys{Enter}');
+
+    expect(await screen.findByText(/Ajattelu jäi kiertämään kehää/)).toBeInTheDocument();
+    expect(screen.getByText('Vastaus ilman ajattelua')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Mietin/ })).toHaveLength(1);
   });
 });

@@ -1,5 +1,12 @@
 import { InProcessClient } from '@penni/asiakas';
-import { KysyVirhe, OLETUS_ASETUKSET, kysy, luoOllamaKutsu, varmistaKysyOllama } from '@penni/kysy';
+import {
+  KysyVirhe,
+  OLETUS_ASETUKSET,
+  kysy,
+  luoOllamaKutsu,
+  tukeeAjattelua,
+  varmistaKysyOllama,
+} from '@penni/kysy';
 import type { KysyTapahtuma, KysyTila } from '@penni/kysy';
 import { ipcMain } from 'electron';
 import { type IpcLahettaja, tarkistaLahettaja } from './ipcRajaus.js';
@@ -59,10 +66,14 @@ export function kysyKasittelijat(annaIstunto: () => KirjaIstunto | null) {
       const istunto = annaIstunto();
       if (!istunto) throw new Error('Avaa ensin kirjanpito.');
       const malli = await malliAsetuksista(istunto);
+      // Ajattelu päälle aina kun malli sen osaa: 97 % vs 86 % ilman (qwen3.5:2b-mtp-q8_0,
+      // kysy-validointi 2026-11-06). Hitaampi (ka. 21 s vs 5 s), mutta ajattelu striimautuu
+      // paneeliin, joten odotus näkyy. Ei-ajatteleva malli hylkäisi think:true-pyynnön.
+      const ajattelu = await tukeeAjattelua({ ...OLETUS_ASETUKSET, malli });
       const client = new InProcessClient(istunto.storage, undefined, 'kysy');
       for await (const e of kysy(client, {
         kysymys,
-        asetukset: { malli },
+        asetukset: { malli, ajattelu },
         kutsuFn: luoOllamaKutsu(),
         keskeyta: controller.signal,
       })) {

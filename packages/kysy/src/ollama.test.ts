@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { luoOllamaKutsu, varmistaKysyOllama } from './ollama.js';
+import { luoOllamaKutsu, tukeeAjattelua, varmistaKysyOllama } from './ollama.js';
 import { OLETUS_ASETUKSET, type OllamaTyokalu, type OllamaViesti } from './tyypit.js';
 
 const asetukset = { ...OLETUS_ASETUKSET };
@@ -237,5 +237,145 @@ describe('luoOllamaKutsu: levyvälimuisti', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+/** NDJSON-virta annetuista palasista — palan raja saa osua kesken JSON-rivin. */
+const virtaVastaus = (palat: string[]): Response => {
+  const koodari = new TextEncoder();
+  return new Response(
+    new ReadableStream<Uint8Array>({
+      start(ohjain) {
+        for (const p of palat) ohjain.enqueue(koodari.encode(p));
+        ohjain.close();
+      },
+    }),
+    { status: 200 },
+  );
+};
+
+describe('luoOllamaKutsu: ajattelun striimaus', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const ajatteleva = { ...asetukset, ajattelu: true };
+
+  it('striimaa vain kun ajatus-kuuntelija annetaan, ja kokoaa virrasta yhden vastauksen', async () => {
+    const rivit = [
+      { message: { role: 'assistant', content: '', thinking: 'Mietin ' } },
+      { message: { role: 'assistant', content: '', thinking: 'saldoa.' } },
+      {
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [{ function: { name: 'saldot', arguments: { pvm: '2026-12-31' } } }],
+        },
+      },
+      { message: { role: 'assistant', content: '' }, done: true, done_reason: 'stop' },
+    ]
+      .map((r) => JSON.stringify(r))
+      .join('\n');
+    // pilkotaan keskeltä riviä ja keskeltä monitavuista merkkiä (ä)
+    const raja = rivit.indexOf('saldoa') + 3;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(virtaVastaus([rivit.slice(0, raja), rivit.slice(raja)]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const palat: string[] = [];
+    const vastaus = await luoOllamaKutsu()(viestit, tyokalut, ajatteleva, {
+      ajatus: (osa) => palat.push(osa),
+    });
+
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1].body).stream).toBe(true);
+    expect(palat).toEqual(['Mietin ', 'saldoa.']);
+    expect(vastaus).toEqual({
+      message: {
+        content: '',
+        thinking: 'Mietin saldoa.',
+        tool_calls: [{ function: { name: 'saldot', arguments: { pvm: '2026-12-31' } } }],
+      },
+      done_reason: 'stop',
+    });
+  });
+
+  it('kesken virran tullut {error}-rivi heittää KysyVirhe(kutsu)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          virtaVastaus([
+            `${JSON.stringify({ message: { content: '', thinking: 'a' } })}\n`,
+            `${JSON.stringify({ error: 'model runner has unexpectedly stopped' })}\n`,
+          ]),
+        ),
+    );
+    await expect(
+      luoOllamaKutsu()(viestit, tyokalut, ajatteleva, { ajatus: () => {} }),
+    ).rejects.toMatchObject({ koodi: 'kutsu', message: expect.stringContaining('unexpectedly') });
+  });
+
+  it('välittää peruutussignaalin fetchille', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ollamaVastaus('ok'));
+    vi.stubGlobal('fetch', fetchMock);
+    const ohjain = new AbortController();
+    await luoOllamaKutsu()(viestit, tyokalut, asetukset, { signal: ohjain.signal });
+    const signaali = fetchMock.mock.calls[0]?.[1].signal as AbortSignal;
+    expect(signaali.aborted).toBe(false);
+    ohjain.abort();
+    expect(signaali.aborted).toBe(true);
+  });
+
+  it('välimuistiosuma toistaa talletetun ajattelun kuuntelijalle', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kysy-cache-test-'));
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            virtaVastaus([
+              `${JSON.stringify({ message: { content: 'vastaus', thinking: 'pohdin' }, done: true })}\n`,
+            ]),
+          ),
+      );
+      const kutsu = luoOllamaKutsu(dir);
+      await kutsu(viestit, tyokalut, ajatteleva, { ajatus: () => {} });
+      const palat: string[] = [];
+      await kutsu(viestit, tyokalut, ajatteleva, { ajatus: (o) => palat.push(o) });
+      expect(palat).toEqual(['pohdin']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('tukeeAjattelua', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const show = (runko: unknown, ok = true): Response =>
+    ({ ok, status: ok ? 200 : 404, json: () => Promise.resolve(runko) }) as unknown as Response;
+
+  it('kysyy /api/show-osoitteesta mallin nimellä ja tunnistaa thinking-kyvyn', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(show({ capabilities: ['completion', 'tools', 'thinking'] }));
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await tukeeAjattelua(asetukset)).toBe(true);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:11434/api/show');
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1].body)).toEqual({ model: asetukset.malli });
+  });
+
+  it('ei-ajatteleva malli, HTTP-virhe tai verkkovirhe → false', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(show({ capabilities: ['completion'] })));
+    expect(await tukeeAjattelua(asetukset)).toBe(false);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(show({ error: 'not found' }, false)));
+    expect(await tukeeAjattelua(asetukset)).toBe(false);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+    expect(await tukeeAjattelua(asetukset)).toBe(false);
   });
 });

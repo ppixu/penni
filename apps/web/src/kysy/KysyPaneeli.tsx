@@ -2,12 +2,14 @@ import { BetaMerkki } from '@/components/ui/BetaMerkki';
 import { Button } from '@/components/ui/button';
 import { siivoaIpcVirhe } from '@/tasmays/ipcVirhe';
 import type { KysyTapahtuma, KysyTila } from '@penni/kysy';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { annaKysySilta, onkoKysySilta } from './silta.js';
 
-/** Yksi keskustelun rivi: käyttäjän kysymys, mallin vastaus, työkaluaskel tai virhe. */
+/** Yksi keskustelun rivi: käyttäjän kysymys, mallin ajatus tai vastaus, työkaluaskel tai virhe. */
 type Rivi =
   | { tyyppi: 'kayttaja'; teksti: string }
+  | { tyyppi: 'ajatus'; kysymysId: number; ajatusId: number; teksti: string; kaynnissa: boolean }
+  | { tyyppi: 'huomio'; teksti: string }
   | { tyyppi: 'vastaus'; teksti: string }
   | {
       tyyppi: 'tyokalu';
@@ -91,8 +93,46 @@ function KysyPaneeliSisalto({ sulje }: { sulje: () => void }): React.ReactElemen
     };
   }, []);
 
+  /** Ajatus on valmis heti, kun sen jälkeen tulee mikä tahansa muu askel (tai kysymys päättyy). */
+  function lopetaAjatukset(r: Rivi[], id: number): Rivi[] {
+    return r.map((rivi) =>
+      rivi.tyyppi === 'ajatus' && rivi.kysymysId === id && rivi.kaynnissa
+        ? { ...rivi, kaynnissa: false }
+        : rivi,
+    );
+  }
+
   function kasitteleTapahtuma(id: number, e: KysyTapahtuma & { kysymysId: number }) {
     if (e.kysymysId !== id) return;
+    if (e.tyyppi === 'ajatus') {
+      setRivit((r) => {
+        // ajatusId on yksilöllinen kysymyksen sisällä, joten ensimmäinen osuma on ainoa
+        const i = r.findIndex(
+          (rivi) =>
+            rivi.tyyppi === 'ajatus' && rivi.kysymysId === id && rivi.ajatusId === e.ajatusId,
+        );
+        const vanha = r[i];
+        if (vanha?.tyyppi === 'ajatus') {
+          return r.map((rivi, j) => (j === i ? { ...vanha, teksti: vanha.teksti + e.osa } : rivi));
+        }
+        return [
+          ...lopetaAjatukset(r, id),
+          { tyyppi: 'ajatus', kysymysId: id, ajatusId: e.ajatusId, teksti: e.osa, kaynnissa: true },
+        ];
+      });
+      return;
+    }
+    setRivit((r) => lopetaAjatukset(r, id));
+    if (e.tyyppi === 'varatie') {
+      setRivit((r) => [
+        ...r,
+        {
+          tyyppi: 'huomio',
+          teksti: 'Ajattelu jäi kiertämään kehää — vastaan uudelleen ilman sitä.',
+        },
+      ]);
+      return;
+    }
     if (e.tyyppi === 'tyokalu_alkoi') {
       setRivit((r) => [
         ...r,
@@ -152,6 +192,7 @@ function KysyPaneeliSisalto({ sulje }: { sulje: () => void }): React.ReactElemen
       ]);
     } finally {
       aktiivinenId.current = null;
+      setRivit((r) => lopetaAjatukset(r, id));
       setKaynnissa(false);
     }
   }
@@ -245,6 +286,12 @@ function RiviNaytto({ rivi }: { rivi: Rivi }): React.ReactElement {
   if (rivi.tyyppi === 'vastaus') {
     return <p className="mb-2 px-3 py-2 text-[12.5px]">{rivi.teksti}</p>;
   }
+  if (rivi.tyyppi === 'ajatus') {
+    return <AjatusNaytto teksti={rivi.teksti} kaynnissa={rivi.kaynnissa} />;
+  }
+  if (rivi.tyyppi === 'huomio') {
+    return <p className="mb-2 px-3 py-1 text-[12px] text-[var(--text-muted)]">{rivi.teksti}</p>;
+  }
   if (rivi.tyyppi === 'virhe') {
     return (
       <div role="alert" className="mb-2 px-3 py-2 text-[12.5px] text-[var(--danger)]">
@@ -262,5 +309,49 @@ function RiviNaytto({ rivi }: { rivi: Rivi }): React.ReactElement {
         {JSON.stringify({ syote: rivi.syote, tulos: rivi.tulos }, null, 2)}
       </pre>
     </details>
+  );
+}
+
+/**
+ * Mallin ajattelu näkyvissä: auki ja seuraa loppua sillä aikaa kun se striimautuu, sulkeutuu
+ * itsestään kun askel valmistuu (avattavissa uudelleen). Ajattelu tekee vastaamisesta hitaampaa
+ * (~30 s/kysymys pienellä mallilla), joten käyttäjän pitää nähdä, että jotain tapahtuu.
+ */
+function AjatusNaytto({
+  teksti,
+  kaynnissa,
+}: {
+  teksti: string;
+  kaynnissa: boolean;
+}): React.ReactElement {
+  const [auki, setAuki] = useState(kaynnissa);
+  const runko = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    setAuki(kaynnissa);
+  }, [kaynnissa]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: vieritys seuraa nimenomaan tekstin kasvua
+  useLayoutEffect(() => {
+    if (kaynnissa && runko.current) runko.current.scrollTop = runko.current.scrollHeight;
+  }, [teksti, kaynnissa]);
+  return (
+    <div className="mb-2 px-3 py-1 text-[12px]">
+      <button
+        type="button"
+        aria-expanded={auki}
+        onClick={() => setAuki((a) => !a)}
+        className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text)]"
+      >
+        {kaynnissa ? 'Mietin…' : 'Mietin'} {auki ? '▾' : '▸'}
+      </button>
+      {auki && (
+        <p
+          ref={runko}
+          aria-label="mallin ajatus"
+          className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap border-l-2 border-[var(--border)] pl-2 text-[11.5px] leading-[1.45] text-[var(--text-muted)]"
+        >
+          {teksti.trim()}
+        </p>
+      )}
+    </div>
   );
 }

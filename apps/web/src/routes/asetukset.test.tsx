@@ -294,12 +294,12 @@ describe('Asetukset-näkymä — Kysy', () => {
     expect(within(sivu).getByLabelText('Paikallinen malli')).toHaveValue('qwen3.5:7b');
   });
 
-  it('näyttää oletusmallin qwen3.5:2b placeholderina, kun KysyMalli puuttuu', async () => {
+  it('näyttää oletusmallin qwen3.5:2b-mtp-q8_0 placeholderina, kun KysyMalli puuttuu', async () => {
     await renderRoute('/asetukset', { seed: SEED });
     const sivu = await screen.findByLabelText('asetukset');
     expect(within(sivu).getByLabelText('Paikallinen malli')).toHaveAttribute(
       'placeholder',
-      'qwen3.5:2b',
+      'qwen3.5:2b-mtp-q8_0',
     );
   });
 

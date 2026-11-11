@@ -4,3 +4,4 @@ export * from './tyokaluMuunnos.js';
 export * from './silmukka.js';
 export * from './ollama.js';
 export * from './silta.js';
+export * from './kehavahti.js';
