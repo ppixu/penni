@@ -28,6 +28,7 @@ export function IlmoitusHistoria({
   raja,
   tilit,
   onValitse,
+  onAvaaOhje,
 }: {
   ilmoitukset: readonly StoredTosite[];
   kausiKk: KausiPituus;
@@ -35,6 +36,8 @@ export function IlmoitusHistoria({
   raja: string | undefined;
   tilit: readonly Tili[];
   onValitse: (kausi: AlvKausi) => void;
+  /** Valitsee kauden ja avaa sen OmaVero-täyttöavun (myös jo ilmoitetuille kausille). */
+  onAvaaOhje: (kausi: AlvKausi) => void;
 }) {
   const { poista, virheviesti, poistaa } = usePoistaAlvIlmoitus();
   const [auki, setAuki] = useState(true);
@@ -124,6 +127,18 @@ export function IlmoitusHistoria({
                       >
                         Tosite
                       </Link>
+                      {kausi && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAvaaOhje(kausi);
+                          }}
+                          className="ml-4 text-[var(--accent)] hover:underline"
+                        >
+                          OmaVero-ohje
+                        </button>
+                      )}
                     </td>
                     <td className="py-[7px] text-right">
                       <Button

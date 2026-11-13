@@ -114,7 +114,7 @@ describe('ALV-sivu — laskelma ja kausikortti', () => {
     expect(erapvm).toHaveClass('text-[var(--danger)]');
   });
 
-  it('tilittää kauden: dialogi → vahvistus → tosite, raja siirtyy ja kortti siirtyy seuraavaan kauteen', async () => {
+  it('tilittää kauden: dialogi → vahvistus → tosite, raja siirtyy ja kortti jää tilitetylle kaudelle täyttöapu auki', async () => {
     const { user, client } = await renderRoute('/alv', {
       seed: SEED_MAALISKUU,
       arrange: siemennaMaaliskuu,
@@ -145,17 +145,27 @@ describe('ALV-sivu — laskelma ja kausikortti', () => {
     const init = await client.haeInit();
     expect(init.asetukset.AlvIlmoitettu).toBe('2026-03-31');
 
-    // Kortti siirtyi automaattisesti huhtikuuhun (frontier liikkui → key-remount).
+    // Raja siirtyi (key-remount), mutta kortti jää juuri tilitetylle maaliskuulle: seuraava
+    // askel on ilmoittaa se OmaVerossa, joten täyttöapu avautuu valmiiksi.
     // Huom: remount vaihtaa DOM-solmun — kortti haetaan uudelleen vasta sisällön jälkeen.
     await waitFor(() =>
-      expect(screen.getByLabelText('kausikortti')).toHaveTextContent('1.4.2026 – 30.4.2026'),
+      expect(screen.getByLabelText('kausikortti')).toHaveTextContent('Ilmoitettu'),
     );
     const uusiKortti = screen.getByLabelText('kausikortti');
-
-    // Ilmoitettu kausi on luku-vain: taaksepäin → Ilmoitettu-badge, ei Tilitä-nappia.
-    await user.click(within(uusiKortti).getByRole('button', { name: 'Edellinen kausi' }));
-    expect(await within(uusiKortti).findByText('Ilmoitettu')).toBeInTheDocument();
+    expect(uusiKortti).toHaveTextContent('1.3.2026 – 31.3.2026');
     expect(within(uusiKortti).queryByRole('button', { name: 'Tilitä' })).not.toBeInTheDocument();
+    expect(within(uusiKortti).getByRole('button', { name: 'OmaVero-täyttöapu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    const apu = await within(uusiKortti).findByLabelText('omavero-tayttoapu');
+    expect(apu).toHaveTextContent('3/2026');
+    expect(apu).not.toHaveTextContent('Tilitä kausi ennen ilmoittamista');
+
+    // Seuraava kausi on yhä tavoitettavissa, ja se on tilittämätön.
+    await user.click(within(uusiKortti).getByRole('button', { name: 'Seuraava kausi' }));
+    expect(await within(uusiKortti).findByText('1.4.2026 – 30.4.2026')).toBeInTheDocument();
+    expect(within(uusiKortti).queryByText('Ilmoitettu')).not.toBeInTheDocument();
   });
 
   it('nollakausi: nollailmoitusteksti näkyy, mutta sivun Tilitä on käytössä — dialogin oma vartija torjuu aidosti tyhjän laskelman', async () => {
@@ -448,6 +458,30 @@ describe('ALV-sivu — annetut ilmoitukset ja poisto', () => {
     ).toBeInTheDocument();
     expect(within(kortti).getByText('Ilmoitettu')).toBeInTheDocument();
     expect(within(kortti).queryByRole('button', { name: 'Tilitä' })).not.toBeInTheDocument();
+  });
+
+  it('OmaVero-ohje avaa aiemman ilmoitetun kauden täyttöavun', async () => {
+    const { user } = await renderRoute('/alv', {
+      seed: SEED,
+      arrange: siemennaKaksiIlmoitusta,
+    });
+    const historia = await screen.findByLabelText('annetut-ilmoitukset');
+    const ohjeet = within(historia).getAllByRole('button', { name: 'OmaVero-ohje' });
+    expect(ohjeet).toHaveLength(2);
+    // Vanhempi (tammikuu) on jälkimmäinen rivi.
+    await user.click(ohjeet[1] as HTMLElement);
+
+    const kortti = await screen.findByLabelText('kausikortti');
+    expect(
+      await within(kortti).findByRole('heading', { name: '1.1.2026 – 31.1.2026' }),
+    ).toBeInTheDocument();
+    expect(within(kortti).getByRole('button', { name: 'OmaVero-täyttöapu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    const apu = await within(kortti).findByLabelText('omavero-tayttoapu');
+    await waitFor(() => expect(apu).toHaveTextContent('1/2026'));
+    expect(apu).toHaveTextContent('Maksettava vero25,50OmaVero laskee');
   });
 
   it('poistaa vain uusimman: raja kelautuu taakse ja kauden voi tilittää uudelleen', async () => {

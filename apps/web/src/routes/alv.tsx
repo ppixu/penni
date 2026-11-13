@@ -33,7 +33,7 @@ import {
 import { muotoileEuro, muotoilePvm } from '@penni/euro';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const Route = createFileRoute('/alv')({ component: AlvSivu });
 
@@ -55,6 +55,9 @@ function AlvSivu() {
   const { kausi: tilikausi } = useValittuTilikausi();
   // Vahvistus elää täällä (ei AlvNaytossa), jotta se säilyy rajan siirron key-remountin yli.
   const [vahvistus, setVahvistus] = useState<string | null>(null);
+  // Juuri tilitetty kausi elää myös täällä: tilitys siirtää rajaa ja remounttaa AlvNayton,
+  // mutta käyttäjä tarvitsee kauden OmaVero-täyttöapua juuri nyt — ei seuraavan kauden.
+  const [tilitetty, setTilitetty] = useState<AlvKausi | null>(null);
 
   if (!init) {
     return (
@@ -82,7 +85,11 @@ function AlvSivu() {
           key={`${init.asetukset.AlvIlmoitettu ?? ''}_${init.asetukset.AlvKausiHistoria ?? ''}_${tilikausi?.alkaa ?? ''}`}
           init={init}
           tilikausi={tilikausi}
-          onVahvistus={() => setVahvistus(VAHVISTUS)}
+          alkuKausi={tilitetty}
+          onVahvistus={(k) => {
+            setVahvistus(VAHVISTUS);
+            setTilitetty(k);
+          }}
         />
       </section>
     </>
@@ -92,25 +99,45 @@ function AlvSivu() {
 function AlvNaytto({
   init,
   tilikausi,
+  alkuKausi,
   onVahvistus,
 }: {
   init: InitBundle;
   /** Sivupalkin valitsema tilikausi; alv-kaudet selataan sen sisällä. */
   tilikausi: Tilikausi | undefined;
-  onVahvistus: () => void;
+  /** Juuri tilitetty kausi: näytetään oletuskauden sijaan täyttöapu auki. */
+  alkuKausi: AlvKausi | null;
+  onVahvistus: (kausi: AlvKausi) => void;
 }) {
   const asetukset = init.asetukset;
   const historia = verokausiHistoria(asetukset);
   const raja = asetukset.AlvIlmoitettu;
-  const [valittuKausi, setKausi] = useState<AlvKausi | null>(null);
+  // Tilitetty kausi kelpaa alkukaudeksi vain valitulla tilikaudella (tilikauden vaihto
+  // remounttaa näkymän, eikä toisen tilikauden kausi saa jäädä näkyviin).
+  const [tilitettyAlussa] = useState(
+    () => alkuKausi !== null && (!tilikausi || osuuTilikaudelle(alkuKausi, tilikausi)),
+  );
+  const [valittuKausi, setKausi] = useState<AlvKausi | null>(tilitettyAlussa ? alkuKausi : null);
   const [dialogiAuki, setDialogiAuki] = useState(false);
   const [verokausiAuki, setVerokausiAuki] = useState(false);
   // Osioiden taittotila elää täällä: dokumentti ja täyttöapu remountataan kauden vaihtuessa.
   const [osioAuki, setOsioAuki] = useState<Record<DokumenttiOsio | 'tayttoapu', boolean>>({
     laskelma: true,
     erittely: false,
-    tayttoapu: false,
+    tayttoapu: tilitettyAlussa,
   });
+  // Täyttöavun avaus ilmoitushistoriasta (tai tilityksen jälkeen) vierittää sen näkyviin.
+  const tayttoapuRef = useRef<HTMLDivElement>(null);
+  const [vieritaOhjeeseen, setVieritaOhjeeseen] = useState(tilitettyAlussa ? 1 : 0);
+  useEffect(() => {
+    if (vieritaOhjeeseen === 0) return;
+    tayttoapuRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [vieritaOhjeeseen]);
+  const avaaOhje = (k: AlvKausi) => {
+    setKausi(k);
+    setOsioAuki((a) => ({ ...a, tayttoapu: true }));
+    setVieritaOhjeeseen((n) => n + 1);
+  };
   const vaihdaOsio = (osio: DokumenttiOsio | 'tayttoapu') =>
     setOsioAuki((a) => ({ ...a, [osio]: !a[osio] }));
 
@@ -303,20 +330,22 @@ function AlvNaytto({
 
         {/* Tulosteesta piilotetaan kaikki laskelman ulkopuolinen. */}
         <div className="mt-8 flex flex-col gap-8 print:hidden">
-          {laskelma && (
-            // key: kopiointikuittaus ei saa jäädä edellisen kauden riville.
-            <OmaVeroTayttoapu
-              key={`omavero_${kausi.alkupvm}_${kausi.loppupvm}`}
-              kausi={kausi}
-              kausiKk={kausiKk}
-              laskelma={laskelma}
-              erapvm={erapvm}
-              ytunnus={asetukset.Ytunnus}
-              ilmoitettu={ilmoitettu}
-              auki={osioAuki.tayttoapu}
-              onVaihda={() => vaihdaOsio('tayttoapu')}
-            />
-          )}
+          <div ref={tayttoapuRef} className="scroll-mt-14">
+            {laskelma && (
+              // key: kopiointikuittaus ei saa jäädä edellisen kauden riville.
+              <OmaVeroTayttoapu
+                key={`omavero_${kausi.alkupvm}_${kausi.loppupvm}`}
+                kausi={kausi}
+                kausiKk={kausiKk}
+                laskelma={laskelma}
+                erapvm={erapvm}
+                ytunnus={asetukset.Ytunnus}
+                ilmoitettu={ilmoitettu}
+                auki={osioAuki.tayttoapu}
+                onVaihda={() => vaihdaOsio('tayttoapu')}
+              />
+            )}
+          </div>
 
           {/* puuttuviaTunnuksia voi olla tosi vain kun rivejä on (euMyynti.ts:75) —
             rivit.length > 0 kattaa specin §5 näkyvyysehdon kokonaan. */}
@@ -330,6 +359,7 @@ function AlvNaytto({
             raja={raja}
             tilit={kartta}
             onValitse={setKausi}
+            onAvaaOhje={avaaOhje}
           />
         </div>
       </section>
@@ -347,7 +377,7 @@ function AlvNaytto({
           onPeruuta={() => setDialogiAuki(false)}
           onValmis={() => {
             setDialogiAuki(false);
-            onVahvistus();
+            onVahvistus(kausi);
           }}
         />
       )}
